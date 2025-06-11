@@ -1,0 +1,196 @@
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #388E3C;
+    --secondary: #008CBA;
+    --secondary-dark: #007B9A;
+    --bg: #f6f8fa;
+    --border: #e0e0e0;
+    --text: #222;
+    --radius: 8px;
+}
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 10px 30px 10px;
+}
+nav {
+    background: var(--primary);
+    border-radius: var(--radius);
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px #0001;
+}
+nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+nav li {
+    margin: 0;
+}
+nav a {
+    display: block;
+    padding: 16px 24px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+nav a.active, nav a:hover {
+    background: var(--primary-dark);
+}
+h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 32px;
+    color: var(--primary-dark);
+    text-align: center;
+    letter-spacing: 1px;
+}
+section {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px #0001;
+    padding: 24px 20px 16px 20px;
+    margin-bottom: 32px;
+}
+h2 {
+    color: var(--primary-dark);
+    font-size: 1.4rem;
+    margin-top: 0;
+    border-left: 5px solid var(--primary);
+    padding-left: 12px;
+    margin-bottom: 18px;
+}
+h3 {
+    color: var(--secondary-dark);
+    margin-top: 32px;
+    margin-bottom: 10px;
+}
+.form-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+}
+label {
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #444;
+}
+input[type="text"], input[type="tel"], input[type="date"], select, textarea {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: border 0.2s;
+    background: #f9f9f9;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+button[type="submit"], .btn-kml {
+    background: var(--secondary);
+    color: #fff;
+    padding: 10px 24px;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 4px #0001;
+}
+button[type="submit"]:hover, .btn-kml:hover {
+    background: var(--secondary-dark);
+}
+#resposta {
+    background: #fffbe7;
+    border: 1px solid #ffe082;
+    padding: 14px;
+    margin-bottom: 32px;
+    border-radius: var(--radius);
+    font-family: 'Fira Mono', 'Consolas', monospace;
+    color: #7c6f00;
+    font-size: 1rem;
+    white-space: pre-wrap;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 2px 8px #0001;
+    margin-bottom: 24px;
+}
+th, td {
+    padding: 12px 8px;
+    text-align: left;
+}
+th {
+    background: #f2f2f2;
+    color: #333;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+}
+tr:nth-child(even) {
+    background: #f9f9f9;
+}
+tr:hover {
+    background: #e3f2fd;
+}
+td:last-child {
+    white-space: nowrap;
+}
+table button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    margin-right: 4px;
+    transition: background 0.2s;
+}
+table button:hover {
+    background: var(--primary-dark);
+}
+#map {
+    width: 100%;
+    height: 400px;
+    border-radius: var(--radius);
+    margin: 32px 0 0 0;
+    box-shadow: 0 2px 8px #0001;
+    border: 1px solid var(--border);
+}
+.btn-kml {
+    margin-top: 18px;
+    display: inline-block;
+}
+/* Responsivo */
+@media (max-width: 700px) {
+    body { padding: 10px; }
+    nav ul { flex-direction: column; }
+    nav a { padding: 12px 16px; }
+    section { padding: 12px 6px 10px 6px; }
+    h1 { font-size: 1.3rem; }
+    h2 { font-size: 1.1rem; }
+    th, td { padding: 8px 4px; font-size: 0.92rem; }
+    button[type="submit"], .btn-kml { padding: 8px 12px; font-size: 0.95rem; }
+    #map { height: 250px; }
+}

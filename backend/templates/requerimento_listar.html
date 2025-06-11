@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Listar Requerimentos - Sistema SEMAPA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index">Cadastro</a></li>
+            <li><a href="requerimento">Requerimentos</a></li>
+            <li><a href="os_listar">Ordens de Serviço</a></li>
+        </ul>
+    </nav>
+
+    <h1>Sistema SEMAPA - Requerimentos</h1>
+
+    <section>
+        <h2>Listagem de Requerimentos</h2>
+        <table id="requerimentos-lista">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>ID</th>
+                    <th>Número</th>
+                    <th>Tipo</th>
+                    <th>Motivo</th>
+                    <th>Status</th>
+                    <th>Prioridade</th>
+                    <th>Data Abertura</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button id="btn-gerar-os">Gerar OS</button>
+        <button onclick="window.location.href='os_listar'">Listar OS</button>
+    </section>
+
+    <section>
+        <h2>Mapa de Requerimentos</h2>
+        <div id="map"></div>
+    </section>
+
+    <pre id="resposta"></pre>
+
+    <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+    <script src="{{ url_for('static', filename='js/renderer_requerimento_listar.js') }}"></script>
+</body>
+</html>

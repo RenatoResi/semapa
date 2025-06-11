@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema SEMAPA - Gestão Arbórea</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index" class="active">Cadastro</a></li>
+            <li><a href="requerimento">Requerimentos</a></li>
+            <li><a href="os_listar">Ordens de Serviço</a></li>
+        </ul>
+    </nav>
+
+    <h1>Sistema SEMAPA - Gestão Arbórea</h1>
+    
+    <pre id="resposta"></pre>
+
+    <section>
+        <h2>Cadastro de Requerente</h2>
+        <form id="form-requerente" autocomplete="off">
+            <div class="form-group">
+                <label for="nome">Nome</label>
+                <input id="nome" name="nome" type="text" required>
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input id="telefone" name="telefone" type="tel" oninput="formatarTelefone(this)" maxlength="15">
+            </div>
+            <div class="form-group">
+                <label for="observacao-requerente">Observação</label>
+                <input id="observacao-requerente" name="observacao" type="text">
+            </div>
+            <button type="submit">Cadastrar</button>
+        </form>
+    </section>
+
+    <h3>Requerentes</h3>
+    <table id="requerentes-lista">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Observação</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <section>
+        <h2>Cadastro de Árvore</h2>
+        <form id="form-arvore" autocomplete="off">
+            <div class="form-group">
+                <label for="especie">Espécie</label>
+                <input id="especie" name="especie" type="text">
+            </div>
+            <div class="form-group">
+                <label for="endereco">Endereço</label>
+                <input id="endereco" name="endereco" type="text">
+            </div>
+            <div class="form-group">
+                <label for="bairro">Bairro</label>
+                <input id="bairro" name="bairro" type="text">
+            </div>
+            <div class="form-group">
+                <label for="latitude">Latitude</label>
+                <input id="latitude" name="latitude" type="text">
+            </div>
+            <div class="form-group">
+                <label for="longitude">Longitude</label>
+                <input id="longitude" name="longitude" type="text">
+            </div>
+            <div class="form-group">
+                <label for="data_plantio">Data de Plantio</label>
+                <input id="data_plantio" name="data_plantio" type="date">
+            </div>
+            <div class="form-group">
+                <label for="observacao-arvore">Observação</label>
+                <input id="observacao-arvore" name="observacao" type="text">
+            </div>
+            <button type="submit">Cadastrar</button>
+        </form>
+    </section>
+
+    <h3>Árvores</h3>
+    <table id="arvores-lista">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Espécie</th>
+                <th>Endereço</th>
+                <th>Bairro</th>
+                <th>Data Plantio</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="map"></div>
+    <button onclick="gerarKML()" class="btn-kml">
+        Gerar KML de Todas as Árvores
+    </button>
+    
+    <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+    <script src="{{ url_for('static', filename='js/renderer.js') }}"></script>
+</body>
+</html>
