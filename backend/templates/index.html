@@ -17,27 +17,30 @@
     </nav>
 
     <h1>Sistema SEMAPA - Gestão Arbórea</h1>
-    
-    <pre id="resposta"></pre>
 
     <section>
-        <h2>Cadastro de Requerente</h2>
-        <form id="form-requerente" autocomplete="off">
+    <h2>Cadastro de Requerente</h2>
+    <form id="form-requerente" autocomplete="off">
+        <div class="form-row">
             <div class="form-group">
                 <label for="nome">Nome</label>
                 <input id="nome" name="nome" type="text" required>
+                <div id="nome-erro" class="erro-mensagem" style="display:none;"></div>
             </div>
             <div class="form-group">
                 <label for="telefone">Telefone</label>
                 <input id="telefone" name="telefone" type="tel" oninput="formatarTelefone(this)" maxlength="15">
             </div>
-            <div class="form-group">
-                <label for="observacao-requerente">Observação</label>
-                <input id="observacao-requerente" name="observacao" type="text">
-            </div>
-            <button type="submit">Cadastrar</button>
-        </form>
-    </section>
+        </div>
+        <div class="form-group">
+            <label for="observacao-requerente">Observação</label>
+            <input id="observacao-requerente" name="observacao" type="text">
+        </div>
+        <button type="submit">Cadastrar</button>
+    </form>
+</section>
+
+<pre id="resposta"></pre>
 
     <h3>Requerentes</h3>
     <table id="requerentes-lista">
@@ -55,29 +58,35 @@
     <section>
         <h2>Cadastro de Árvore</h2>
         <form id="form-arvore" autocomplete="off">
-            <div class="form-group">
-                <label for="especie">Espécie</label>
-                <input id="especie" name="especie" type="text">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="endereco">Endereço</label>
+                    <input id="endereco" name="endereco" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="bairro">Bairro</label>
+                    <input id="bairro" name="bairro" type="text">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="endereco">Endereço</label>
-                <input id="endereco" name="endereco" type="text">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="latitude">Latitude</label>
+                    <input id="latitude" name="latitude" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="longitude">Longitude</label>
+                    <input id="longitude" name="longitude" type="text">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="bairro">Bairro</label>
-                <input id="bairro" name="bairro" type="text">
-            </div>
-            <div class="form-group">
-                <label for="latitude">Latitude</label>
-                <input id="latitude" name="latitude" type="text">
-            </div>
-            <div class="form-group">
-                <label for="longitude">Longitude</label>
-                <input id="longitude" name="longitude" type="text">
-            </div>
-            <div class="form-group">
-                <label for="data_plantio">Data de Plantio</label>
-                <input id="data_plantio" name="data_plantio" type="date">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="data_plantio">Data de Plantio</label>
+                    <input id="data_plantio" name="data_plantio" type="date">
+                </div>
+                <div class="form-group">
+                    <label for="especie">Espécie</label>
+                    <input id="especie" name="especie" type="text">
+                </div>
             </div>
             <div class="form-group">
                 <label for="observacao-arvore">Observação</label>
@@ -86,6 +95,8 @@
             <button type="submit">Cadastrar</button>
         </form>
     </section>
+
+    <pre id="resposta"></pre>
 
     <h3>Árvores</h3>
     <table id="arvores-lista">

@@ -228,6 +228,37 @@ function formatarTelefone(campo) {
     campo.value = formato;
 }
 
+// Verificar se o requerente já existe
+document.addEventListener('DOMContentLoaded', function() {
+    const nomeInput = document.getElementById('nome');
+    const erroDiv = document.getElementById('nome-erro');
+
+    nomeInput.addEventListener('blur', function() {
+        const nome = nomeInput.value.trim();
+        if (nome.length < 3) {
+            nomeInput.classList.remove('erro');
+            erroDiv.style.display = 'none';
+            return;
+        }
+        fetch(`/api/requerente/existe?nome=${encodeURIComponent(nome)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    nomeInput.classList.add('erro');
+                    erroDiv.textContent = `Esse requerente já existe (id=${data.id})`;
+                    erroDiv.style.display = 'block';
+                } else {
+                    nomeInput.classList.remove('erro');
+                    erroDiv.style.display = 'none';
+                }
+            })
+            .catch(() => {
+                nomeInput.classList.remove('erro');
+                erroDiv.style.display = 'none';
+            });
+    });
+});
+
 
 window.onload = () => {
     listarRequerentes();

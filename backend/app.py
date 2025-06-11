@@ -3,6 +3,7 @@ from flask_cors import CORS
 from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico
 import os
 from simplekml import Kml
+from sqlalchemy.orm import Session
 import sqlalchemy as sa
 from datetime import datetime
 
@@ -127,6 +128,17 @@ def listar_requerentes():
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
+
+@app.route('/api/requerente/existe', methods=['GET'])
+def requerente_existe():
+    nome = request.args.get('nome')
+
+    with SessionLocal() as session:
+        requerente = session.query(Requerente).filter_by(nome=nome).first()
+        if requerente:
+            return jsonify({"exists": True, "id": requerente.id})
+        else:
+            return jsonify({"exists": False})
 
 @app.route('/arvores', methods=['POST'])
 def cadastrar_arvore():

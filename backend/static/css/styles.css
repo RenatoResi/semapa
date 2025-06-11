@@ -194,3 +194,23 @@ table button:hover {
     button[type="submit"], .btn-kml { padding: 8px 12px; font-size: 0.95rem; }
     #map { height: 250px; }
 }
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.form-row .form-group {
+    flex: 1 1 200px;
+    min-width: 150px;
+}
+
+input.erro {
+    border: 2px solid red;
+    background-color: #ffe5e5;
+}
+.erro-mensagem {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 2px;
+}
