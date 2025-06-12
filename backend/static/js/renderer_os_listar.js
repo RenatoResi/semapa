@@ -6,7 +6,6 @@ async function listarOrdensServico() {
     lista.forEach(o => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${o.id}</td>
             <td>${o.numero}</td>
             <td>${o.responsavel}</td>
             <td>${o.data_execucao ? new Date(o.data_execucao).toLocaleDateString() : ''}</td>

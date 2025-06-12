@@ -25,6 +25,7 @@ formRequerente?.addEventListener('submit', async function(e) {
     exibirResposta(await response.json());
     formRequerente.reset();
     listarRequerentes();
+    document.getElementById('cadastro-arvore').scrollIntoView({ behavior: 'smooth' });
 });
 
 // Cadastrar Árvore
@@ -40,6 +41,7 @@ formArvore?.addEventListener('submit', async function(e) {
     formArvore.reset();
     listarArvores();
     carregarArvoresNoMapa();
+    window.location.href = 'requerimento';
 });
 
 
@@ -168,6 +170,33 @@ map.on('click', function(e) {
     if (latField) latField.value = lat.toFixed(6);
     if (lngField) lngField.value = lng.toFixed(6);
 });
+map.on('load', function () {
+    map.addSource('perimetros', {
+        type: 'geojson',
+        data: 'static/files/cravinhos.geojson' // Caminho para seu arquivo
+    });
+
+    map.addLayer({
+        id: 'perimetros-fill',
+        type: 'fill',
+        source: 'perimetros',
+        paint: {
+            'fill-color': '#0080ff',
+            'fill-opacity': 0
+        }
+    });
+
+    map.addLayer({
+        id: 'perimetros-borda',
+        type: 'line',
+        source: 'perimetros',
+        paint: {
+            'line-color': '#0050a0',
+            'line-width': 2
+        }
+    });
+});
+
 
 async function carregarArvoresNoMapa() {
     try {
@@ -203,7 +232,6 @@ async function listarArvores() {
                 <td>${a.especie}</td>
                 <td>${a.endereco}</td>
                 <td>${a.bairro}</td>
-                <td>${formatarData(a.data_plantio)}</td>
                 <td><button onclick="gerarKMLArvore(${a.id})" class="btn-kml">Gerar KML</button></td>
             `;
             tbody.appendChild(tr);
@@ -258,6 +286,54 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 });
+
+function setupAutocomplete(inputId, endpoint) {
+    const input = document.getElementById(inputId);
+    let sugestoesDiv;
+
+    input.addEventListener('input', async function() {
+        const valor = input.value.trim();
+        if (valor.length < 2) {
+            removeSugestoes();
+            return;
+        }
+        const res = await fetch(`${endpoint}?query=${encodeURIComponent(valor)}`);
+        const sugestoes = await res.json();
+
+        removeSugestoes();
+        if (sugestoes.length === 0) return;
+
+        sugestoesDiv = document.createElement('div');
+        sugestoesDiv.className = 'autocomplete-sugestoes';
+        sugestoes.forEach(sugestao => {
+            const div = document.createElement('div');
+            div.textContent = sugestao;
+            div.onmousedown = () => {
+                input.value = sugestao;
+                removeSugestoes();
+            };
+            sugestoesDiv.appendChild(div);
+        });
+
+        input.parentNode.appendChild(sugestoesDiv);
+    });
+
+    input.addEventListener('blur', function() {
+        setTimeout(removeSugestoes, 100);
+    });
+
+    function removeSugestoes() {
+        if (sugestoesDiv) {
+            sugestoesDiv.remove();
+            sugestoesDiv = null;
+        }
+    }
+}
+
+// Ative o autocomplete nos campos
+setupAutocomplete('bairro', '/api/sugestoes/bairros');
+setupAutocomplete('endereco', '/api/sugestoes/enderecos');
+
 
 
 window.onload = () => {

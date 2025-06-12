@@ -10,13 +10,15 @@
 <body>
     <nav>
         <ul>
-            <li><a href="index" class="active">Cadastro</a></li>
+            <li><a href="index">Cadastro</a></li>
             <li><a href="requerimento">Requerimentos</a></li>
             <li><a href="os_listar">Ordens de Serviço</a></li>
         </ul>
     </nav>
 
     <h1>Sistema SEMAPA - Gestão Arbórea</h1>
+
+    <pre id="resposta"></pre>
 
     <section>
     <h2>Cadastro de Requerente</h2>
@@ -40,8 +42,6 @@
     </form>
 </section>
 
-<pre id="resposta"></pre>
-
     <h3>Requerentes</h3>
     <table id="requerentes-lista">
         <thead>
@@ -55,7 +55,7 @@
         <tbody></tbody>
     </table>
 
-    <section>
+    <section id="cadastro-arvore">
         <h2>Cadastro de Árvore</h2>
         <form id="form-arvore" autocomplete="off">
             <div class="form-row">
@@ -96,8 +96,6 @@
         </form>
     </section>
 
-    <pre id="resposta"></pre>
-
     <h3>Árvores</h3>
     <table id="arvores-lista">
         <thead>
@@ -106,7 +104,6 @@
                 <th>Espécie</th>
                 <th>Endereço</th>
                 <th>Bairro</th>
-                <th>Data Plantio</th>
                 <th>Ações</th>
             </tr>
         </thead>

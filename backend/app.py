@@ -168,6 +168,40 @@ def cadastrar_arvore():
     finally:
         session.close()
 
+@app.route('/api/sugestoes/bairros')
+def sugestoes_bairros():
+    session = SessionLocal()
+    try:
+        query = request.args.get('query', '').lower()
+        bairros = (
+            session.query(Arvore.bairro)
+            .filter(Arvore.bairro.ilike(f'%{query}%'))
+            .distinct()
+            .limit(10)
+            .all()
+        )
+        sugestoes = [b[0] for b in bairros if b[0]]
+        return jsonify(sugestoes)
+    finally:
+        session.close()
+        
+@app.route('/api/sugestoes/enderecos')
+def sugestoes_enderecos():
+    session = SessionLocal()
+    try:
+        query = request.args.get('query', '').lower()
+        enderecos = (
+            session.query(Arvore.endereco)
+            .filter(Arvore.endereco.ilike(f'%{query}%'))
+            .distinct()
+            .limit(10)
+            .all()
+        )
+        sugestoes = [e[0] for e in enderecos if e[0]]
+        return jsonify(sugestoes)
+    finally:
+        session.close()
+
 @app.route('/arvores', methods=['GET'])
 def listar_arvores():
     session = SessionLocal()

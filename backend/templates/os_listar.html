@@ -9,7 +9,7 @@
 <body>
     <nav>
         <ul>
-            <li><a href="index" class="active">Cadastro</a></li>
+            <li><a href="index">Cadastro</a></li>
             <li><a href="requerimento">Requerimentos</a></li>
             <li><a href="os_listar">Ordens de Serviço</a></li>
         </ul>
@@ -18,18 +18,17 @@
     <table id="ordens-servico-lista">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>Número</th>
                 <th>Responsável</th>
-                <th>Data Execução</th>
+                <th>Data Emissão</th>
                 <th>Status</th>
                 <th>Observação</th>
-                <th>Data Emissão</th>
+                <th>Data Execução</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
     <pre id="resposta"></pre>
-    <script src="renderer_os_listar.js"></script>
+    <script src="{{ url_for('static', filename='js/renderer_os_listar.js') }}"></script>
 </body>
 </html>
