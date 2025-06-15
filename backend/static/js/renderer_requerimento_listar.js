@@ -7,17 +7,18 @@ async function listarRequerimentos() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><input type="checkbox" class="select-row" value="${r.id}"></td>
-            <td>${r.id}</td>
             <td>${r.numero}</td>
             <td>${r.tipo}</td>
             <td>${r.motivo}</td>
-            <td>${r.status}</td>
             <td>${r.prioridade}</td>
             <td>${new Date(r.data_abertura).toLocaleDateString()}</td>
+            <td>${r.requerente_nome}</td>
+            <td>${r.arvore_endereco}</td>
         `;
         tbody.appendChild(tr);
     });
 }
+
 document.getElementById('select-all').addEventListener('change', function() {
     document.querySelectorAll('.select-row').forEach(cb => cb.checked = this.checked);
 });

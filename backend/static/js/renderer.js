@@ -46,55 +46,50 @@ formArvore?.addEventListener('submit', async function(e) {
 
 
 // Listagens
-async function listarRequerentes() {
+let currentPageReq = 1;
+const perPageReq = 5;
+
+async function listarRequerentes(page = 1) {
     try {
-        const res = await fetch('http://localhost:5000/requerentes');
+        const res = await fetch(`http://localhost:5000/requerentes?page=${page}&per_page=${perPageReq}`);
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const lista = await res.json();
+        const data = await res.json();
+        const requerentes = data.requerentes || data;
+
         const tbody = document.querySelector('#requerentes-lista tbody');
         if (tbody) {
             tbody.innerHTML = '';
-            lista.forEach(r => {
+            requerentes.forEach(r => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${r.id}</td><td>${r.nome}</td><td>${r.telefone}</td><td>${r.observacao}</td>`;
                 tbody.appendChild(tr);
             });
         }
+
+        currentPageReq = page;
+        atualizarControlesPaginaReq(data.total);
+
     } catch (error) {
         console.error('Erro ao listar requerentes:', error);
         document.getElementById('resposta').innerText = 'Erro ao carregar requerentes: ' + error.message;
     }
 }
 
-async function listarArvores() {
-    try {
-        const res = await fetch('http://localhost:5000/arvores');
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const lista = await res.json();
-        const tbody = document.querySelector('#arvores-lista tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            lista.forEach(a => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${a.id}</td>
-                    <td>${a.especie}</td>
-                    <td>${a.endereco}</td>
-                    <td>${a.bairro}</td>
-                    <td>${formatarData(a.data_plantio)}</td>
-                    <td><button onclick="gerarKMLArvore(${a.id})" class="btn-kml">Gerar KML</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (error) {
-        console.error('Erro ao listar árvores:', error);
-        document.getElementById('resposta').innerText = 'Erro ao carregar árvores: ' + error.message;
-    }
+function atualizarControlesPaginaReq(total) {
+    const paginacao = document.getElementById('paginacao-requerentes');
+    if (!paginacao) return;
+
+    paginacao.innerHTML = `
+        <button onclick="listarRequerentes(${currentPageReq - 1})" ${currentPageReq === 1 ? 'disabled' : ''}>
+            Anterior
+        </button>
+        <span>Página ${currentPageReq} (Total: ${total})</span>
+        <button onclick="listarRequerentes(${currentPageReq + 1})" ${currentPageReq * perPageReq >= total ? 'disabled' : ''}>
+            Próxima
+        </button>
+    `;
 }
 
 // KML - Geral
@@ -197,14 +192,15 @@ map.on('load', function () {
     });
 });
 
-
 async function carregarArvoresNoMapa() {
     try {
-        const res = await fetch('http://localhost:5000/arvores');
+        const res = await fetch('http://localhost:5000/arvores?per_page=1000'); // ou um valor alto para pegar todas
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const arvores = await res.json();
+        const data = await res.json();
+        const arvores = data.arvores || data; // compatível com ambos formatos
+
         arvores.forEach(a => {
             new maplibregl.Marker({ color: 'green' })
                 .setLngLat([parseFloat(a.longitude), parseFloat(a.latitude)])
@@ -216,16 +212,18 @@ async function carregarArvoresNoMapa() {
     }
 }
 
-// Modificar a função listarArvores
-async function listarArvores() {
+let currentPage = 1;
+const perPage = 5;
+
+async function listarArvores(page = 1) {
     try {
-        const res = await fetch('http://localhost:5000/arvores');
+        const res = await fetch(`http://localhost:5000/arvores?page=${page}&per_page=${perPage}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const lista = await res.json();
+        const data = await res.json();
         
         const tbody = document.querySelector('#arvores-lista tbody');
         tbody.innerHTML = '';
-        lista.forEach(a => {
+        data.arvores.forEach(a => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${a.id}</td>
@@ -236,11 +234,29 @@ async function listarArvores() {
             `;
             tbody.appendChild(tr);
         });
+
+        currentPage = page;
+        atualizarControlesPagina(data.total);
         
     } catch (error) {
         console.error('Erro ao listar árvores:', error);
         document.getElementById('resposta').innerText = 'Erro ao carregar árvores: ' + error.message;
     }
+}
+
+function atualizarControlesPagina(total) {
+    const paginacao = document.getElementById('paginacao-arvores');
+    if (!paginacao) return;
+
+    paginacao.innerHTML = `
+        <button onclick="listarArvores(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+            Anterior
+        </button>
+        <span>Página ${currentPage} (Total: ${total})</span>
+        <button onclick="listarArvores(${currentPage + 1})" ${currentPage * perPage >= total ? 'disabled' : ''}>
+            Próxima
+        </button>
+    `;
 }
 
 function formatarTelefone(campo) {
@@ -337,7 +353,7 @@ setupAutocomplete('endereco', '/api/sugestoes/enderecos');
 
 
 window.onload = () => {
-    listarRequerentes();
-    listarArvores();
+    listarRequerentes(1);
+    listarArvores(1);
     carregarArvoresNoMapa();
 };

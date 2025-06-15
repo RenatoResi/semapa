@@ -5,6 +5,7 @@ import os
 from simplekml import Kml
 from sqlalchemy.orm import Session
 import sqlalchemy as sa
+import sqlalchemy
 from datetime import datetime
 
 app = Flask(__name__)
@@ -117,17 +118,69 @@ def cadastrar_requerente():
 def listar_requerentes():
     session = SessionLocal()
     try:
-        requerentes = session.query(Requerente).all()
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 5, type=int)
+
+        query = session.query(Requerente).order_by(Requerente.id.desc())
+        total = query.count()
+        requerentes = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return jsonify({
+            "requerentes": [{
+                "id": r.id,
+                "nome": r.nome,
+                "telefone": r.telefone,
+                "observacao": r.observacao
+            } for r in requerentes],
+            "total": total,
+            "page": page,
+            "per_page": per_page
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+# Endpoint para todos requerentes (sem paginação)
+@app.route('/requerentes/todos', methods=['GET'])
+def listar_todos_requerentes():
+    session = SessionLocal()
+    try:
+        requerentes = session.query(Requerente).order_by(Requerente.id.desc()).all()
         return jsonify([{
             "id": r.id,
             "nome": r.nome,
             "telefone": r.telefone,
             "observacao": r.observacao
         } for r in requerentes]), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
     finally:
         session.close()
+
+# Endpoint para todas árvores (sem paginação)
+@app.route('/arvores/todos', methods=['GET'])
+def listar_todas_arvores():
+    session = SessionLocal()
+    try:
+        arvores = session.query(Arvore).order_by(Arvore.id.desc()).all()
+        return jsonify([{
+            "id": a.id,
+            "especie": a.especie,
+            "endereco": a.endereco,
+            "bairro": a.bairro,
+            "latitude": a.latitude,
+            "longitude": a.longitude,
+            "data_plantio": a.data_plantio.isoformat() if a.data_plantio else None,
+            "foto": a.foto,
+            "observacao": a.observacao
+        } for a in arvores]), 200
+    finally:
+        session.close()
+
 
 @app.route('/api/requerente/existe', methods=['GET'])
 def requerente_existe():
@@ -206,18 +259,36 @@ def sugestoes_enderecos():
 def listar_arvores():
     session = SessionLocal()
     try:
-        arvores = session.query(Arvore).all()
-        return jsonify([{
-            "id": a.id,
-            "especie": a.especie,
-            "endereco": a.endereco,
-            "bairro": a.bairro,
-            "latitude": a.latitude,
-            "longitude": a.longitude,
-            "data_plantio": a.data_plantio.isoformat() if a.data_plantio else None,
-            "foto": a.foto,
-            "observacao": a.observacao
-        } for a in arvores]), 200
+        # Pegando os parâmetros de paginação da URL (com valores padrão)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 5, type=int)
+
+        # Consulta paginada e ordenada pelo id decrescente
+        query = session.query(Arvore).order_by(Arvore.id.desc())
+        total = query.count()  # Total de registros (para paginação)
+        arvores = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return jsonify({
+            "arvores": [{
+                "id": a.id,
+                "especie": a.especie,
+                "endereco": a.endereco,
+                "bairro": a.bairro,
+                "latitude": a.latitude,
+                "longitude": a.longitude,
+                "data_plantio": a.data_plantio.isoformat() if a.data_plantio else None,
+                "foto": a.foto,
+                "observacao": a.observacao
+            } for a in arvores],
+            "total": total,
+            "page": page,
+            "per_page": per_page
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
@@ -252,7 +323,10 @@ def cadastrar_requerimento():
 def listar_requerimentos():
     session = SessionLocal()
     try:
-        requerimentos = session.query(Requerimento).all()
+        requerimentos = session.query(Requerimento).options(
+            sqlalchemy.orm.joinedload(Requerimento.requerente),
+            sqlalchemy.orm.joinedload(Requerimento.arvore)
+        ).all()
         return jsonify([{
             "id": r.id,
             "numero": r.numero,
@@ -262,7 +336,9 @@ def listar_requerimentos():
             "status": r.status,
             "prioridade": r.prioridade,
             "requerente_id": r.requerente_id,
+            "requerente_nome": r.requerente.nome,  # <-- Aqui!
             "arvore_id": r.arvore_id,
+            "arvore_endereco": r.arvore.endereco,   # <-- Aqui!
             "observacao": r.observacao
         } for r in requerimentos]), 200
     except Exception as e:
