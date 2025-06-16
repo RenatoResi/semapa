@@ -194,7 +194,7 @@ map.on('load', function () {
 
 async function carregarArvoresNoMapa() {
     try {
-        const res = await fetch('http://localhost:5000/arvores?per_page=1000'); // ou um valor alto para pegar todas
+        const res = await fetch('http://localhost:5000/arvores/todos'); // ou um valor alto para pegar todas
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }

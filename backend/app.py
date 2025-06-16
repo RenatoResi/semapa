@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 import sqlalchemy as sa
 import sqlalchemy
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -181,7 +182,6 @@ def listar_todas_arvores():
     finally:
         session.close()
 
-
 @app.route('/api/requerente/existe', methods=['GET'])
 def requerente_existe():
     nome = request.args.get('nome')
@@ -323,26 +323,74 @@ def cadastrar_requerimento():
 def listar_requerimentos():
     session = SessionLocal()
     try:
-        requerimentos = session.query(Requerimento).options(
-            sqlalchemy.orm.joinedload(Requerimento.requerente),
-            sqlalchemy.orm.joinedload(Requerimento.arvore)
-        ).all()
-        return jsonify([{
-            "id": r.id,
-            "numero": r.numero,
-            "data_abertura": r.data_abertura.isoformat(),
-            "tipo": r.tipo,
-            "motivo": r.motivo,
-            "status": r.status,
-            "prioridade": r.prioridade,
-            "requerente_id": r.requerente_id,
-            "requerente_nome": r.requerente.nome,  # <-- Aqui!
-            "arvore_id": r.arvore_id,
-            "arvore_endereco": r.arvore.endereco,   # <-- Aqui!
-            "observacao": r.observacao
-        } for r in requerimentos]), 200
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 5, type=int)
+
+        query = session.query(Requerimento).order_by(Requerimento.id.desc())
+        total = query.count()
+        requerimentos = (
+            query
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all()
+        )
+
+        return jsonify({
+            "requerimentos": [{
+                "id": r.id,
+                "numero": r.numero,
+                "tipo": r.tipo,
+                "motivo": r.motivo,
+                "prioridade": r.prioridade,
+                "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
+                "requerente_nome": r.requerente.nome if r.requerente else "",
+                "arvore_endereco": r.arvore.endereco if r.arvore else ""
+            } for r in requerimentos],
+            "total": total,
+            "page": page,
+            "per_page": per_page
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/requerimentos/todos', methods=['GET'])
+def listar_todos_requerimentos():
+    session = SessionLocal()
+    try:
+        requerimentos = (
+            session.query(Requerimento)
+            .options(joinedload(Requerimento.arvore))  # Carrega a árvore relacionada
+            .order_by(Requerimento.id.desc())
+            .all()
+        )
+
+        requerimentos_json = []
+        for r in requerimentos:
+            # Captura dados da árvore associada (se existir)
+            arvore = r.arvore
+            requerimento_data = {
+                "id": r.id,
+                "numero": r.numero,
+                "tipo": r.tipo,
+                "motivo": r.motivo,
+                "prioridade": r.prioridade,
+                "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
+                "requerente_nome": r.requerente.nome if r.requerente else "",
+                "observacao": r.observacao,
+                "arvore_id": arvore.id if arvore else None,
+                "arvore_latitude": arvore.latitude if arvore else None,
+                "arvore_longitude": arvore.longitude if arvore else None,
+                "arvore_especie": arvore.especie if arvore else "",
+                "arvore_endereco": arvore.endereco if arvore else ""
+            }
+            requerimentos_json.append(requerimento_data)
+
+        return jsonify(requerimentos_json), 200
+    except Exception as e:
+        print(f"Erro no backend: {str(e)}")  # Log para debug
+        return jsonify({"error": "Erro interno no servidor"}), 500
     finally:
         session.close()
 
