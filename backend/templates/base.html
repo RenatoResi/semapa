@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema SEMAPA - Gestão Arbórea{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <div class="container" style="display: flex; min-height: 100vh;">
+        <aside class="sidebar" style="width:220px; background:var(--primary); color:#fff; min-height:100vh; position:fixed; left:0; top:0;">
+            <nav>
+                <ul style="list-style:none; padding:0; margin:0;">
+                    <li><a href="{{ url_for('index') }}">Cadastro</a></li>
+                    <li><a href="{{ url_for('requerimento') }}">Requerimentos</a></li>
+                    <li><a href="{{ url_for('requerimento_listar') }}">Listar Requerimentos</a></li>
+                    <li><a href="{{ url_for('os_listar') }}">Ordens de Serviço</a></li>
+                    <!-- Adicione novos módulos aqui -->
+                </ul>
+            </nav>
+            <div id="sidebar-resposta">
+                <pre id="resposta"></pre>
+            </div>
+        </aside>
+        <main class="main-content" style="margin-left:220px; width:100%; padding:30px 10px;">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

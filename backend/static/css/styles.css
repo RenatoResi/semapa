@@ -236,3 +236,67 @@ input.erro {
     /* Se quiser, pode ajustar a cor de fundo */
 }
 
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Barra lateral fixa à esquerda */
+.sidebar {
+  width: 220px;
+  background: var(--primary);
+  color: #fff;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  padding-top: 32px;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: block; /* vertical */
+}
+
+.sidebar nav li {
+  margin-bottom: 16px;
+}
+
+.sidebar nav a {
+  display: block;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  transition: background 0.2s;
+}
+
+.sidebar nav a.active, .sidebar nav a:hover {
+  background: var(--primary-dark);
+}
+
+.main-content {
+  margin-left: 220px; /* espaço para a sidebar */
+  padding: 30px 10px;
+  width: 100%;
+}
+
+#sidebar-resposta {
+    margin-top: 32px;
+    padding: 0 8px;
+}
+
+.sidebar #resposta {
+    background: #fffbe7;
+    border: 1px solid #ffe082;
+    padding: 10px;
+    border-radius: var(--radius);
+    color: #7c6f00;
+    font-size: 0.96rem;
+    white-space: pre-wrap;
+    margin: 0;
+}

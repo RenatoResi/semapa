@@ -1,34 +1,24 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Ordens de Serviço</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="static/css/styles.css">
-</head>
-<body>
-    <nav>
-        <ul>
-            <li><a href="index">Cadastro</a></li>
-            <li><a href="requerimento">Requerimentos</a></li>
-            <li><a href="os_listar">Ordens de Serviço</a></li>
-        </ul>
-    </nav>
-    <h1>Ordens de Serviço</h1>
-    <table id="ordens-servico-lista">
-        <thead>
-            <tr>
-                <th>Número</th>
-                <th>Responsável</th>
-                <th>Data Emissão</th>
-                <th>Status</th>
-                <th>Observação</th>
-                <th>Data Execução</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-    <pre id="resposta"></pre>
-    <script src="{{ url_for('static', filename='js/renderer_os_listar.js') }}"></script>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Ordens de Serviço - Sistema SEMAPA{% endblock %}
+
+{% block content %}
+<h1>Ordens de Serviço</h1>
+<table id="ordens-servico-lista">
+    <thead>
+        <tr>
+            <th>Número</th>
+            <th>Responsável</th>
+            <th>Data Emissão</th>
+            <th>Status</th>
+            <th>Observação</th>
+            <th>Data Execução</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/renderer_os_listar.js') }}"></script>
+{% endblock %}

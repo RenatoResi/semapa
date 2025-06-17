@@ -8,6 +8,7 @@ import sqlalchemy as sa
 import sqlalchemy
 from datetime import datetime
 from sqlalchemy.orm import joinedload
+from flask import render_template
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
