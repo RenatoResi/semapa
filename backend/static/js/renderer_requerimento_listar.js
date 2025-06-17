@@ -230,10 +230,12 @@ async function carregarMapa() {
                 <strong>${r.tipo || 'Tipo não informado'}</strong><br>
                 ${r.arvore_especie || 'Espécie não informada'}<br>
                 Endereço: ${r.arvore_endereco || 'Não cadastrado'}<br>
+                Bairro: ${r.arvore_bairro || 'Não cadastrado'}<br>
                 Requerimento: ${r.numero}<br>
                 ${r.data_abertura ? diasDesdeAbertura(r.data_abertura) : '-'} dias pendentes<br>
                 Motivo: ${r.motivo || 'Não informado'}<br>
                 Requerente: ${r.requerente_nome || 'Não informado'}<br>
+                Telefone: ${r.requerente_telefone || 'Não informado'}<br>
                 Data de Abertura: ${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : 'Não informada'}<br>
                 Prioridade: ${r.prioridade || ''}
             `))

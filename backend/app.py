@@ -378,12 +378,14 @@ def listar_todos_requerimentos():
                 "prioridade": r.prioridade,
                 "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
                 "requerente_nome": r.requerente.nome if r.requerente else "",
+                "requerente_telefone": r.requerente.telefone if r.requerente else "",
                 "observacao": r.observacao,
                 "arvore_id": arvore.id if arvore else None,
                 "arvore_latitude": arvore.latitude if arvore else None,
                 "arvore_longitude": arvore.longitude if arvore else None,
                 "arvore_especie": arvore.especie if arvore else "",
-                "arvore_endereco": arvore.endereco if arvore else ""
+                "arvore_endereco": arvore.endereco if arvore else "",
+                "arvore_bairro": arvore.bairro if arvore else ""
             }
             requerimentos_json.append(requerimento_data)
 
