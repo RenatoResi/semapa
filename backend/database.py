@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 
@@ -52,6 +52,30 @@ class OrdemServico(Base):
     observacao = Column(Text)
     requerimento_id = Column(Integer, ForeignKey('requerimentos.id'))
     requerimento = relationship("Requerimento", back_populates="ordens_servico")
+
+class Especies(Base):
+    __tablename__ = 'especies'
+    id = Column(Integer, primary_key=True)
+    nome_popular = Column(String(100), unique=True, nullable=False)
+    nome_cientifico = Column(String(150), nullable=False)
+    porte = Column(String(20), nullable=False)  # pequeno, medio_grande
+    altura_min = Column(Float)
+    altura_max = Column(Float)
+    longevidade_min = Column(Integer)
+    longevidade_max = Column(Integer)
+    deciduidade = Column(String(30))
+    cor_flor = Column(String(50))
+    epoca_floracao = Column(String(50))
+    fruto_comestivel = Column(String(10))  # 'sim' ou 'não'
+    epoca_frutificacao = Column(String(50))
+    necessidade_rega = Column(String(20))
+    atrai_fauna = Column(String(10))  # 'sim' ou 'não'
+    observacoes = Column(Text)
+    link_foto = Column(String(200))  # Caminho/URL da foto
+
+    def __repr__(self):
+        return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"
+
 
 # Configuração do banco SQLite
 engine = create_engine('sqlite:///../sistema_semapa.db', echo=True)

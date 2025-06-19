@@ -9,22 +9,22 @@
     {% block head_extra %}{% endblock %}
 </head>
 <body>
-    <div class="container" style="display: flex; min-height: 100vh;">
-        <aside class="sidebar" style="width:220px; background:var(--primary); color:#fff; min-height:100vh; position:fixed; left:0; top:0;">
+    <div class="layout">
+        <aside class="sidebar">
             <nav>
-                <ul style="list-style:none; padding:0; margin:0;">
+                <ul>
                     <li><a href="{{ url_for('index') }}">Cadastro</a></li>
                     <li><a href="{{ url_for('requerimento') }}">Requerimentos</a></li>
                     <li><a href="{{ url_for('requerimento_listar') }}">Listar Requerimentos</a></li>
                     <li><a href="{{ url_for('os_listar') }}">Ordens de Serviço</a></li>
-                    <!-- Adicione novos módulos aqui -->
+                    <li><a href="{{ url_for('lista_especies') }}">Lista de Espécies</a></li>
                 </ul>
             </nav>
             <div id="sidebar-resposta">
                 <pre id="resposta"></pre>
             </div>
         </aside>
-        <main class="main-content" style="margin-left:220px; width:100%; padding:30px 10px;">
+        <main class="main-content">
             {% block content %}{% endblock %}
         </main>
     </div>

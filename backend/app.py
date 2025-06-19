@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
-from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico
+from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies
 import os
 from simplekml import Kml
 from sqlalchemy.orm import Session
@@ -29,6 +29,10 @@ def requerimento_listar():
 @app.route('/os_listar')
 def os_listar():
     return render_template('os_listar.html')
+
+@app.route('/lista_especies')
+def lista_especies():
+    return render_template('lista_especies.html')
 
 @app.route('/gerar_kml')
 def gerar_kml():
@@ -327,7 +331,27 @@ def listar_requerimentos():
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
 
-        query = session.query(Requerimento).order_by(Requerimento.id.desc())
+        order_by = request.args.get('order_by', 'id')
+        direction = request.args.get('direction', 'desc').lower()
+
+        # Mapeia os campos válidos para ordenação segura
+        campos_validos = {
+            'id': Requerimento.id,
+            'numero': Requerimento.numero,
+            'tipo': Requerimento.tipo,
+            'motivo': Requerimento.motivo,
+            'prioridade': Requerimento.prioridade,
+            'status': Requerimento.status,
+            'data_abertura': Requerimento.data_abertura
+        }
+
+        campo_ordenacao = campos_validos.get(order_by, Requerimento.id)
+        if direction == 'asc':
+            ordenacao = campo_ordenacao.asc()
+        else:
+            ordenacao = campo_ordenacao.desc()
+
+        query = session.query(Requerimento).order_by(ordenacao)
         total = query.count()
         requerimentos = (
             query
@@ -337,21 +361,51 @@ def listar_requerimentos():
         )
 
         return jsonify({
-            "requerimentos": [{
+            "requerimentos": [ {
                 "id": r.id,
                 "numero": r.numero,
                 "tipo": r.tipo,
                 "motivo": r.motivo,
                 "prioridade": r.prioridade,
+                "status": r.status,
                 "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
                 "requerente_nome": r.requerente.nome if r.requerente else "",
                 "arvore_endereco": r.arvore.endereco if r.arvore else ""
-            } for r in requerimentos],
+            } for r in requerimentos ],
             "total": total,
             "page": page,
             "per_page": per_page
         }), 200
+
     except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/requerimentos/<int:id>', methods=['PUT'])
+def atualizar_requerimento(id):
+    data = request.json
+    session = SessionLocal()
+    try:
+        requerimento = session.query(Requerimento).get(id)
+        if not requerimento:
+            return jsonify({"error": "Requerimento não encontrado"}), 404
+
+        # Atualiza campos, se existirem no payload
+        requerimento.numero = data.get('numero', requerimento.numero)
+        requerimento.tipo = data.get('tipo', requerimento.tipo)
+        requerimento.motivo = data.get('motivo', requerimento.motivo)
+        requerimento.prioridade = data.get('prioridade', requerimento.prioridade)
+        requerimento.status = data.get('status', requerimento.status)
+        requerimento.data_abertura = datetime.strptime(data['data_abertura'], '%Y-%m-%d') if data.get('data_abertura') else requerimento.data_abertura
+        requerimento.requerente_id = data.get('requerente_id', requerimento.requerente_id)
+        requerimento.arvore_id = data.get('arvore_id', requerimento.arvore_id)
+        requerimento.observacao = data.get('observacao', requerimento.observacao)
+
+        session.commit()
+        return jsonify({"message": "Requerimento atualizado com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
@@ -362,7 +416,8 @@ def listar_todos_requerimentos():
     try:
         requerimentos = (
             session.query(Requerimento)
-            .options(joinedload(Requerimento.arvore))  # Carrega a árvore relacionada
+            .options(joinedload(Requerimento.arvore))
+            .filter(sa.func.lower(Requerimento.status) != 'concluído')  # <-- filtro aqui
             .order_by(Requerimento.id.desc())
             .all()
         )
@@ -435,6 +490,103 @@ def listar_ordens_servico():
             "requerimento_id": o.requerimento_id
         } for o in ordens]), 200
     except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/especies', methods=['GET'])
+def listar_especies():
+    session = SessionLocal()
+    try:
+        especies = session.query(Especies).all()
+        return jsonify([
+            {
+                "id": e.id,
+                "nome_popular": e.nome_popular,
+                "nome_cientifico": e.nome_cientifico,
+                "porte": e.porte,
+                "altura_min": e.altura_min,
+                "altura_max": e.altura_max,
+                "longevidade_min": e.longevidade_min,
+                "longevidade_max": e.longevidade_max,
+                "deciduidade": e.deciduidade,
+                "cor_flor": e.cor_flor,
+                "epoca_floracao": e.epoca_floracao,
+                "fruto_comestivel": e.fruto_comestivel,
+                "epoca_frutificacao": e.epoca_frutificacao,
+                "necessidade_rega": e.necessidade_rega,
+                "atrai_fauna": e.atrai_fauna,
+                "observacoes": e.observacoes,
+                "link_foto": e.link_foto
+            } for e in especies
+        ]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+        
+@app.route('/especies', methods=['POST'])
+def cadastrar_especie():
+    data = request.json
+    session = SessionLocal()
+    try:
+        nova = Especies(
+            nome_popular=data['nome_popular'],
+            nome_cientifico=data['nome_cientifico'],
+            porte=data['porte'],
+            altura_min=data.get('altura_min'),
+            altura_max=data.get('altura_max'),
+            longevidade_min=data.get('longevidade_min'),
+            longevidade_max=data.get('longevidade_max'),
+            deciduidade=data.get('deciduidade', ''),
+            cor_flor=data.get('cor_flor', ''),
+            epoca_floracao=data.get('epoca_floracao', ''),
+            fruto_comestivel=data.get('fruto_comestivel', 'não'),
+            epoca_frutificacao=data.get('epoca_frutificacao', ''),
+            necessidade_rega=data.get('necessidade_rega', ''),
+            atrai_fauna=data.get('atrai_fauna', 'não'),
+            observacoes=data.get('observacoes', ''),
+            link_foto=data.get('link_foto', '')
+        )
+        session.add(nova)
+        session.commit()
+        return jsonify({"message": "Espécie cadastrada!", "id": nova.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route('/especies/<int:id>', methods=['PUT'])
+def atualizar_especie(id):
+    data = request.json
+    session = SessionLocal()
+    try:
+        especie = session.query(Especies).filter(Especies.id == id).first()
+        if not especie:
+            return jsonify({"error": "Espécie não encontrada"}), 404
+
+        especie.nome_popular = data.get('nome_popular', especie.nome_popular)
+        especie.nome_cientifico = data.get('nome_cientifico', especie.nome_cientifico)
+        especie.porte = data.get('porte', especie.porte)
+        especie.altura_min = data.get('altura_min', especie.altura_min)
+        especie.altura_max = data.get('altura_max', especie.altura_max)
+        especie.longevidade_min = data.get('longevidade_min', especie.longevidade_min)
+        especie.longevidade_max = data.get('longevidade_max', especie.longevidade_max)
+        especie.deciduidade = data.get('deciduidade', especie.deciduidade)
+        especie.cor_flor = data.get('cor_flor', especie.cor_flor)
+        especie.epoca_floracao = data.get('epoca_floracao', especie.epoca_floracao)
+        especie.fruto_comestivel = data.get('fruto_comestivel', especie.fruto_comestivel)
+        especie.epoca_frutificacao = data.get('epoca_frutificacao', especie.epoca_frutificacao)
+        especie.necessidade_rega = data.get('necessidade_rega', especie.necessidade_rega)
+        especie.atrai_fauna = data.get('atrai_fauna', especie.atrai_fauna)
+        especie.observacoes = data.get('observacoes', especie.observacoes)
+        especie.link_foto = data.get('link_foto', especie.link_foto)
+
+        session.commit()
+        return jsonify({"message": "Espécie atualizada!"}), 200
+    except Exception as e:
+        session.rollback()
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()

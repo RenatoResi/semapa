@@ -8,10 +8,19 @@
 <section>
     <h2>Listagem de Requerimentos</h2>
     <input type="text" id="filtro-requerimento" placeholder="Buscar requerimentos..." style="margin-bottom: 10px; width: 300px;">
+    <select id="ordenar-campo">
+        <option value="data_abertura">Data de Abertura</option>
+        <option value="prioridade">Prioridade</option>
+        <option value="status">Status</option>
+    </select>
+    <select id="ordenar-direcao">
+        <option value="asc">Crescente</option>
+        <option value="desc" selected>Decrescente</option>
+    </select>
+    <button onclick="ordenarRequerimentos()">Ordenar</button>
     <table id="requerimentos-lista">
         <thead>
             <tr>
-                <th><input type="checkbox" id="select-all"></th>
                 <th>Número</th>
                 <th>Tipo</th>
                 <th>Motivo</th>
@@ -19,13 +28,32 @@
                 <th>Data</th>
                 <th>Requerente</th>
                 <th>Local</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
     <div id="paginacao-requerimentos" style="margin-top: 20px;"></div>
+</section>
+
+<section>
+    <h2>Requerimentos Selecionados</h2>
+    <table id="requerimentos-selecionados">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Motivo</th>
+                <th>Prioridade</th>
+                <th>Data</th>
+                <th>Requerente</th>
+                <th>Local</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
     <button id="btn-gerar-os">Gerar OS</button>
-    <button onclick="window.location.href='os_listar'">Listar OS</button>
 </section>
 
 <section>
@@ -45,29 +73,12 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroInput.addEventListener('input', function(e) {
             const termo = e.target.value.toLowerCase();
             document.querySelectorAll('#requerimentos-lista tbody tr').forEach(tr => {
-                const campos = Array.from(tr.children).slice(1);
+                const campos = Array.from(tr.children).slice(0, -1);
                 const textoLinha = campos.map(td => td.textContent?.toLowerCase() ?? '').join(' ');
                 tr.style.display = textoLinha.includes(termo) ? '' : 'none';
             });
         });
     }
 });
-
-function criarMarcadorCor(prioridade) {
-    const el = document.createElement('div');
-    el.style.width = '18px';
-    el.style.height = '18px';
-    el.style.borderRadius = '50%';
-    el.style.border = '2px solid #fff';
-    el.style.boxShadow = '0 0 4px #0004';
-    if (prioridade === 'urgente') {
-        el.style.background = 'red';
-    } else if (prioridade === 'alta') {
-        el.style.background = 'yellow';
-    } else {
-        el.style.background = 'green';
-    }
-    return el;
-}
 </script>
 {% endblock %}
