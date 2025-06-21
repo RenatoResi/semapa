@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - SEMAPA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #e9f5ee;
+      font-family: 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 360px;
+      margin: 60px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.11);
+      padding: 32px 28px 24px 28px;
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      margin-bottom: 16px;
+    }
+    h2 {
+      margin-bottom: 24px;
+      color: #217a4b;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #b2dfdb;
+      border-radius: 6px;
+      font-size: 16px;
+      background: #f4fdfb;
+      transition: border 0.2s;
+    }
+    input:focus {
+      border-color: #217a4b;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      background: #217a4b;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #145c37;
+    }
+    .register-link {
+      display: block;
+      margin-top: 18px;
+      color: #217a4b;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .register-link:hover {
+      text-decoration: underline;
+    }
+    .error-msg {
+      margin-top: 15px;
+      color: #c62828;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .footer {
+      margin-top: 28px;
+      font-size: 13px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Se tiver um logo, substitua o src abaixo -->
+    <img src="https://img.icons8.com/color/96/000000/deciduous-tree.png" alt="Logo SEMAPA" class="logo">
+    <h2>Sistema SEMAPA<br>Prefeitura Municipal</h2>
+    <form method="POST" action="/login">
+      <input name="email" type="email" placeholder="E-mail" required>
+      <input name="password" type="password" placeholder="Senha" required>
+      <button type="submit">Entrar</button>
+    </form>
+    <a href="/register" class="register-link">Cadastrar novo usuário</a>
+    {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+    <div class="footer">Secretaria do Meio Ambiente</div>
+  </div>
+</body>
+</html>

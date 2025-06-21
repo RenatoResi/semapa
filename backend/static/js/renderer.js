@@ -18,7 +18,7 @@ formRequerente = document.getElementById('form-requerente')
 formRequerente?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(formRequerente));
-    const response = await fetch('http://localhost:5000/requerente', {
+    const response = await fetch('/requerente', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
     });
@@ -33,7 +33,7 @@ formArvore = document.getElementById('form-arvore')
 formArvore?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(formArvore));
-    const response = await fetch('http://localhost:5000/arvores', {
+    const response = await fetch('/arvores', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
     });
@@ -51,7 +51,7 @@ const perPageReq = 5;
 
 async function listarRequerentes(page = 1) {
     try {
-        const res = await fetch(`http://localhost:5000/requerentes?page=${page}&per_page=${perPageReq}`);
+        const res = await fetch(`/requerentes?page=${page}&per_page=${perPageReq}`);
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
@@ -95,7 +95,7 @@ function atualizarControlesPaginaReq(total) {
 // KML - Geral
 async function gerarKML() {
     try {
-        const response = await fetch('http://localhost:5000/gerar_kml');
+        const response = await fetch('/gerar_kml');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -113,7 +113,7 @@ async function gerarKML() {
 // KML - Individual por árvore
 async function gerarKMLArvore(arvoreId) {
     try {
-        const response = await fetch(`http://localhost:5000/gerar_kml/${arvoreId}`);
+        const response = await fetch(`/gerar_kml/${arvoreId}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -194,7 +194,7 @@ map.on('load', function () {
 
 async function carregarArvoresNoMapa() {
     try {
-        const res = await fetch('http://localhost:5000/arvores/todos'); // ou um valor alto para pegar todas
+        const res = await fetch('/arvores/todos'); // ou um valor alto para pegar todas
         if (!res.ok) {
             throw new Error(`HTTP error! status: ${res.status}`);
         }
@@ -217,7 +217,7 @@ const perPage = 5;
 
 async function listarArvores(page = 1) {
     try {
-        const res = await fetch(`http://localhost:5000/arvores?page=${page}&per_page=${perPage}`);
+        const res = await fetch(`/arvores?page=${page}&per_page=${perPage}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         

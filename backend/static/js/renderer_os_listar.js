@@ -1,5 +1,5 @@
 async function listarOrdensServico() {
-    const res = await fetch('http://localhost:5000/ordens_servico');
+    const res = await fetch('/ordens_servico');
     const lista = await res.json();
     const tbody = document.querySelector('#ordens-servico-lista tbody');
     tbody.innerHTML = '';

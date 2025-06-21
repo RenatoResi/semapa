@@ -90,7 +90,7 @@ function proximaPaginaArv() {
 
 async function carregarSelecao() {
   // Requerentes
-  const resReq = await fetch('http://localhost:5000/requerentes/todos');
+  const resReq = await fetch('/requerentes/todos');
   const dataReq = await resReq.json();
   requerentesSelecionados = dataReq.requerentes || dataReq;
   filteredRequerentes = [...requerentesSelecionados];
@@ -98,7 +98,7 @@ async function carregarSelecao() {
   renderTabelaRequerentes();
 
   // Árvores
-  const resArv = await fetch('http://localhost:5000/arvores/todos');
+  const resArv = await fetch('/arvores/todos');
   const dataArv = await resArv.json();
   arvoresSelecionadas = dataArv.arvores || dataArv;
   filteredArvores = [...arvoresSelecionadas];
@@ -144,7 +144,7 @@ document.getElementById('filtro-arvore').addEventListener('input', function(e) {
 document.getElementById('form-requerimento').addEventListener('submit', async function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(this));
-  const response = await fetch('http://localhost:5000/requerimento', {
+  const response = await fetch('/requerimento', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)

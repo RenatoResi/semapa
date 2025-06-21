@@ -1,40 +1,128 @@
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for
 from flask_cors import CORS
-from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies
+from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
 import os
 from simplekml import Kml
-from sqlalchemy.orm import Session
-import sqlalchemy as sa
-import sqlalchemy
-from datetime import datetime
 from sqlalchemy.orm import joinedload
-from flask import render_template
+import sqlalchemy as sa
+from datetime import datetime
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+import bcrypt
 
 app = Flask(__name__)
+app.secret_key = "SUA_CHAVE_SECRETA_AQUI"
 CORS(app, resources={r"/*": {"origins": "*"}})
 criar_banco()
 
-@app.route('/index')
+# Flask-Login setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+@login_manager.user_loader
+def load_user(user_id):
+    session = SessionLocal()
+    user = session.query(User).get(int(user_id))
+    session.close()
+    return user
+
+# -------------------- AUTENTICAÇÃO --------------------
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        senha = request.form['password']
+        session = SessionLocal()
+        user = session.query(User).filter_by(email=email).first()
+        session.close()
+        if user and bcrypt.checkpw(senha.encode(), user.password.encode()):
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error="E-mail ou senha inválidos")
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        nome = request.form['nome']
+        email = request.form['email']
+        telefone = request.form['telefone']
+        senha = request.form['password']
+        session = SessionLocal()
+        if session.query(User).filter_by(email=email).first():
+            session.close()
+            return render_template('register.html', error="E-mail já cadastrado.")
+        hash_senha = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+        novo = User(nome=nome, email=email, telefone=telefone, password=hash_senha, nivel=3)
+        session.add(novo)
+        session.commit()
+        session.close()
+        return render_template('login.html', error="Cadastro realizado. Faça login.")
+    return render_template('register.html')
+
+@app.route('/alterar_senha', methods=['POST'])
+@login_required
+def alterar_senha():
+    senha_atual = request.form['senha_atual']
+    nova_senha = request.form['nova_senha']
+    confirma = request.form['confirma_senha']
+    session = SessionLocal()
+    user = session.query(User).get(current_user.id)
+    if not user or not bcrypt.checkpw(senha_atual.encode(), user.password.encode()):
+        session.close()
+        return render_template('index.html', error="Senha atual incorreta.")
+    if nova_senha != confirma:
+        session.close()
+        return render_template('index.html', error="As novas senhas não coincidem.")
+    user.password = bcrypt.hashpw(nova_senha.encode(), bcrypt.gensalt()).decode()
+    session.commit()
+    session.close()
+    return render_template('index.html', error="Senha alterada com sucesso.")
+
+# -------------------- TELAS PRINCIPAIS --------------------
+
+@app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
+@app.route('/index')
+@login_required
+def index_alias():
+    return render_template('index.html')
+
 @app.route('/requerimento')
+@login_required
 def requerimento():
     return render_template('requerimento.html')
 
 @app.route('/requerimento_listar')
+@login_required
 def requerimento_listar():
     return render_template('requerimento_listar.html')
 
 @app.route('/os_listar')
+@login_required
 def os_listar():
     return render_template('os_listar.html')
 
 @app.route('/lista_especies')
+@login_required
 def lista_especies():
     return render_template('lista_especies.html')
 
+# -------------------- KML --------------------
+
 @app.route('/gerar_kml')
+@login_required
 def gerar_kml():
     session = SessionLocal()
     try:
@@ -66,6 +154,7 @@ def gerar_kml():
         session.close()
 
 @app.route('/gerar_kml/<int:arvore_id>')
+@login_required
 def gerar_kml_arvore(arvore_id):
     session = SessionLocal()
     try:
@@ -96,12 +185,14 @@ def gerar_kml_arvore(arvore_id):
         os.makedirs(os.path.join(app.root_path, 'temp'), exist_ok=True)
         caminho_kml = os.path.join(app.root_path, 'temp', f'arvore_{arvore_id}.kml')
         kml.save(caminho_kml)
-
         return send_file(caminho_kml, as_attachment=True, download_name=f'arvore_{arvore_id}.kml')
     finally:
         session.close()
 
+# -------------------- REQUERENTES --------------------
+
 @app.route('/requerente', methods=['POST'])
+@login_required
 def cadastrar_requerente():
     data = request.json
     session = SessionLocal()
@@ -109,7 +200,10 @@ def cadastrar_requerente():
         novo = Requerente(
             nome=data['nome'],
             telefone=data.get('telefone', ''),
-            observacao=data.get('observacao', '')
+            observacao=data.get('observacao', ''),
+            user_id=current_user.id,
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
         )
         session.add(novo)
         session.commit()
@@ -120,13 +214,35 @@ def cadastrar_requerente():
     finally:
         session.close()
 
+@app.route('/requerentes/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_requerente(id):
+    data = request.json
+    session = SessionLocal()
+    try:
+        req = session.query(Requerente).get(id)
+        if not req:
+            return jsonify({"error": "Não encontrado"}), 404
+        req.nome = data.get('nome', req.nome)
+        req.telefone = data.get('telefone', req.telefone)
+        req.observacao = data.get('observacao', req.observacao)
+        req.data_atualizacao = datetime.now()
+        req.atualizado_por = current_user.id
+        session.commit()
+        return jsonify({"message": "Atualizado!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
 @app.route('/requerentes', methods=['GET'])
+@login_required
 def listar_requerentes():
     session = SessionLocal()
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
-
         query = session.query(Requerente).order_by(Requerente.id.desc())
         total = query.count()
         requerentes = (
@@ -135,14 +251,17 @@ def listar_requerentes():
             .limit(per_page)
             .all()
         )
-
         return jsonify({
-            "requerentes": [{
+            "requerentes": [ {
                 "id": r.id,
                 "nome": r.nome,
                 "telefone": r.telefone,
-                "observacao": r.observacao
-            } for r in requerentes],
+                "observacao": r.observacao,
+                "data_criacao": r.data_criacao.isoformat() if r.data_criacao else None,
+                "criado_por": r.criado_por,
+                "data_atualizacao": r.data_atualizacao.isoformat() if r.data_atualizacao else None,
+                "atualizado_por": r.atualizado_por
+            } for r in requerentes ],
             "total": total,
             "page": page,
             "per_page": per_page
@@ -152,8 +271,8 @@ def listar_requerentes():
     finally:
         session.close()
 
-# Endpoint para todos requerentes (sem paginação)
 @app.route('/requerentes/todos', methods=['GET'])
+@login_required
 def listar_todos_requerentes():
     session = SessionLocal()
     try:
@@ -162,13 +281,30 @@ def listar_todos_requerentes():
             "id": r.id,
             "nome": r.nome,
             "telefone": r.telefone,
-            "observacao": r.observacao
+            "observacao": r.observacao,
+            "data_criacao": r.data_criacao.isoformat() if r.data_criacao else None,
+            "criado_por": r.criado_por,
+            "data_atualizacao": r.data_atualizacao.isoformat() if r.data_atualizacao else None,
+            "atualizado_por": r.atualizado_por
         } for r in requerentes]), 200
     finally:
         session.close()
 
-# Endpoint para todas árvores (sem paginação)
+@app.route('/api/requerente/existe', methods=['GET'])
+@login_required
+def requerente_existe():
+    nome = request.args.get('nome')
+    with SessionLocal() as session:
+        requerente = session.query(Requerente).filter_by(nome=nome).first()
+        if requerente:
+            return jsonify({"exists": True, "id": requerente.id})
+        else:
+            return jsonify({"exists": False})
+
+# -------------------- ÁRVORES --------------------
+
 @app.route('/arvores/todos', methods=['GET'])
+@login_required
 def listar_todas_arvores():
     session = SessionLocal()
     try:
@@ -182,30 +318,23 @@ def listar_todas_arvores():
             "longitude": a.longitude,
             "data_plantio": a.data_plantio.isoformat() if a.data_plantio else None,
             "foto": a.foto,
-            "observacao": a.observacao
+            "observacao": a.observacao,
+            "data_criacao": a.data_criacao.isoformat() if a.data_criacao else None,
+            "criado_por": a.criado_por,
+            "data_atualizacao": a.data_atualizacao.isoformat() if a.data_atualizacao else None,
+            "atualizado_por": a.atualizado_por
         } for a in arvores]), 200
     finally:
         session.close()
 
-@app.route('/api/requerente/existe', methods=['GET'])
-def requerente_existe():
-    nome = request.args.get('nome')
-
-    with SessionLocal() as session:
-        requerente = session.query(Requerente).filter_by(nome=nome).first()
-        if requerente:
-            return jsonify({"exists": True, "id": requerente.id})
-        else:
-            return jsonify({"exists": False})
-
 @app.route('/arvores', methods=['POST'])
+@login_required
 def cadastrar_arvore():
     data = request.json
     session = SessionLocal()
     try:
         data_plantio = None
         if data.get('data_plantio'):
-            # Converter de string 'YYYY-MM-DD' para datetime
             data_plantio = datetime.strptime(data['data_plantio'], '%Y-%m-%d')
         nova = Arvore(
             especie=data['especie'] or None,
@@ -215,7 +344,10 @@ def cadastrar_arvore():
             longitude=data['longitude'] or None,
             data_plantio=data_plantio,
             foto=data.get('foto', ''),
-            observacao=data.get('observacao', '')
+            observacao=data.get('observacao', ''),
+            user_id=current_user.id,
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
         )
         session.add(nova)
         session.commit()
@@ -226,7 +358,36 @@ def cadastrar_arvore():
     finally:
         session.close()
 
+@app.route('/arvores/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_arvore(id):
+    data = request.json
+    session = SessionLocal()
+    try:
+        arvore = session.query(Arvore).get(id)
+        if not arvore:
+            return jsonify({"error": "Árvore não encontrada"}), 404
+        arvore.especie = data.get('especie', arvore.especie)
+        arvore.endereco = data.get('endereco', arvore.endereco)
+        arvore.bairro = data.get('bairro', arvore.bairro)
+        arvore.latitude = data.get('latitude', arvore.latitude)
+        arvore.longitude = data.get('longitude', arvore.longitude)
+        if data.get('data_plantio'):
+            arvore.data_plantio = datetime.strptime(data['data_plantio'], '%Y-%m-%d')
+        arvore.foto = data.get('foto', arvore.foto)
+        arvore.observacao = data.get('observacao', arvore.observacao)
+        arvore.data_atualizacao = datetime.now()
+        arvore.atualizado_por = current_user.id
+        session.commit()
+        return jsonify({"message": "Árvore atualizada!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
 @app.route('/api/sugestoes/bairros')
+@login_required
 def sugestoes_bairros():
     session = SessionLocal()
     try:
@@ -244,6 +405,7 @@ def sugestoes_bairros():
         session.close()
         
 @app.route('/api/sugestoes/enderecos')
+@login_required
 def sugestoes_enderecos():
     session = SessionLocal()
     try:
@@ -261,25 +423,22 @@ def sugestoes_enderecos():
         session.close()
 
 @app.route('/arvores', methods=['GET'])
+@login_required
 def listar_arvores():
     session = SessionLocal()
     try:
-        # Pegando os parâmetros de paginação da URL (com valores padrão)
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
-
-        # Consulta paginada e ordenada pelo id decrescente
         query = session.query(Arvore).order_by(Arvore.id.desc())
-        total = query.count()  # Total de registros (para paginação)
+        total = query.count()
         arvores = (
             query
             .offset((page - 1) * per_page)
             .limit(per_page)
             .all()
         )
-
         return jsonify({
-            "arvores": [{
+            "arvores": [ {
                 "id": a.id,
                 "especie": a.especie,
                 "endereco": a.endereco,
@@ -288,8 +447,12 @@ def listar_arvores():
                 "longitude": a.longitude,
                 "data_plantio": a.data_plantio.isoformat() if a.data_plantio else None,
                 "foto": a.foto,
-                "observacao": a.observacao
-            } for a in arvores],
+                "observacao": a.observacao,
+                "data_criacao": a.data_criacao.isoformat() if a.data_criacao else None,
+                "criado_por": a.criado_por,
+                "data_atualizacao": a.data_atualizacao.isoformat() if a.data_atualizacao else None,
+                "atualizado_por": a.atualizado_por
+            } for a in arvores ],
             "total": total,
             "page": page,
             "per_page": per_page
@@ -299,7 +462,10 @@ def listar_arvores():
     finally:
         session.close()
 
+# -------------------- REQUERIMENTOS --------------------
+
 @app.route('/requerimento', methods=['POST'])
+@login_required
 def cadastrar_requerimento():
     data = request.json
     session = SessionLocal()
@@ -313,7 +479,10 @@ def cadastrar_requerimento():
             prioridade=data.get('prioridade', 'Normal'),
             requerente_id=data['requerente_id'],
             arvore_id=data.get('arvore_id'),
-            observacao=data.get('observacao', '')
+            observacao=data.get('observacao', ''),
+            user_id=current_user.id,
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
         )
         session.add(novo)
         session.commit()
@@ -325,16 +494,14 @@ def cadastrar_requerimento():
         session.close()
 
 @app.route('/requerimentos', methods=['GET'])
+@login_required
 def listar_requerimentos():
     session = SessionLocal()
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
-
         order_by = request.args.get('order_by', 'id')
         direction = request.args.get('direction', 'desc').lower()
-
-        # Mapeia os campos válidos para ordenação segura
         campos_validos = {
             'id': Requerimento.id,
             'numero': Requerimento.numero,
@@ -344,13 +511,11 @@ def listar_requerimentos():
             'status': Requerimento.status,
             'data_abertura': Requerimento.data_abertura
         }
-
         campo_ordenacao = campos_validos.get(order_by, Requerimento.id)
         if direction == 'asc':
             ordenacao = campo_ordenacao.asc()
         else:
             ordenacao = campo_ordenacao.desc()
-
         query = session.query(Requerimento).order_by(ordenacao)
         total = query.count()
         requerimentos = (
@@ -359,7 +524,6 @@ def listar_requerimentos():
             .limit(per_page)
             .all()
         )
-
         return jsonify({
             "requerimentos": [ {
                 "id": r.id,
@@ -376,13 +540,13 @@ def listar_requerimentos():
             "page": page,
             "per_page": per_page
         }), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
 
 @app.route('/requerimentos/<int:id>', methods=['PUT'])
+@login_required
 def atualizar_requerimento(id):
     data = request.json
     session = SessionLocal()
@@ -390,8 +554,6 @@ def atualizar_requerimento(id):
         requerimento = session.query(Requerimento).get(id)
         if not requerimento:
             return jsonify({"error": "Requerimento não encontrado"}), 404
-
-        # Atualiza campos, se existirem no payload
         requerimento.numero = data.get('numero', requerimento.numero)
         requerimento.tipo = data.get('tipo', requerimento.tipo)
         requerimento.motivo = data.get('motivo', requerimento.motivo)
@@ -401,7 +563,8 @@ def atualizar_requerimento(id):
         requerimento.requerente_id = data.get('requerente_id', requerimento.requerente_id)
         requerimento.arvore_id = data.get('arvore_id', requerimento.arvore_id)
         requerimento.observacao = data.get('observacao', requerimento.observacao)
-
+        requerimento.data_atualizacao = datetime.now()
+        requerimento.atualizado_por = current_user.id
         session.commit()
         return jsonify({"message": "Requerimento atualizado com sucesso!"}), 200
     except Exception as e:
@@ -411,20 +574,19 @@ def atualizar_requerimento(id):
         session.close()
 
 @app.route('/requerimentos/todos', methods=['GET'])
+@login_required
 def listar_todos_requerimentos():
     session = SessionLocal()
     try:
         requerimentos = (
             session.query(Requerimento)
             .options(joinedload(Requerimento.arvore))
-            .filter(sa.func.lower(Requerimento.status) != 'concluído')  # <-- filtro aqui
+            .filter(sa.func.lower(Requerimento.status) != 'concluído')
             .order_by(Requerimento.id.desc())
             .all()
         )
-
         requerimentos_json = []
         for r in requerimentos:
-            # Captura dados da árvore associada (se existir)
             arvore = r.arvore
             requerimento_data = {
                 "id": r.id,
@@ -444,15 +606,17 @@ def listar_todos_requerimentos():
                 "arvore_bairro": arvore.bairro if arvore else ""
             }
             requerimentos_json.append(requerimento_data)
-
         return jsonify(requerimentos_json), 200
     except Exception as e:
-        print(f"Erro no backend: {str(e)}")  # Log para debug
+        print(f"Erro no backend: {str(e)}")
         return jsonify({"error": "Erro interno no servidor"}), 500
     finally:
         session.close()
 
+# -------------------- ORDEM DE SERVIÇO --------------------
+
 @app.route('/ordens_servico', methods=['POST'])
+@login_required
 def cadastrar_ordem_servico():
     data = request.json
     session = SessionLocal()
@@ -461,7 +625,10 @@ def cadastrar_ordem_servico():
             numero=data['numero'],
             responsavel=data['responsavel'],
             requerimento_id=data['requerimento_id'],
-            observacao=data.get('observacao', '')
+            observacao=data.get('observacao', ''),
+            user_id=current_user.id,
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
         )
         if 'data_execucao' in data:
             nova.data_execucao = data['data_execucao']
@@ -474,7 +641,33 @@ def cadastrar_ordem_servico():
     finally:
         session.close()
 
+@app.route('/ordens_servico/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_ordem_servico(id):
+    data = request.json
+    session = SessionLocal()
+    try:
+        ordem = session.query(OrdemServico).get(id)
+        if not ordem:
+            return jsonify({"error": "Ordem de serviço não encontrada"}), 404
+        ordem.numero = data.get('numero', ordem.numero)
+        ordem.responsavel = data.get('responsavel', ordem.responsavel)
+        ordem.requerimento_id = data.get('requerimento_id', ordem.requerimento_id)
+        ordem.observacao = data.get('observacao', ordem.observacao)
+        if 'data_execucao' in data:
+            ordem.data_execucao = data['data_execucao']
+        ordem.data_atualizacao = datetime.now()
+        ordem.atualizado_por = current_user.id
+        session.commit()
+        return jsonify({"message": "Ordem de serviço atualizada!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
 @app.route('/ordens_servico', methods=['GET'])
+@login_required
 def listar_ordens_servico():
     session = SessionLocal()
     try:
@@ -494,11 +687,14 @@ def listar_ordens_servico():
     finally:
         session.close()
 
+# -------------------- ESPÉCIES --------------------
+
 @app.route('/especies', methods=['GET'])
+@login_required
 def listar_especies():
     session = SessionLocal()
     try:
-        especies = session.query(Especies).all()
+        especies = session.query(Especies).order_by(Especies.nome_popular.asc()).all()
         return jsonify([
             {
                 "id": e.id,
@@ -526,6 +722,7 @@ def listar_especies():
         session.close()
         
 @app.route('/especies', methods=['POST'])
+@login_required
 def cadastrar_especie():
     data = request.json
     session = SessionLocal()
@@ -558,6 +755,7 @@ def cadastrar_especie():
         session.close()
 
 @app.route('/especies/<int:id>', methods=['PUT'])
+@login_required
 def atualizar_especie(id):
     data = request.json
     session = SessionLocal()
@@ -565,7 +763,6 @@ def atualizar_especie(id):
         especie = session.query(Especies).filter(Especies.id == id).first()
         if not especie:
             return jsonify({"error": "Espécie não encontrada"}), 404
-
         especie.nome_popular = data.get('nome_popular', especie.nome_popular)
         especie.nome_cientifico = data.get('nome_cientifico', especie.nome_cientifico)
         especie.porte = data.get('porte', especie.porte)
@@ -582,7 +779,6 @@ def atualizar_especie(id):
         especie.atrai_fauna = data.get('atrai_fauna', especie.atrai_fauna)
         especie.observacoes = data.get('observacoes', especie.observacoes)
         especie.link_foto = data.get('link_foto', especie.link_foto)
-
         session.commit()
         return jsonify({"message": "Espécie atualizada!"}), 200
     except Exception as e:

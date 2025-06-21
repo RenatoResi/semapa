@@ -37,7 +37,6 @@ function renderTabela(lista) {
             <td>${capitalize(e.fruto_comestivel)}</td>
             <td>${e.epoca_frutificacao || ''}</td>
             <td>${e.necessidade_rega || ''}</td>
-            <td>${capitalize(e.atrai_fauna)}</td>
             <td>${e.observacoes || ''}</td>
         `;
         tbody.appendChild(tr);

@@ -1,8 +1,23 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
+from flask_login import UserMixin
 
 Base = declarative_base()
+
+class User(Base, UserMixin):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    email = Column(String(100), unique=True, nullable=False)
+    password = Column(String(200), nullable=False)  # Guarde apenas o hash!
+    nome = Column(String(100))
+    telefone = Column(String(20))
+    nivel = Column(Integer, nullable=False, default=3)  # 1=admin, 2, 3, etc
+
+    requerentes = relationship("Requerente", back_populates="user", foreign_keys='Requerente.criado_por')
+    arvores = relationship("Arvore", back_populates="user", foreign_keys='Arvore.criado_por')
+    requerimentos = relationship("Requerimento", back_populates="user", foreign_keys='Requerimento.criado_por')
+    ordens_servico = relationship("OrdemServico", back_populates="user", foreign_keys='OrdemServico.criado_por')
 
 class Requerente(Base):
     __tablename__ = 'requerentes'
@@ -11,6 +26,12 @@ class Requerente(Base):
     telefone = Column(String(20))
     requerimentos = relationship("Requerimento", back_populates="requerente")
     observacao = Column(Text)
+    data_criacao = Column(DateTime, default=datetime.now)
+    criado_por = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", back_populates="requerentes", foreign_keys=[criado_por])
+    data_atualizacao = Column(DateTime)
+    atualizado_por = Column(Integer, ForeignKey('users.id'))
+    atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class Arvore(Base):
     __tablename__ = 'arvores'
@@ -21,9 +42,15 @@ class Arvore(Base):
     latitude = Column(String(20))
     longitude = Column(String(20))
     data_plantio = Column(DateTime)
-    foto = Column(String(200))  # Caminho/URL da foto
+    foto = Column(String(200))
     requerimentos = relationship("Requerimento", back_populates="arvore")
     observacao = Column(Text)
+    data_criacao = Column(DateTime, default=datetime.now)
+    criado_por = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", back_populates="arvores", foreign_keys=[criado_por])
+    data_atualizacao = Column(DateTime)
+    atualizado_por = Column(Integer, ForeignKey('users.id'))
+    atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class Requerimento(Base):
     __tablename__ = 'requerimentos'
@@ -40,6 +67,12 @@ class Requerimento(Base):
     arvore = relationship("Arvore", back_populates="requerimentos")
     ordens_servico = relationship("OrdemServico", back_populates="requerimento")
     observacao = Column(Text)
+    data_criacao = Column(DateTime, default=datetime.now)
+    criado_por = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", back_populates="requerimentos", foreign_keys=[criado_por])
+    data_atualizacao = Column(DateTime)
+    atualizado_por = Column(Integer, ForeignKey('users.id'))
+    atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class OrdemServico(Base):
     __tablename__ = 'ordens_servico'
@@ -47,11 +80,16 @@ class OrdemServico(Base):
     numero = Column(String(20), unique=True)
     data_emissao = Column(DateTime, default=datetime.now)
     data_execucao = Column(DateTime)
-    responsavel = Column(String(100))  # Nome do responsável pela execução
+    responsavel = Column(String(100))
     status = Column(String(30), default="Aberta")
     observacao = Column(Text)
     requerimento_id = Column(Integer, ForeignKey('requerimentos.id'))
     requerimento = relationship("Requerimento", back_populates="ordens_servico")
+    criado_por = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", back_populates="ordens_servico", foreign_keys=[criado_por])
+    data_atualizacao = Column(DateTime)
+    atualizado_por = Column(Integer, ForeignKey('users.id'))
+    atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class Especies(Base):
     __tablename__ = 'especies'
@@ -75,7 +113,6 @@ class Especies(Base):
 
     def __repr__(self):
         return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"
-
 
 # Configuração do banco SQLite
 engine = create_engine('sqlite:///../sistema_semapa.db', echo=True)

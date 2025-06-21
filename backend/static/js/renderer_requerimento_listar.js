@@ -9,7 +9,7 @@ let marcadoresMapa = {};
 // Carrega todos os requerimentos e inicializa filtrados
 async function carregarSelecao() {
   try {
-    const res = await fetch('http://localhost:5000/requerimentos/todos');
+    const res = await fetch('/requerimentos/todos');
     if (!res.ok) throw new Error(`Erro HTTP! Status: ${res.status}`);
     requerimentosDisponiveis = await res.json();
     filteredRequerimentos = [...requerimentosDisponiveis];
@@ -128,7 +128,7 @@ document.getElementById('filtro-requerimento').addEventListener('input', functio
 async function ordenarRequerimentos() {
   const campo = document.getElementById('ordenar-campo').value;
   const direcao = document.getElementById('ordenar-direcao').value;
-  const res = await fetch(`http://localhost:5000/requerimentos?order_by=${campo}&direction=${direcao}`);
+  const res = await fetch(`/requerimentos?order_by=${campo}&direction=${direcao}`);
   const data = await res.json();
   requerimentosDisponiveis = data.requerimentos;
   filteredRequerimentos = [...requerimentosDisponiveis];
@@ -199,7 +199,7 @@ document.addEventListener('click', function(e) {
       const campo = input.dataset.field;
       payload[campo] = input.value;
     });
-    fetch(`http://localhost:5000/requerimentos/${id}`, {
+    fetch(`/requerimentos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -226,7 +226,7 @@ document.getElementById('btn-gerar-os').addEventListener('click', async function
   }
   try {
     for (const req of requerimentosSelecionados) {
-      await fetch('http://localhost:5000/ordens_servico', {
+      await fetch('/ordens_servico', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -277,6 +277,33 @@ function inicializarMapa() {
     zoom: 13
   });
   map.addControl(new maplibregl.NavigationControl());
+  
+  map.on('load', function () {
+      map.addSource('perimetros', {
+          type: 'geojson',
+          data: 'static/files/cravinhos.geojson' // Caminho para seu arquivo
+      });
+
+      map.addLayer({
+          id: 'perimetros-fill',
+          type: 'fill',
+          source: 'perimetros',
+          paint: {
+              'fill-color': '#0080ff',
+              'fill-opacity': 0
+          }
+      });
+
+      map.addLayer({
+          id: 'perimetros-borda',
+          type: 'line',
+          source: 'perimetros',
+          paint: {
+              'line-color': '#0050a0',
+              'line-width': 2
+          }
+      });
+  });
 }
 
 function criarMarcadores() {
