@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for
 from flask_cors import CORS
-from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
+from .database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
 import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
