@@ -24,6 +24,7 @@ nav {
     background: var(--primary);
     border-radius: var(--radius);
     margin-bottom: 32px;
+    margin-top: 32px;
     box-shadow: 0 2px 8px #0001;
 }
 nav ul {
@@ -279,10 +280,20 @@ input.erro {
 }
 
 .main-content {
-  margin-left: 220px; /* espaço para a sidebar */
+  margin-left: 220px; /* espaço para a sidebar em desktop */
   padding: 30px 10px;
-  width: 100%;
+  width: calc(100% - 220px);
+  transition: margin-left 0.3s ease, width 0.3s ease;
 }
+
+/* Em telas pequenas, remova a margem e ajuste largura */
+@media (max-width: 900px) {
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
 
 #sidebar-resposta {
     margin-top: 32px;

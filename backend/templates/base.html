@@ -60,6 +60,7 @@
         min-width: 320px;
         max-width: 90vw;
         text-align: center;
+        position: relative;
       }
       .modal-content h3 {
         color: #217a4b;
@@ -89,6 +90,61 @@
         cursor: pointer;
       }
       .modal-close:hover { color: #c62828; }
+
+      /* Sidebar toggle button */
+      .sidebar-toggle {
+        display: none;
+        position: fixed;
+        top: 18px;
+        left: 18px;
+        z-index: 10001;
+        background: #217a4b;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        padding: 10px 14px;
+        font-size: 26px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+      }
+      /* Sidebar padrão */
+      .sidebar {
+        transition: transform 0.3s;
+      }
+      /* Responsivo: sidebar oculta em telas pequenas */
+      @media (max-width: 900px) {
+        .sidebar-toggle {
+          display: block;
+  top: 10px; /* Mais próximo do topo */
+  left: 10px; /* Mais à esquerda */
+  z-index: 10002; /* Fica acima da sidebar */
+        }
+        .sidebar {
+          position: fixed;
+          top: 0; left: 0;
+          width: 80vw;
+          max-width: 320px;
+          height: 100vh;
+          background: #fff;
+          z-index: 10000;
+          box-shadow: 2px 0 12px rgba(0,0,0,0.13);
+          transform: translateX(-100%);
+        }
+        .sidebar.open {
+          transform: translateX(0);
+        }
+        .sidebar-backdrop {
+          display: block;
+          position: fixed;
+          top: 0; left: 0;
+          width: 100vw; height: 100vh;
+          background: rgba(0,0,0,0.25);
+          z-index: 9999;
+        }
+      }
+      .sidebar-backdrop {
+        display: none;
+      }
       @media (max-width: 700px) {
         .sidebar-user { font-size: 14px; }
         .modal-content { min-width: 220px; }
@@ -98,6 +154,8 @@
 </head>
 <body>
     <div class="layout">
+        <!-- Botão hamburguer -->
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">&#9776;</button>
         <aside class="sidebar">
             <nav>
                 <ul>
@@ -124,6 +182,8 @@
             {% block content %}{% endblock %}
         </main>
     </div>
+    <!-- Backdrop para sidebar mobile -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
     <!-- Modal de alteração de senha -->
     <div class="modal" id="modalSenha">
       <div class="modal-content">
@@ -151,6 +211,45 @@
           fecharModalSenha();
         }
       }
+
+      // Sidebar responsiva
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.querySelector('.sidebar');
+      const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+      sidebarToggle.onclick = function() {
+        if (sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+          sidebarBackdrop.style.display = 'none';
+        } else {
+          sidebar.classList.add('open');
+          sidebarBackdrop.style.display = 'block';
+        }
+      };
+
+      sidebarBackdrop.onclick = function() {
+        sidebar.classList.remove('open');
+        sidebarBackdrop.style.display = 'none';
+      };
+
+      // Fecha sidebar ao clicar em um link
+      document.querySelectorAll('.sidebar a').forEach(function(link){
+        link.onclick = function() {
+          if(window.innerWidth <= 900){
+            sidebar.classList.remove('open');
+            sidebarBackdrop.style.display = 'none';
+          }
+        }
+      });
+
+      // Fecha sidebar ao redimensionar para desktop
+      window.addEventListener('resize', function() {
+        if(window.innerWidth > 900) {
+          sidebar.classList.remove('open');
+          sidebarBackdrop.style.display = 'none';
+        }
+      });
+
     </script>
     {% block scripts %}{% endblock %}
 </body>
