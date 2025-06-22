@@ -1,9 +1,15 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
 
 Base = declarative_base()
+
+ordem_servico_requerimento = Table(
+    'ordem_servico_requerimento', Base.metadata,
+    Column('ordem_servico_id', Integer, ForeignKey('ordens_servico.id'), primary_key=True),
+    Column('requerimento_id', Integer, ForeignKey('requerimentos.id'), primary_key=True)
+)
 
 class User(Base, UserMixin):
     __tablename__ = 'users'
@@ -65,7 +71,6 @@ class Requerimento(Base):
     arvore_id = Column(Integer, ForeignKey('arvores.id'))
     requerente = relationship("Requerente", back_populates="requerimentos")
     arvore = relationship("Arvore", back_populates="requerimentos")
-    ordens_servico = relationship("OrdemServico", back_populates="requerimento")
     observacao = Column(Text)
     data_criacao = Column(DateTime, default=datetime.now)
     criado_por = Column(Integer, ForeignKey('users.id'))
@@ -73,6 +78,12 @@ class Requerimento(Base):
     data_atualizacao = Column(DateTime)
     atualizado_por = Column(Integer, ForeignKey('users.id'))
     atualizador = relationship("User", foreign_keys=[atualizado_por])
+    # RELAÇÃO CORRETA: muitos-para-muitos com OrdemServico
+    ordens_servico = relationship(
+        "OrdemServico",
+        secondary=ordem_servico_requerimento,
+        back_populates="requerimentos"
+    )
 
 class OrdemServico(Base):
     __tablename__ = 'ordens_servico'
@@ -83,13 +94,17 @@ class OrdemServico(Base):
     responsavel = Column(String(100))
     status = Column(String(30), default="Aberta")
     observacao = Column(Text)
-    requerimento_id = Column(Integer, ForeignKey('requerimentos.id'))
-    requerimento = relationship("Requerimento", back_populates="ordens_servico")
     criado_por = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", back_populates="ordens_servico", foreign_keys=[criado_por])
     data_atualizacao = Column(DateTime)
     atualizado_por = Column(Integer, ForeignKey('users.id'))
     atualizador = relationship("User", foreign_keys=[atualizado_por])
+    # RELAÇÃO CORRETA: muitos-para-muitos com Requerimento
+    requerimentos = relationship(
+        "Requerimento",
+        secondary=ordem_servico_requerimento,
+        back_populates="ordens_servico"
+    )
 
 class Especies(Base):
     __tablename__ = 'especies'

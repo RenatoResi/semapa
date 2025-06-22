@@ -225,19 +225,20 @@ document.getElementById('btn-gerar-os').addEventListener('click', async function
     return;
   }
   try {
-    for (const req of requerimentosSelecionados) {
-      await fetch('/ordens_servico', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          requerimento_id: req.id,
-          numero: `OS-${req.id}-${Date.now()}`,
-          responsavel: 'Equipe',
-          observacao: ''
-        })
-      });
-    }
-    alert('Ordens de serviço geradas com sucesso!');
+    // Gera um número único para a OS
+    const numeroOS = `OS-${Date.now()}`;
+    const response = await fetch('/ordens_servico', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        requerimento_ids: requerimentosSelecionados.map(r => r.id),
+        numero: numeroOS,
+        responsavel: 'Equipe',
+        observacao: ''
+      })
+    });
+    if (!response.ok) throw new Error('Erro ao gerar OS');
+    alert('Ordem de serviço gerada com sucesso!');
     requerimentosSelecionados = [];
     renderTabelaRequerimentos();
     renderTabelaSelecionados();
@@ -245,7 +246,7 @@ document.getElementById('btn-gerar-os').addEventListener('click', async function
     carregarSelecao().then(() => criarMarcadores());
   } catch (error) {
     console.error('Erro ao gerar OS:', error);
-    alert('Erro ao gerar ordens de serviço!');
+    alert('Erro ao gerar ordem de serviço!');
   }
 });
 

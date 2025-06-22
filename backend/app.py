@@ -201,7 +201,6 @@ def cadastrar_requerente():
             nome=data['nome'],
             telefone=data.get('telefone', ''),
             observacao=data.get('observacao', ''),
-            user_id=current_user.id,
             criado_por=current_user.id,
             data_criacao=datetime.now()
         )
@@ -345,7 +344,6 @@ def cadastrar_arvore():
             data_plantio=data_plantio,
             foto=data.get('foto', ''),
             observacao=data.get('observacao', ''),
-            user_id=current_user.id,
             criado_por=current_user.id,
             data_criacao=datetime.now()
         )
@@ -480,7 +478,6 @@ def cadastrar_requerimento():
             requerente_id=data['requerente_id'],
             arvore_id=data.get('arvore_id'),
             observacao=data.get('observacao', ''),
-            user_id=current_user.id,
             criado_por=current_user.id,
             data_criacao=datetime.now()
         )
@@ -615,23 +612,75 @@ def listar_todos_requerimentos():
 
 # -------------------- ORDEM DE SERVIÇO --------------------
 
-@app.route('/ordens_servico', methods=['POST'])
+@app.route('/ordens_servico', methods=['GET', 'POST'])
 @login_required
+def ordens_servico():
+    if request.method == 'GET':
+        return listar_ordens_servico()
+    elif request.method == 'POST':
+        return cadastrar_ordem_servico()
+
+def listar_ordens_servico():
+    session = SessionLocal()
+    try:
+        ordens = session.query(OrdemServico).all()
+        ordens_json = []
+        for os in ordens:
+            # Carregar requerimentos com dados completos
+            requerimentos = []
+            for req in os.requerimentos:
+                requerimentos.append({
+                    "id": req.id,
+                    "numero": req.numero,
+                    "requerente_nome": req.requerente.nome if req.requerente else "",
+                    "requerente_telefone": req.requerente.telefone if req.requerente else "",
+                    "arvore_endereco": req.arvore.endereco if req.arvore else "",
+                    "arvore_latitude": req.arvore.latitude if req.arvore else None,
+                    "arvore_longitude": req.arvore.longitude if req.arvore else None
+                })
+            
+            ordens_json.append({
+                "id": os.id,
+                "numero": os.numero,
+                "responsavel": os.responsavel,
+                "data_emissao": os.data_emissao.isoformat() if os.data_emissao else None,
+                "data_execucao": os.data_execucao.isoformat() if os.data_execucao else None,
+                "status": os.status,
+                "observacao": os.observacao,
+                "requerimentos": requerimentos
+            })
+        return jsonify(ordens_json), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
 def cadastrar_ordem_servico():
     data = request.json
     session = SessionLocal()
     try:
+        # Verificar se requerimento_ids existe e não está vazio
+        requerimento_ids = data.get('requerimento_ids', [])
+        if not requerimento_ids:
+            return jsonify({"error": "Nenhum requerimento selecionado."}), 400
+        
+        # Verificar se todos os requerimentos existem
+        requerimentos = session.query(Requerimento).filter(Requerimento.id.in_(requerimento_ids)).all()
+        if len(requerimentos) != len(requerimento_ids):
+            ids_encontrados = {r.id for r in requerimentos}
+            ids_nao_encontrados = [rid for rid in requerimento_ids if rid not in ids_encontrados]
+            return jsonify({"error": f"Requerimentos não encontrados: {ids_nao_encontrados}"}), 400
+        
         nova = OrdemServico(
             numero=data['numero'],
             responsavel=data['responsavel'],
-            requerimento_id=data['requerimento_id'],
             observacao=data.get('observacao', ''),
-            user_id=current_user.id,
             criado_por=current_user.id,
-            data_criacao=datetime.now()
+            data_emissao=datetime.now()
         )
         if 'data_execucao' in data:
             nova.data_execucao = data['data_execucao']
+        nova.requerimentos = requerimentos
         session.add(nova)
         session.commit()
         return jsonify({"message": "Ordem de serviço cadastrada!", "id": nova.id}), 201
@@ -652,7 +701,6 @@ def atualizar_ordem_servico(id):
             return jsonify({"error": "Ordem de serviço não encontrada"}), 404
         ordem.numero = data.get('numero', ordem.numero)
         ordem.responsavel = data.get('responsavel', ordem.responsavel)
-        ordem.requerimento_id = data.get('requerimento_id', ordem.requerimento_id)
         ordem.observacao = data.get('observacao', ordem.observacao)
         if 'data_execucao' in data:
             ordem.data_execucao = data['data_execucao']
@@ -665,23 +713,41 @@ def atualizar_ordem_servico(id):
         return jsonify({"error": str(e)}), 400
     finally:
         session.close()
-
-@app.route('/ordens_servico', methods=['GET'])
+        
+@app.route('/ordens_servico/<int:id>', methods=['GET'])
 @login_required
-def listar_ordens_servico():
+def detalhes_ordem_servico(id):
     session = SessionLocal()
     try:
-        ordens = session.query(OrdemServico).all()
-        return jsonify([{
-            "id": o.id,
-            "numero": o.numero,
-            "data_emissao": o.data_emissao.isoformat(),
-            "data_execucao": o.data_execucao.isoformat() if o.data_execucao else None,
-            "responsavel": o.responsavel,
-            "status": o.status,
-            "observacao": o.observacao,
-            "requerimento_id": o.requerimento_id
-        } for o in ordens]), 200
+        os = session.query(OrdemServico).get(id)
+        if not os:
+            return jsonify({"error": "Ordem de serviço não encontrada"}), 404
+        
+        # Carregar requerimentos com dados completos
+        requerimentos = []
+        for req in os.requerimentos:
+            requerimentos.append({
+                "id": req.id,
+                "numero": req.numero,
+                "tipo": req.tipo,
+                "motivo": req.motivo,
+                "requerente_nome": req.requerente.nome if req.requerente else "",
+                "requerente_telefone": req.requerente.telefone if req.requerente else "",
+                "arvore_endereco": req.arvore.endereco if req.arvore else "",
+                "arvore_latitude": req.arvore.latitude if req.arvore else None,
+                "arvore_longitude": req.arvore.longitude if req.arvore else None
+            })
+        
+        return jsonify({
+            "id": os.id,
+            "numero": os.numero,
+            "responsavel": os.responsavel,
+            "data_emissao": os.data_emissao.isoformat() if os.data_emissao else None,
+            "data_execucao": os.data_execucao.isoformat() if os.data_execucao else None,
+            "status": os.status,
+            "observacao": os.observacao,
+            "requerimentos": requerimentos
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
