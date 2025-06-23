@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for
+from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, flash
 from flask_cors import CORS
-from .database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
+from database import SessionLocal, criar_banco, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
 import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from datetime import datetime
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 import bcrypt
+from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "SUA_CHAVE_SECRETA_AQUI"
@@ -28,6 +29,26 @@ def load_user(user_id):
 
 # -------------------- AUTENTICAÇÃO --------------------
 
+def nivel_requerido(*niveis_permitidos):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('login'))
+            
+            # Verificar se o nível do usuário está nos permitidos
+            if current_user.nivel not in niveis_permitidos:
+                # Resposta com alerta JavaScript para nível 3
+                if current_user.nivel == 3:
+                    return "<script>alert('Acesso negado'); window.location.href = '/os_listar';</script>", 403
+                # Redirecionamento padrão para outros níveis
+                else:
+                    flash('Acesso negado', 'error')
+                    return redirect(url_for('index'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -38,7 +59,7 @@ def login():
         session.close()
         if user and bcrypt.checkpw(senha.encode(), user.password.encode()):
             login_user(user)
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
         else:
             return render_template('login.html', error="E-mail ou senha inválidos")
     return render_template('login.html')
@@ -78,44 +99,55 @@ def alterar_senha():
     user = session.query(User).get(current_user.id)
     if not user or not bcrypt.checkpw(senha_atual.encode(), user.password.encode()):
         session.close()
-        return render_template('index.html', error="Senha atual incorreta.")
+        return render_template('base.html', error="Senha atual incorreta.")
     if nova_senha != confirma:
         session.close()
-        return render_template('index.html', error="As novas senhas não coincidem.")
+        return render_template('base.html', error="As novas senhas não coincidem.")
     user.password = bcrypt.hashpw(nova_senha.encode(), bcrypt.gensalt()).decode()
     session.commit()
     session.close()
-    return render_template('index.html', error="Senha alterada com sucesso.")
+    return render_template('base.html', error="Senha alterada com sucesso.")
 
 # -------------------- TELAS PRINCIPAIS --------------------
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('base.html')
+
 @app.route('/')
 @login_required
+@nivel_requerido(1, 2)
 def index():
     return render_template('index.html')
 
 @app.route('/index')
 @login_required
+@nivel_requerido(1, 2)
 def index_alias():
     return render_template('index.html')
 
 @app.route('/requerimento')
 @login_required
+@nivel_requerido(1, 2)
 def requerimento():
     return render_template('requerimento.html')
 
 @app.route('/requerimento_listar')
 @login_required
+@nivel_requerido(1, 2)
 def requerimento_listar():
     return render_template('requerimento_listar.html')
 
 @app.route('/os_listar')
 @login_required
+@nivel_requerido(1, 2, 3)
 def os_listar():
     return render_template('os_listar.html')
 
 @app.route('/lista_especies')
 @login_required
+@nivel_requerido(1, 2, 3)
 def lista_especies():
     return render_template('lista_especies.html')
 
@@ -528,10 +560,13 @@ def listar_requerimentos():
                 "tipo": r.tipo,
                 "motivo": r.motivo,
                 "prioridade": r.prioridade,
-                "status": r.status,
+                "status": r.status,  # CAMPO ESSENCIAL ADICIONADO
                 "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
                 "requerente_nome": r.requerente.nome if r.requerente else "",
-                "arvore_endereco": r.arvore.endereco if r.arvore else ""
+                "arvore_endereco": r.arvore.endereco if r.arvore else "",
+                # Adicione outros campos necessários para a interface
+                "data_atualizacao": r.data_atualizacao.isoformat() if r.data_atualizacao else None,
+                "atualizado_por": r.atualizado_por
             } for r in requerimentos ],
             "total": total,
             "page": page,
@@ -542,6 +577,7 @@ def listar_requerimentos():
     finally:
         session.close()
 
+
 @app.route('/requerimentos/<int:id>', methods=['PUT'])
 @login_required
 def atualizar_requerimento(id):
@@ -551,19 +587,46 @@ def atualizar_requerimento(id):
         requerimento = session.query(Requerimento).get(id)
         if not requerimento:
             return jsonify({"error": "Requerimento não encontrado"}), 404
-        requerimento.numero = data.get('numero', requerimento.numero)
-        requerimento.tipo = data.get('tipo', requerimento.tipo)
-        requerimento.motivo = data.get('motivo', requerimento.motivo)
-        requerimento.prioridade = data.get('prioridade', requerimento.prioridade)
-        requerimento.status = data.get('status', requerimento.status)
-        requerimento.data_abertura = datetime.strptime(data['data_abertura'], '%Y-%m-%d') if data.get('data_abertura') else requerimento.data_abertura
-        requerimento.requerente_id = data.get('requerente_id', requerimento.requerente_id)
-        requerimento.arvore_id = data.get('arvore_id', requerimento.arvore_id)
-        requerimento.observacao = data.get('observacao', requerimento.observacao)
+        
+        status_anterior = requerimento.status
+        
+        # Atualiza apenas campos fornecidos
+        if 'status' in data:
+            requerimento.status = data['status']
+        
+        # Campos obrigatórios de auditoria
         requerimento.data_atualizacao = datetime.now()
         requerimento.atualizado_por = current_user.id
+
+        if status_anterior != "Concluído" and requerimento.status == "Concluído":
+            # Obter todas as OS associadas a este requerimento
+            ordens_servico = requerimento.ordens_servico
+            
+            # Verificar cada OS associada
+            for os in ordens_servico:
+                # Verificar se todos requerimentos desta OS estão concluídos
+                todos_concluidos = all(
+                    req.status == "Concluído" 
+                    for req in os.requerimentos
+                    if req.id != requerimento.id  # Excluir o próprio requerimento
+                )
+                
+                # Atualizar status da OS
+                if todos_concluidos:
+                    os.status = "Concluída"
+                else:
+                    os.status = "Em Andamento"
+                
+                # Atualizar dados de auditoria da OS
+                os.data_atualizacao = datetime.now()
+                os.atualizado_por = current_user.id
+        
         session.commit()
-        return jsonify({"message": "Requerimento atualizado com sucesso!"}), 200
+        return jsonify({
+            "message": "Requerimento atualizado com sucesso!",
+            "atualizado_por": current_user.nome,
+            "data_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 200
     except Exception as e:
         session.rollback()
         return jsonify({"error": str(e)}), 400
@@ -632,6 +695,7 @@ def listar_ordens_servico():
                 requerimentos.append({
                     "id": req.id,
                     "numero": req.numero,
+                    "status": req.status,  # CAMPO ADICIONADO
                     "requerente_nome": req.requerente.nome if req.requerente else "",
                     "requerente_telefone": req.requerente.telefone if req.requerente else "",
                     "arvore_endereco": req.arvore.endereco if req.arvore else "",
@@ -731,6 +795,7 @@ def detalhes_ordem_servico(id):
                 "numero": req.numero,
                 "tipo": req.tipo,
                 "motivo": req.motivo,
+                "status": req.status,  # CAMPO ESSENCIAL ADICIONADO
                 "requerente_nome": req.requerente.nome if req.requerente else "",
                 "requerente_telefone": req.requerente.telefone if req.requerente else "",
                 "arvore_endereco": req.arvore.endereco if req.arvore else "",

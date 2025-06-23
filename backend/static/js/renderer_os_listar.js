@@ -48,10 +48,14 @@ async function carregarDetalhesOS(osId) {
         // Preencher requerimentos
         const tbody = document.querySelector('#requerimentos-os tbody');
         tbody.innerHTML = '';
-        
+
         if (os.requerimentos && os.requerimentos.length > 0) {
             os.requerimentos.forEach(req => {
                 const tr = document.createElement('tr');
+                
+                // Verificar se o requerimento está concluído
+                const isConcluido = req.status === 'Concluído';
+                
                 tr.innerHTML = `
                     <td>${req.numero}</td>
                     <td>${req.tipo || '-'}</td>
@@ -59,8 +63,21 @@ async function carregarDetalhesOS(osId) {
                     <td>${req.requerente_nome || '-'}</td>
                     <td>${req.requerente_telefone || '-'}</td>
                     <td>${req.arvore_endereco || '-'}</td>
+                    <td>
+                        ${isConcluido 
+                            ? '<span class="checked-sign">✅</span>' 
+                            : `<button class="btn-concluir" data-req-id="${req.id}">Concluir</button>`}
+                    </td>
                 `;
                 tbody.appendChild(tr);
+            });
+            
+            // Adicionar event listeners aos botões "Concluir"
+            document.querySelectorAll('.btn-concluir').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const reqId = btn.dataset.reqId;
+                    await marcarConcluido(reqId);
+                });
             });
             
             // Carregar mapa
@@ -73,6 +90,7 @@ async function carregarDetalhesOS(osId) {
                 marcadoresMapa = [];
             }
         }
+
         
         // Mostrar seção de detalhes
         document.getElementById('detalhes-os').style.display = 'block';
@@ -207,6 +225,39 @@ function filtrarOS() {
         tr.style.display = textoLinha.includes(termo) ? '' : 'none';
     });
 }
+
+async function marcarConcluido(reqId) {
+    try {
+        const response = await fetch(`/requerimentos/${reqId}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: 'Concluído'})
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('Sucesso:', result);
+            await carregarDetalhesOS(osAtual.id);
+            await listarOrdensServico();
+        } else {
+            // Extrai a mensagem de erro do servidor
+            const errorData = await response.json();
+            const errorMsg = errorData.error || 'Erro desconhecido';
+            alert(`Erro ao atualizar: ${errorMsg} (Status: ${response.status})`);
+        }
+    } catch (error) {
+        console.error('Erro na rede:', error);
+        alert('Falha na conexão com o servidor');
+    }
+}
+
+
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-concluir')) {
+        const reqId = e.target.dataset.reqId;
+        await marcarConcluido(reqId);
+    }
+});
 
 // Inicialização
 window.onload = () => {
