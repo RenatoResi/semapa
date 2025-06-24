@@ -17,6 +17,7 @@ async function carregarSelecao() {
     renderTabelaRequerimentos();
     renderTabelaSelecionados();
     atualizarPaginacaoReq();
+    criarMarcadores();  // Atualiza o mapa com todos os dados iniciais
   } catch (error) {
     console.error('Erro ao carregar requerimentos:', error);
     document.getElementById('resposta').innerText = `Erro: ${error.message}`;
@@ -42,6 +43,7 @@ function renderTabelaRequerimentos() {
       <td>${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : ''}</td>
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
+      <td>${r.arvore_bairro || ''}</td>
       <td>
         <button class="btn-editar-inline">Editar</button>
         <button class="btn-selecionar" data-id="${r.id}">Selecionar</button>
@@ -67,6 +69,7 @@ function renderTabelaSelecionados() {
       <td>${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : ''}</td>
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
+      <td>${r.arvore_bairro || ''}</td>
       <td>
         <button class="btn-remover-selecionado" data-id="${r.id}">Remover</button>
       </td>
@@ -90,6 +93,7 @@ function atualizarPaginacaoReq() {
     </button>
   `;
 }
+
 function paginaAnteriorReq() {
   if (paginaReq > 1) {
     paginaReq--;
@@ -97,6 +101,7 @@ function paginaAnteriorReq() {
     atualizarPaginacaoReq();
   }
 }
+
 function proximaPaginaReq() {
   const totalPaginas = Math.ceil(filteredRequerimentos.length / porPagina);
   if (paginaReq < totalPaginas) {
@@ -116,12 +121,16 @@ document.getElementById('filtro-requerimento').addEventListener('input', functio
       (r.motivo?.toLowerCase() || '').includes(termo) ||
       (r.prioridade?.toLowerCase() || '').includes(termo) ||
       (r.requerente_nome?.toLowerCase() || '').includes(termo) ||
-      (r.arvore_endereco?.toLowerCase() || '').includes(termo)
+      (r.arvore_endereco?.toLowerCase() || '').includes(termo) ||
+      (r.arvore_bairro?.toLowerCase() || '').includes(termo)
     );
   });
+  
+  // Resetar paginação e renderizar imediatamente
   paginaReq = 1;
   renderTabelaRequerimentos();
   atualizarPaginacaoReq();
+  criarMarcadores();  // Atualizar o mapa com os resultados filtrados
 });
 
 // Ordenação
@@ -135,6 +144,7 @@ async function ordenarRequerimentos() {
   paginaReq = 1;
   renderTabelaRequerimentos();
   atualizarPaginacaoReq();
+  criarMarcadores();  // Atualizar o mapa após ordenação
 }
 
 // Selecionar e remover requerimento
@@ -178,6 +188,7 @@ document.addEventListener('click', function(e) {
       <td><input type="date" value="${r.data_abertura ? r.data_abertura.split('T')[0] : ''}" class="input-inline" data-field="data_abertura"></td>
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
+      <td>${r.arvore_bairro || ''}</td>
       <td>
         <button class="btn-salvar-inline" data-id="${r.id}">Salvar</button>
         <button class="btn-cancelar-inline">Cancelar</button>
@@ -282,7 +293,7 @@ function inicializarMapa() {
   map.on('load', function () {
       map.addSource('perimetros', {
           type: 'geojson',
-          data: 'static/files/cravinhos.geojson' // Caminho para seu arquivo
+          data: 'static/files/cravinhos.geojson'
       });
 
       map.addLayer({
@@ -312,7 +323,8 @@ function criarMarcadores() {
   Object.values(marcadoresMapa).forEach(marker => marker.remove());
   marcadoresMapa = {};
 
-  requerimentosDisponiveis.forEach(r => {
+  // Usar filteredRequerimentos em vez de requerimentosDisponiveis
+  filteredRequerimentos.forEach(r => {
     if (r.arvore_latitude && r.arvore_longitude) {
       const selecionado = requerimentosSelecionados.some(sel => sel.id == r.id);
       const marker = new maplibregl.Marker({ element: criarMarcadorCor((r.prioridade || '').toLowerCase(), selecionado) })

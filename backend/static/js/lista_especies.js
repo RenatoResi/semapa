@@ -25,7 +25,7 @@ function renderTabela(lista) {
     lista.forEach(e => {
         let tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${e.link_foto ? `<img src="${e.link_foto}" alt="Foto de ${e.nome_popular}" class="foto-especie" style="max-width:80px;max-height:80px;cursor:pointer;">` : '—'}</td>
+            <td>${e.link_foto ? `<img src="/static/files/fotos_especies/${e.link_foto}" alt="Foto de ${e.nome_popular}" class="foto-especie" style="max-width:80px;max-height:80px;cursor:pointer;">` : '—'}</td>
             <td>${e.nome_popular}</td>
             <td><em>${e.nome_cientifico}</em></td>
             <td>${capitalize(e.porte)}</td>
