@@ -113,11 +113,11 @@ function carregarMapaOS(requerimentos) {
         marcadoresMapa.forEach(m => m.remove());
         marcadoresMapa = [];
     }
-    
+
     // Criar novo mapa
     const container = document.getElementById('mapa-os');
     container.innerHTML = '';
-    
+
     map = new maplibregl.Map({
         container: 'mapa-os',
         style: {
@@ -143,16 +143,19 @@ function carregarMapaOS(requerimentos) {
         center: [-47.7319, -21.3381],
         zoom: 13
     });
-    
+
     map.addControl(new maplibregl.NavigationControl());
-    
+
     // Adicionar marcadores para cada requerimento com localização
     requerimentos.forEach(req => {
         if (req.arvore_latitude && req.arvore_longitude) {
-            const marker = new maplibregl.Marker()
+            const marker = new maplibregl.Marker({
+                element: criarMarcadorCorStatus(req.status)
+            })
                 .setLngLat([parseFloat(req.arvore_longitude), parseFloat(req.arvore_latitude)])
                 .setPopup(new maplibregl.Popup().setHTML(`
                     <strong>Requerimento:</strong> ${req.numero}<br>
+                    <strong>Status:</strong> ${req.status || 'N/A'}<br>
                     <strong>Endereço:</strong> ${req.arvore_endereco || 'N/A'}<br>
                     <strong>Requerente:</strong> ${req.requerente_nome || 'N/A'}
                 `))
@@ -160,6 +163,23 @@ function carregarMapaOS(requerimentos) {
             marcadoresMapa.push(marker);
         }
     });
+}
+
+// Função auxiliar para cor do marcador conforme status
+function criarMarcadorCorStatus(status) {
+    const el = document.createElement('div');
+    el.style.width = '22px';
+    el.style.height = '22px';
+    el.style.borderRadius = '50%';
+    el.style.border = '3px solid #fff';
+    el.style.boxShadow = '0 0 4px #0004';
+
+    if (status && status.toLowerCase() === 'concluído') {
+        el.style.background = 'green';
+    } else {
+        el.style.background = 'red'; // Ou outra cor para os demais status
+    }
+    return el;
 }
 
 function abrirEdicaoOS() {

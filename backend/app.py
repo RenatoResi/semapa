@@ -642,7 +642,7 @@ def listar_todos_requerimentos():
             session.query(Requerimento)
             .options(joinedload(Requerimento.arvore))
             .filter(sa.func.lower(Requerimento.status) != 'concluído')
-            .order_by(Requerimento.id.desc())
+            .order_by(Requerimento.data_abertura.desc())
             .all()
         )
         requerimentos_json = []
