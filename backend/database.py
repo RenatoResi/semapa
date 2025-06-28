@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
@@ -129,8 +130,17 @@ class Especies(Base):
     def __repr__(self):
         return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"
 
-# Configuração do banco SQLite
-engine = create_engine('sqlite:///../sistema_semapa.db', echo=True)
+# ==============================
+# CONFIGURAÇÃO DO BANCO POSTGRES
+# ==============================
+
+# Pegue a URL do banco de dados do ambiente, ou use um valor padrão para testes
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://semapa_user:Semapa2025WW@localhost/semapa_arborizacao"
+)
+
+engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 
 def criar_banco():
