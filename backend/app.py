@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, flash
 from flask_cors import CORS
-from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User
+from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User, Vistoria, VistoriaFoto
 import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
@@ -9,6 +9,8 @@ from datetime import datetime
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 import bcrypt
 from functools import wraps
+from werkzeug.utils import secure_filename
+import io
 
 app = Flask(__name__)
 app.secret_key = "SUA_CHAVE_SECRETA_AQUI"
@@ -143,6 +145,18 @@ def requerimento_listar():
 @nivel_requerido(1, 2, 3)
 def os_listar():
     return render_template('os_listar.html')
+
+@app.route('/vistoria_listar')
+@login_required
+@nivel_requerido(1, 2)
+def vistoria_listar():
+    return render_template('vistoria_listar.html')
+
+@app.route('/vistoria_form')
+@login_required
+@nivel_requerido(1, 2)
+def vistoria_form():
+    return render_template('vistoria_form.html')
 
 @app.route('/lista_especies')
 @login_required
@@ -814,6 +828,184 @@ def detalhes_ordem_servico(id):
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+        
+# -------------------- VISTORIAS --------------------
+
+@app.route('/vistorias', methods=['GET'])
+@login_required
+def listar_vistorias():
+    session = SessionLocal()
+    try:
+        vistorias = session.query(Vistoria).options(
+            joinedload(Vistoria.requerimento),
+            joinedload(Vistoria.user)
+        ).all()
+        return render_template('vistoria_listar.html', vistorias=vistorias)
+    finally:
+        session.close()
+
+# Rota para exibir formulário de nova vistoria
+@app.route('/vistorias/nova', methods=['GET'])
+@login_required
+def nova_vistoria():
+    session = SessionLocal()
+    try:
+        requerimentos = session.query(Requerimento).all()
+        especies = session.query(Especies).all()
+        requerimento_id = request.args.get('requerimento_id', type=int)
+        return render_template(
+            'vistoria_form.html',
+            requerimentos=requerimentos,
+            especies=especies,
+            requerimento_id=requerimento_id
+        )
+    finally:
+        session.close()
+
+# Rota para processar criação de nova vistoria
+@app.route('/vistorias', methods=['POST'])
+@login_required
+def criar_vistoria():
+    data = request.form
+    files = request.files.getlist('fotos')
+    session = SessionLocal()
+    
+    try:
+        vistoria_data = datetime.strptime(data['vistoria_data'], '%Y-%m-%dT%H:%M')
+        nova_vistoria = Vistoria(
+            requerimento_id=int(data['requerimento_id']),
+            vistoria_data=vistoria_data,
+            user_id=current_user.id,
+            status=data['status'],
+            observacoes=data.get('observacoes', ''),
+            especie_id=data.get('especie_id'),
+            condicoes=','.join(data.getlist('condicoes[]')),
+            conflitos=','.join(data.getlist('conflitos[]')),
+            risco_queda=data.get('risco_queda'),
+            diagnostico=data.get('diagnostico'),
+            acao_recomendada=data.get('acao_recomendada'),
+            tipo_poda=','.join(data.getlist('tipo_poda[]')),
+            galhos_cortar=data.get('galhos_cortar'),
+            medidas_seguranca=data.get('medidas_seguranca'),
+            observacoes_tecnicas=data.get('observacoes_tecnicas')
+        )
+        session.add(nova_vistoria)
+        session.flush()
+        
+        for file in files:
+            if file.filename != '':
+                foto = VistoriaFoto(
+                    vistoria_id=nova_vistoria.id,
+                    arquivo_nome=secure_filename(file.filename),
+                    arquivo=file.read()
+                )
+                session.add(foto)
+        
+        session.commit()
+        flash("Vistoria cadastrada com sucesso!", "success")
+        return redirect(url_for('listar_vistorias'))
+    except Exception as e:
+        session.rollback()
+        flash(f"Erro ao cadastrar vistoria: {str(e)}", "error")
+        return redirect(url_for('nova_vistoria'))
+    finally:
+        session.close()
+
+# Rota para exibir formulário de edição
+@app.route('/vistorias/<int:id>/editar', methods=['GET'])
+@login_required
+def editar_vistoria(id):
+    session = SessionLocal()
+    try:
+        vistoria = session.query(Vistoria).options(
+            joinedload(Vistoria.fotos)
+        ).get(id)
+        if not vistoria:
+            flash("Vistoria não encontrada", "error")
+            return redirect(url_for('listar_vistorias'))
+        
+        requerimentos = session.query(Requerimento).all()
+        return render_template(
+            'vistoria_form.html',
+            vistoria=vistoria,
+            requerimentos=requerimentos
+        )
+    finally:
+        session.close()
+
+# Rota para processar atualização de vistoria
+@app.route('/vistorias/<int:id>', methods=['POST'])
+@login_required
+def atualizar_vistoria(id):
+    data = request.form
+    files = request.files.getlist('fotos')
+    session = SessionLocal()
+    
+    try:
+        vistoria = session.query(Vistoria).get(id)
+        if not vistoria:
+            flash("Vistoria não encontrada", "error")
+            return redirect(url_for('listar_vistorias'))
+        
+        vistoria.vistoria_data = datetime.strptime(data['vistoria_data'], '%Y-%m-%dT%H:%M')
+        vistoria.requerimento_id = int(data['requerimento_id'])
+        vistoria.status = data['status']
+        vistoria.observacoes = data.get('observacoes', '')
+        
+        # Adicionar novas fotos
+        for file in files:
+            if file.filename != '':
+                foto = VistoriaFoto(
+                    vistoria_id=vistoria.id,
+                    arquivo_nome=secure_filename(file.filename),
+                    arquivo=file.read()
+                )
+                session.add(foto)
+        
+        session.commit()
+        flash("Vistoria atualizada com sucesso!", "success")
+        return redirect(url_for('editar_vistoria', id=id))
+    except Exception as e:
+        session.rollback()
+        flash(f"Erro ao atualizar vistoria: {str(e)}", "error")
+        return redirect(url_for('editar_vistoria', id=id))
+    finally:
+        session.close()
+
+@app.route('/vistoria_foto/<int:foto_id>', methods=['GET'])
+@login_required
+def vistoria_foto(foto_id):
+    session = SessionLocal()
+    try:
+        foto = session.query(VistoriaFoto).get(foto_id)
+        if not foto:
+            return jsonify({"error": "Foto não encontrada"}), 404
+        
+        return send_file(
+            io.BytesIO(foto.arquivo),
+            mimetype='image/jpeg',
+            download_name=foto.arquivo_nome
+        )
+    finally:
+        session.close()
+        
+@app.route('/vistoria_foto/<int:foto_id>', methods=['DELETE'])
+@login_required
+def remover_vistoria_foto(foto_id):
+    session = SessionLocal()
+    try:
+        foto = session.query(VistoriaFoto).get(foto_id)
+        if not foto:
+            return jsonify({"success": False, "error": "Foto não encontrada"}), 404
+        
+        session.delete(foto)
+        session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
     finally:
         session.close()
 

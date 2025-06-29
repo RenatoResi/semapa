@@ -1,0 +1,70 @@
+.form-section {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: #f9f9f9;
+}
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+.form-group {
+    flex: 1;
+    margin-bottom: 15px;
+}
+.checkbox-group, .radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-top: 5px;
+}
+textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+.existing-photos {
+    margin-top: 15px;
+}
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+.photo-item {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.photo-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+}
+.btn-remove-photo {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(231, 76, 60, 0.8);
+    color: white;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+}
+.btn-submit {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    display: block;
+    margin: 20px auto;
+}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Vistorias - Sistema SEMAPA{% endblock %}
+
+{% block content %}
+<h1>Lista de Vistorias</h1>
+
+<a href="{{ url_for('nova_vistoria') }}" class="btn-nova-vistoria">Nova Vistoria</a>
+
+<table id="tabela-vistorias">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Requerimento</th>
+            <th>Data</th>
+            <th>Status</th>
+            <th>Responsável</th>
+            <th>Fotos</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for v in vistorias %}
+        <tr>
+            <td>{{ v.id }}</td>
+            <td>{{ v.requerimento.numero if v.requerimento else 'N/A' }}</td>
+            <td>{{ v.vistoria_data.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>{{ v.status }}</td>
+            <td>{{ v.user.nome if v.user else 'N/A' }}</td>
+            <td>
+                {% for foto in v.fotos %}
+                <a href="{{ url_for('vistoria_foto', foto_id=foto.id) }}" target="_blank">
+                    <img src="{{ url_for('vistoria_foto', foto_id=foto.id) }}" alt="Foto" width="50">
+                </a>
+                {% endfor %}
+            </td>
+            <td>
+                <a href="{{ url_for('editar_vistoria', id=v.id) }}" class="btn-editar">Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

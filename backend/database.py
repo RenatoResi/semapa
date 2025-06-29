@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table, LargeBinary
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
@@ -85,7 +85,40 @@ class Requerimento(Base):
         secondary=ordem_servico_requerimento,
         back_populates="requerimentos"
     )
+    
+class Vistoria(Base):
+    __tablename__ = 'vistoria'
+    id = Column(Integer, primary_key=True)
+    requerimento_id = Column(Integer, ForeignKey('requerimentos.id', ondelete="CASCADE"), nullable=False)
+    vistoria_data = Column(DateTime, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)
+    status = Column(String(30), nullable=False, default="Pendente")
+    observacoes = Column(Text)
+    especie_id = Column(Integer, ForeignKey('especies.id'))
+    condicoes = Column(Text)  # Armazenará JSON ou string delimitada
+    conflitos = Column(Text)
+    risco_queda = Column(String(10))
+    diagnostico = Column(Text)
+    acao_recomendada = Column(String(20))
+    tipo_poda = Column(Text)
+    galhos_cortar = Column(Text)
+    medidas_seguranca = Column(Text)
+    observacoes_tecnicas = Column(Text)
 
+    especie = relationship("Especies")
+    requerimento = relationship("Requerimento", backref="vistorias")
+    user = relationship("User", backref="vistorias")
+    fotos = relationship("VistoriaFoto", back_populates="vistoria", cascade="all, delete-orphan")
+
+class VistoriaFoto(Base):
+    __tablename__ = 'vistoria_foto'
+    id = Column(Integer, primary_key=True)
+    vistoria_id = Column(Integer, ForeignKey('vistoria.id', ondelete="CASCADE"), nullable=False)
+    arquivo_nome = Column(String(255))
+    arquivo = Column(LargeBinary, nullable=False)  # Use BYTEA no banco, mas pode usar LargeBinary no SQLAlchemy
+
+    vistoria = relationship("Vistoria", back_populates="fotos")
+    
 class OrdemServico(Base):
     __tablename__ = 'ordens_servico'
     id = Column(Integer, primary_key=True)

@@ -52,10 +52,8 @@ async function carregarDetalhesOS(osId) {
         if (os.requerimentos && os.requerimentos.length > 0) {
             os.requerimentos.forEach(req => {
                 const tr = document.createElement('tr');
-                
-                // Verificar se o requerimento está concluído
                 const isConcluido = req.status === 'Concluído';
-                
+
                 tr.innerHTML = `
                     <td>${req.numero}</td>
                     <td>${req.tipo || '-'}</td>
@@ -66,20 +64,30 @@ async function carregarDetalhesOS(osId) {
                     <td>
                         ${isConcluido 
                             ? '<span class="checked-sign">✅</span>' 
-                            : `<button class="btn-concluir" data-req-id="${req.id}">Concluir</button>`}
+                            : `<button class="btn-vistoriar" data-req-id="${req.id}">Vistoriar</button>
+                            <button class="btn-concluir" data-req-id="${req.id}">Concluir</button>`
+                        }
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-            
-            // Adicionar event listeners aos botões "Concluir"
+
+            // Event listeners para "Concluir"
             document.querySelectorAll('.btn-concluir').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const reqId = btn.dataset.reqId;
                     await marcarConcluido(reqId);
                 });
             });
-            
+
+            // Event listeners para "Vistoriar"
+            document.querySelectorAll('.btn-vistoriar').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const reqId = btn.dataset.reqId;
+                    window.location.href = `/vistoria_form?requerimento_id=${reqId}`;
+                });
+            });
+
             // Carregar mapa
             carregarMapaOS(os.requerimentos);
         } else {
