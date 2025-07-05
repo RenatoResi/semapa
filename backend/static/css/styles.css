@@ -475,3 +475,20 @@ input.erro {
     .sidebar-user { font-size: 14px; }
     .modal-content { min-width: 220px; }
 }
+
+.autocomplete-items {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+}
+.autocomplete-item {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.autocomplete-item:hover {
+    background: #f0f0f0;
+}

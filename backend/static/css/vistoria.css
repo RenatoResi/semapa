@@ -68,3 +68,37 @@ textarea {
     display: block;
     margin: 20px auto;
 }
+.vistoria-flex-container {
+    display: flex;
+    flex-wrap: nowrap;         /* Não deixa quebrar linha em telas grandes */
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.dados-vistoria {
+    flex: 2 1 0;
+    min-width: 320px;
+    max-width: 700px;
+}
+
+.foto-geral {
+    flex: 1 1 0;
+    min-width: 250px;
+    max-width: 350px;          /* Limita a largura da foto */
+    box-sizing: border-box;
+}
+
+.foto-geral .form-group {
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .vistoria-flex-container {
+        flex-direction: column;
+    }
+    .dados-vistoria, .foto-geral {
+        max-width: 100%;
+        min-width: 0;
+    }
+}

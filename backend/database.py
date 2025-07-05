@@ -43,12 +43,12 @@ class Requerente(Base):
 class Arvore(Base):
     __tablename__ = 'arvores'
     id = Column(Integer, primary_key=True)
-    especie = Column(String(100))
     endereco = Column(String(200))
     bairro = Column(String(100))
     latitude = Column(String(20))
     longitude = Column(String(20))
     data_plantio = Column(DateTime)
+    especie_id = Column(Integer, ForeignKey('especies.id'))
     foto = Column(String(200))
     requerimentos = relationship("Requerimento", back_populates="arvore")
     observacao = Column(Text)
@@ -57,6 +57,7 @@ class Arvore(Base):
     user = relationship("User", back_populates="arvores", foreign_keys=[criado_por])
     data_atualizacao = Column(DateTime)
     atualizado_por = Column(Integer, ForeignKey('users.id'))
+    especie = relationship("Especies", back_populates="arvores")
     atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class Requerimento(Base):
@@ -159,6 +160,7 @@ class Especies(Base):
     atrai_fauna = Column(String(10))  # 'sim' ou 'não'
     observacoes = Column(Text)
     link_foto = Column(String(200))  # Caminho/URL da foto
+    arvores = relationship("Arvore", back_populates="especie")
 
     def __repr__(self):
         return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"

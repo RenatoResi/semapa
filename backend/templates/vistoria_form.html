@@ -14,18 +14,20 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="requerimento_id">Requerimento:</label>
-                <select name="requerimento_id" id="requerimento_id" required {% if requerimento_id %}disabled{% endif %}>
-                    <option value="">Selecione...</option>
-                    {% for req in requerimentos %}
-                        <option value="{{ req.id }}" 
-                            {% if (requerimento_id and req.id == requerimento_id) or (vistoria and vistoria.requerimento_id == req.id) %}selected{% endif %}
-                            {% if requerimento_id %}disabled{% endif %}>
-                            {{ req.numero }} - {{ req.requerente.nome }}
-                        </option>
-                    {% endfor %}
-                </select>
-                {% if requerimento_id %}
+                {% if requerimento_id and requerimento %}
+                    <!-- Mostra apenas o número do requerimento como readonly -->
+                    <input type="text" class="form-control" value="{{ requerimento.numero }}" readonly>
                     <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
+                {% else %}
+                    <!-- Select normal para escolha quando não há requerimento_id -->
+                    <select name="requerimento_id" id="requerimento_id" required>
+                        <option value="">Selecione...</option>
+                        {% for req in requerimentos %}
+                            <option value="{{ req.id }}">
+                                {{ req.numero }} - {{ req.requerente.nome if req.requerente else 'Sem requerente' }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 {% endif %}
             </div>
             
@@ -43,15 +45,23 @@
         
         <div class="form-row">
             <div class="form-group">
-                <label for="especie_id">Espécie Confirmada:</label>
-                <select name="especie_id" id="especie_id">
-                    <option value="">Selecione a espécie</option>
-                    {% for especie in especies %}
-                        <option value="{{ especie.id }}" {% if vistoria and vistoria.especie_id == especie.id %}selected{% endif %}>
-                            {{ especie.nome_popular }} ({{ especie.nome_cientifico }})
-                        </option>
-                    {% endfor %}
-                </select>
+                 <label for="especie_id">Espécie Confirmada:</label>
+                <div id="especie-selector-container">
+                    <select name="especie_id" id="especie_id">
+                        <option value="">Selecione a espécie</option>
+                        {% for especie in especies %}
+                            <option value="{{ especie.id }}" {% if vistoria and vistoria.especie_id == especie.id %}selected{% endif %}>
+                                {{ especie.nome_popular }} ({{ especie.nome_cientifico }})
+                            </option>
+                        {% endfor %}
+                        <option value="outra">Outra (digitar)...</option>
+                    </select>
+                </div>
+                <div id="nova-especie-container" style="display: none;">
+                    <input type="text" name="nova_especie_popular" id="nova_especie_popular" placeholder="Nome Popular da Nova Espécie" class="form-control" disabled>
+                    <input type="text" name="nova_especie_cientifico" id="nova_especie_cientifico" placeholder="Nome Científico (opcional)" class="form-control" disabled>
+                    <button type="button" id="cancelar-nova-especie" class="btn-secondary" style="margin-top: 5px;">Voltar para seleção</button>
+                </div>
             </div>
             
             <div class="form-group">
@@ -74,6 +84,7 @@
                     <label><input type="checkbox" name="conflitos[]" value="calcada"> Calçada danificada</label>
                     <label><input type="checkbox" name="conflitos[]" value="edificacao"> Edificação</label>
                     <label><input type="checkbox" name="conflitos[]" value="sinalizacao"> Sinalização de trânsito</label>
+                    <label><input type="checkbox" name="conflitos[]" value="iluminacao"> Iluminação pública</label>
                     <label><input type="checkbox" name="conflitos[]" value="outros"> Outros</label>
                 </div>
             </div>
@@ -201,6 +212,39 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const especieSelect = document.getElementById('especie_id');
+    const novaEspecieContainer = document.getElementById('nova-especie-container');
+    const especieSelectorContainer = document.getElementById('especie-selector-container');
+    const novaEspeciePopularInput = document.getElementById('nova_especie_popular');
+    const novaEspecieCientificoInput = document.getElementById('nova_especie_cientifico');
+    const cancelarBtn = document.getElementById('cancelar-nova-especie');
+
+    especieSelect.addEventListener('change', function() {
+        if (this.value === 'outra') {
+            especieSelectorContainer.style.display = 'none';
+            novaEspecieContainer.style.display = 'block';
+            especieSelect.disabled = true; // Desabilita o select para não ser enviado
+            novaEspeciePopularInput.disabled = false; // Habilita o input para ser enviado
+            novaEspecieCientificoInput.disabled = false;
+            novaEspeciePopularInput.required = true; // Torna o campo obrigatório
+        }
+    });
+
+    cancelarBtn.addEventListener('click', function() {
+        novaEspecieContainer.style.display = 'none';
+        especieSelectorContainer.style.display = 'block';
+        especieSelect.disabled = false;
+        novaEspeciePopularInput.disabled = true;
+        novaEspecieCientificoInput.disabled = true;
+        novaEspeciePopularInput.required = false;
+        novaEspeciePopularInput.value = ''; // Limpa os campos
+        novaEspecieCientificoInput.value = '';
+        especieSelect.value = ''; // Reseta a seleção
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const dataField = document.getElementById('vistoria_data');
     if (!dataField.value) {

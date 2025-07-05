@@ -11,6 +11,7 @@ import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
 import io
+from sqlalchemy import or_
 
 app = Flask(__name__)
 app.secret_key = "SUA_CHAVE_SECRETA_AQUI"
@@ -150,13 +151,50 @@ def os_listar():
 @login_required
 @nivel_requerido(1, 2)
 def vistoria_listar():
-    return render_template('vistoria_listar.html')
+    session = SessionLocal()
+    try:
+        vistorias = session.query(Vistoria).options(
+            joinedload(Vistoria.requerimento),
+            joinedload(Vistoria.user)
+        ).all()
+        return render_template('vistoria_listar.html', vistorias=vistorias)
+    finally:
+        session.close()
 
 @app.route('/vistoria_form')
 @login_required
 @nivel_requerido(1, 2)
 def vistoria_form():
-    return render_template('vistoria_form.html')
+    session = SessionLocal()
+    try:
+        # Captura o requerimento_id da URL
+        requerimento_id = request.args.get('requerimento_id', type=int)
+        requerimento = None
+        
+        # Se foi passado um requerimento_id, busca o requerimento específico
+        if requerimento_id:
+            requerimento = session.query(Requerimento).filter(
+                Requerimento.id == requerimento_id
+            ).first()
+        
+        # Lista todos os requerimentos para o select (caso não tenha requerimento_id)
+        requerimentos = session.query(Requerimento).filter(
+            sa.func.lower(Requerimento.status) != 'concluído'
+        ).order_by(Requerimento.data_abertura.desc()).all()
+        
+        return render_template('vistoria_form.html', 
+                             requerimento_id=requerimento_id,
+                             requerimento=requerimento,
+                             requerimentos=requerimentos)
+    except Exception as e:
+        print(f"Erro ao carregar formulário de vistoria: {str(e)}")
+        return render_template('vistoria_form.html', 
+                             requerimento_id=None,
+                             requerimento=None,
+                             requerimentos=[])
+    finally:
+        session.close()
+
 
 @app.route('/lista_especies')
 @login_required
@@ -164,8 +202,35 @@ def vistoria_form():
 def lista_especies():
     return render_template('lista_especies.html')
 
-# -------------------- KML --------------------
+# -------------------- Rotas Auxiliares --------------------
 
+@app.route('/api/especies_autocomplete')
+@login_required
+def especies_autocomplete():
+    termo = request.args.get('q', '').strip()
+    session = SessionLocal()
+    try:
+        query = session.query(Especies)
+        if termo:
+            termo_like = f"%{termo.lower()}%"
+            query = query.filter(
+                or_(
+                    sa.func.lower(Especies.nome_popular).like(termo_like),
+                    sa.func.lower(Especies.nome_cientifico).like(termo_like)
+                )
+            )
+        especies = query.order_by(Especies.nome_popular).limit(20).all()
+        return jsonify([
+            {
+                "id": e.id,
+                "nome_popular": e.nome_popular,
+                "nome_cientifico": e.nome_cientifico
+            }
+            for e in especies
+        ])
+    finally:
+        session.close()
+        
 @app.route('/gerar_kml')
 @login_required
 def gerar_kml():
@@ -203,10 +268,9 @@ def gerar_kml():
 def gerar_kml_arvore(arvore_id):
     session = SessionLocal()
     try:
-        arvore = session.execute(
-            sa.select(Arvore.id, Arvore.especie, Arvore.latitude, Arvore.longitude, Arvore.endereco)
-            .where(Arvore.id == arvore_id)
-        ).first()
+        arvore = session.query(Arvore).options(
+            joinedload(Arvore.especie)
+        ).get(arvore_id)
         
         if not arvore:
             return jsonify({"error": "Árvore não encontrada"}), 404
@@ -214,7 +278,7 @@ def gerar_kml_arvore(arvore_id):
         kml = Kml(name=f"Árvore {arvore.especie}", open=1)
         
         ponto = kml.newpoint(
-            name=arvore.especie,
+            name=arvore.especie.nome_popular if arvore.especie else "Não identificada",
             coords=[(float(arvore.longitude), float(arvore.latitude))]
         )
         ponto.style.iconstyle.icon.href = 'https://maps.google.com/mapfiles/kml/shapes/parks.png'
@@ -222,7 +286,7 @@ def gerar_kml_arvore(arvore_id):
             <![CDATA[
                 <h3>Detalhes da Árvore</h3>
                 <p>ID: {arvore.id}</p>
-                <p>Espécie: {arvore.especie}</p>
+                <p>Espécie: {arvore.especie.nome_popular if arvore.especie else "Não identificada"}</p>
                 <p>Endereço: {arvore.endereco}</p>
             ]]>
         """
@@ -352,10 +416,10 @@ def requerente_existe():
 def listar_todas_arvores():
     session = SessionLocal()
     try:
-        arvores = session.query(Arvore).order_by(Arvore.id.desc()).all()
+        arvores = session.query(Arvore).options(joinedload(Arvore.especie)).order_by(Arvore.id.desc()).all()
         return jsonify([{
             "id": a.id,
-            "especie": a.especie,
+            "especie": a.especie.nome_popular if a.especie else "",
             "endereco": a.endereco,
             "bairro": a.bairro,
             "latitude": a.latitude,
@@ -377,11 +441,32 @@ def cadastrar_arvore():
     data = request.json
     session = SessionLocal()
     try:
+        # --- Lógica para Espécie ---
+        especie_id = None
+        nova_especie_popular = data.get('nova_especie_popular') # Supondo que o frontend envie isso
+
+        if nova_especie_popular:
+            especie_existente = session.query(Especies).filter(sa.func.lower(Especies.nome_popular) == sa.func.lower(nova_especie_popular)).first()
+            if especie_existente:
+                especie_id = especie_existente.id
+            else:
+                nova_especie = Especies(
+                    nome_popular=nova_especie_popular,
+                    nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
+                    porte='não informado'
+                )
+                session.add(nova_especie)
+                session.flush()
+                especie_id = nova_especie.id
+        elif data.get('especie_id'):
+            especie_id = int(data.get('especie_id'))
+        # --- Fim da Lógica para Espécie ---
+
         data_plantio = None
         if data.get('data_plantio'):
             data_plantio = datetime.strptime(data['data_plantio'], '%Y-%m-%d')
         nova = Arvore(
-            especie=data['especie'] or None,
+            especie_id=especie_id,
             endereco=data.get('endereco', ''),
             bairro=data.get('bairro', ''),
             latitude=data['latitude'] or None,
@@ -410,7 +495,26 @@ def atualizar_arvore(id):
         arvore = session.query(Arvore).get(id)
         if not arvore:
             return jsonify({"error": "Árvore não encontrada"}), 404
-        arvore.especie = data.get('especie', arvore.especie)
+        
+        # --- Lógica para Espécie ---
+        nova_especie_popular = data.get('nova_especie_popular')
+        if nova_especie_popular:
+            especie_existente = session.query(Especies).filter(sa.func.lower(Especies.nome_popular) == sa.func.lower(nova_especie_popular)).first()
+            if especie_existente:
+                arvore.especie_id = especie_existente.id
+            else:
+                nova_especie = Especies(
+                    nome_popular=nova_especie_popular,
+                    nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
+                    porte='não informado'
+                )
+                session.add(nova_especie)
+                session.flush()
+                arvore.especie_id = nova_especie.id
+        elif data.get('especie_id'):
+            arvore.especie_id = int(data.get('especie_id'))
+        # --- Fim da Lógica para Espécie ---
+
         arvore.endereco = data.get('endereco', arvore.endereco)
         arvore.bairro = data.get('bairro', arvore.bairro)
         arvore.latitude = data.get('latitude', arvore.latitude)
@@ -483,7 +587,7 @@ def listar_arvores():
         return jsonify({
             "arvores": [ {
                 "id": a.id,
-                "especie": a.especie,
+                "especie": a.especie.nome_popular if a.especie else "",
                 "endereco": a.endereco,
                 "bairro": a.bairro,
                 "latitude": a.latitude,
@@ -674,7 +778,7 @@ def listar_todos_requerimentos():
                 "arvore_id": arvore.id if arvore else None,
                 "arvore_latitude": arvore.latitude if arvore else None,
                 "arvore_longitude": arvore.longitude if arvore else None,
-                "arvore_especie": arvore.especie if arvore else "",
+                "arvore_especie": arvore.especie.nome_popular if arvore and arvore.especie else "",
                 "arvore_endereco": arvore.endereco if arvore else "",
                 "arvore_bairro": arvore.bairro if arvore else ""
             }
@@ -873,20 +977,45 @@ def criar_vistoria():
     session = SessionLocal()
     
     try:
+        # --- Lógica para Espécie ---
+        especie_id = None
+        nova_especie_popular = data.get('nova_especie_popular')
+
+        if nova_especie_popular:
+            # Usuário digitou uma nova espécie
+            especie_existente = session.query(Especies).filter(sa.func.lower(Especies.nome_popular) == sa.func.lower(nova_especie_popular)).first()
+            if especie_existente:
+                especie_id = especie_existente.id
+            else:
+                # Cria a nova espécie no banco
+                nova_especie = Especies(
+                    nome_popular=nova_especie_popular,
+                    nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
+                    porte='não informado' # Campo obrigatório, usando valor padrão
+                )
+                session.add(nova_especie)
+                session.flush()  # Para obter o ID antes do commit final
+                especie_id = nova_especie.id
+        else:
+            # Usuário selecionou uma espécie existente
+            especie_id_str = data.get('especie_id')
+            if especie_id_str:
+                especie_id = int(especie_id_str)
+        # --- Fim da Lógica para Espécie ---
+
         vistoria_data = datetime.strptime(data['vistoria_data'], '%Y-%m-%dT%H:%M')
         nova_vistoria = Vistoria(
             requerimento_id=int(data['requerimento_id']),
             vistoria_data=vistoria_data,
             user_id=current_user.id,
-            status=data['status'],
-            observacoes=data.get('observacoes', ''),
-            especie_id=data.get('especie_id'),
+            status="Pendente", # ou outro status inicial
+            especie_id=especie_id,
             condicoes=','.join(data.getlist('condicoes[]')),
             conflitos=','.join(data.getlist('conflitos[]')),
             risco_queda=data.get('risco_queda'),
             diagnostico=data.get('diagnostico'),
             acao_recomendada=data.get('acao_recomendada'),
-            tipo_poda=','.join(data.getlist('tipo_poda[]')),
+            tipo_poda=','.join(data.getlist('tipo_poda[]')) if data.get('acao_recomendada') == 'poda' else '',
             galhos_cortar=data.get('galhos_cortar'),
             medidas_seguranca=data.get('medidas_seguranca'),
             observacoes_tecnicas=data.get('observacoes_tecnicas')
@@ -909,7 +1038,9 @@ def criar_vistoria():
     except Exception as e:
         session.rollback()
         flash(f"Erro ao cadastrar vistoria: {str(e)}", "error")
-        return redirect(url_for('nova_vistoria'))
+        # Redireciona de volta para o formulário, mantendo o requerimento_id se houver
+        requerimento_id = data.get('requerimento_id')
+        return redirect(url_for('nova_vistoria', requerimento_id=requerimento_id))
     finally:
         session.close()
 
@@ -927,10 +1058,12 @@ def editar_vistoria(id):
             return redirect(url_for('listar_vistorias'))
         
         requerimentos = session.query(Requerimento).all()
+        especies = session.query(Especies).all()
         return render_template(
             'vistoria_form.html',
             vistoria=vistoria,
-            requerimentos=requerimentos
+            requerimentos=requerimentos,
+            especies=especies
         )
     finally:
         session.close()
@@ -949,12 +1082,46 @@ def atualizar_vistoria(id):
             flash("Vistoria não encontrada", "error")
             return redirect(url_for('listar_vistorias'))
         
+        # --- Lógica para Espécie ---
+        especie_id = None
+        nova_especie_popular = data.get('nova_especie_popular')
+
+        if nova_especie_popular:
+            # Usuário digitou uma nova espécie
+            especie_existente = session.query(Especies).filter(sa.func.lower(Especies.nome_popular) == sa.func.lower(nova_especie_popular)).first()
+            if especie_existente:
+                especie_id = especie_existente.id
+            else:
+                # Cria a nova espécie no banco
+                nova_especie = Especies(
+                    nome_popular=nova_especie_popular,
+                    nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
+                    porte='não informado' # Campo obrigatório, usando valor padrão
+                )
+                session.add(nova_especie)
+                session.flush()
+                especie_id = nova_especie.id
+        else:
+            # Usuário selecionou uma espécie existente
+            especie_id_str = data.get('especie_id')
+            if especie_id_str:
+                especie_id = int(especie_id_str)
+        # --- Fim da Lógica para Espécie ---
+
         vistoria.vistoria_data = datetime.strptime(data['vistoria_data'], '%Y-%m-%dT%H:%M')
         vistoria.requerimento_id = int(data['requerimento_id'])
-        vistoria.status = data['status']
-        vistoria.observacoes = data.get('observacoes', '')
+        vistoria.especie_id = especie_id
+        vistoria.condicoes = ','.join(data.getlist('condicoes[]'))
+        vistoria.conflitos = ','.join(data.getlist('conflitos[]'))
+        vistoria.risco_queda = data.get('risco_queda')
+        vistoria.diagnostico = data.get('diagnostico')
+        vistoria.acao_recomendada = data.get('acao_recomendada')
+        vistoria.tipo_poda = ','.join(data.getlist('tipo_poda[]')) if data.get('acao_recomendada') == 'poda' else ''
+        vistoria.galhos_cortar = data.get('galhos_cortar')
+        vistoria.medidas_seguranca = data.get('medidas_seguranca')
+        vistoria.observacoes_tecnicas = data.get('observacoes_tecnicas')
         
-        # Adicionar novas fotos
+        # Adicionar novas fotos, se houver
         for file in files:
             if file.filename != '':
                 foto = VistoriaFoto(
