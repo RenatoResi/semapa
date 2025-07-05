@@ -350,8 +350,6 @@ function setupAutocomplete(inputId, endpoint) {
 setupAutocomplete('bairro', '/api/sugestoes/bairros');
 setupAutocomplete('endereco', '/api/sugestoes/enderecos');
 
-
-
 window.onload = () => {
     listarRequerentes(1);
     listarArvores(1);

@@ -315,6 +315,21 @@ function inicializarMapa() {
               'line-width': 2
           }
       });
+
+      map.addSource('semapa', {
+        type: 'geojson',
+        data: 'static/files/semapa.geojson' // ajuste o caminho conforme necessário
+      });
+
+      map.addLayer({
+          id: 'semapa-sede',
+          type: 'symbol',
+          source: 'semapa',
+          layout: {
+            'icon-image': 'home-15', // ou 'home-11' para menor
+            'icon-size': 1.5
+        }
+      });
   });
 }
 

@@ -70,8 +70,17 @@
                 <input id="data_plantio" name="data_plantio" type="date">
             </div>
             <div class="form-group">
-                <label for="especie">Espécie</label>
-                <input id="especie" name="especie" type="text">
+                <label for="especie_input">Espécie</label>
+                <input id="especie_input" name="especie_nome" type="text" class="form-control" autocomplete="off" placeholder="Digite o nome popular ou científico">
+                <input type="hidden" id="especie_id" name="especie_id">
+                <div id="autocomplete-list" class="autocomplete-items"></div>
+                <button type="button" id="btn-nova-especie" style="display:none;">Cadastrar nova espécie</button>
+            </div>
+            <!-- Campos para nova espécie -->
+            <div id="nova-especie-campos" style="display:none; margin-top:10px;">
+                <input type="text" id="nova_nome_popular" name="nova_nome_popular" placeholder="Nome popular" class="form-control" required disabled>
+                <input type="text" id="nova_nome_cientifico" name="nova_nome_cientifico" placeholder="Nome científico" class="form-control" disabled>
+                <button type="button" id="btn-cancelar-nova-especie" class="btn btn-secondary">Cancelar</button>
             </div>
         </div>
         <div class="form-group">
@@ -106,4 +115,85 @@
 {% block scripts %}
 <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
 <script src="{{ url_for('static', filename='js/renderer.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const especieInput = document.getElementById('especie_input');
+    const especieId = document.getElementById('especie_id');
+    const autocompleteList = document.getElementById('autocomplete-list');
+    const btnNovaEspecie = document.getElementById('btn-nova-especie');
+    const novaCampos = document.getElementById('nova-especie-campos');
+    const btnCancelarNova = document.getElementById('btn-cancelar-nova-especie');
+    // ADICIONE AS LINHAS ABAIXO:
+    const novaNomePopular = document.getElementById('nova_nome_popular');
+    const novaNomeCientifico = document.getElementById('nova_nome_cientifico');
+    let especiesCache = [];
+
+    // Inicialmente, desabilite os campos de nova espécie
+    novaNomePopular.disabled = true;
+    novaNomePopular.required = false;
+    novaNomeCientifico.disabled = true;
+
+    especieInput.addEventListener('input', async function() {
+        const termo = this.value.trim();
+        autocompleteList.innerHTML = '';
+        especieId.value = '';
+        btnNovaEspecie.style.display = 'none';
+        if (termo.length < 2) return;
+
+        // Busca espécies do backend
+        const resp = await fetch(`/api/especies_autocomplete?q=${encodeURIComponent(termo)}`);
+        const especies = await resp.json();
+        especiesCache = especies;
+
+        if (especies.length === 0) {
+            btnNovaEspecie.style.display = 'inline-block';
+        } else {
+            especies.forEach(e => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.innerHTML = `<strong>${e.nome_popular}</strong> <small>(${e.nome_cientifico})</small>`;
+                item.addEventListener('click', function() {
+                    especieInput.value = e.nome_popular;
+                    especieId.value = e.id;
+                    autocompleteList.innerHTML = '';
+                    btnNovaEspecie.style.display = 'none';
+                });
+                autocompleteList.appendChild(item);
+            });
+        }
+    });
+
+    especieInput.addEventListener('blur', function() {
+        setTimeout(() => autocompleteList.innerHTML = '', 200);
+    });
+
+    btnNovaEspecie.addEventListener('click', function() {
+        especieInput.disabled = true;
+        btnNovaEspecie.style.display = 'none';
+        novaCampos.style.display = 'block';
+        novaNomePopular.disabled = false;
+        novaNomePopular.required = true;
+        novaNomeCientifico.disabled = false;
+        novaNomePopular.focus();
+    });
+
+    btnCancelarNova.addEventListener('click', function() {
+        especieInput.disabled = false;
+        especieInput.value = '';
+        especieId.value = '';
+        novaCampos.style.display = 'none';
+        novaNomePopular.disabled = true;
+        novaNomePopular.required = false;
+        novaNomeCientifico.disabled = true;
+        novaNomePopular.value = '';
+        novaNomeCientifico.value = '';
+    });
+
+    // Se o usuário digitar e não escolher uma espécie da lista, limpa o id
+    especieInput.addEventListener('change', function() {
+        const match = especiesCache.find(e => e.nome_popular === especieInput.value);
+        especieId.value = match ? match.id : '';
+    });
+});
+</script>
 {% endblock %}

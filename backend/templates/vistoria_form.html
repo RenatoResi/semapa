@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}{% if vistoria %}Editar Vistoria{% else %}Nova Vistoria{% endif %} - Sistema SEMAPA{% endblock %}
+
+{% block content %}
+<h1>{% if vistoria %}Editar Vistoria{% else %}Nova Vistoria{% endif %}</h1>
+
+<form method="POST" action="{% if vistoria %}{{ url_for('atualizar_vistoria', id=vistoria.id) }}{% else %}{{ url_for('criar_vistoria') }}{% endif %}" enctype="multipart/form-data">
+    <input type="hidden" name="requerimento_id" value="{{ requerimento_id or (vistoria.requerimento_id if vistoria else '') }}">
+    
+    <!-- Seção 1: Dados Básicos -->
+    <fieldset class="form-section">
+        <legend>Dados da Vistoria</legend>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="requerimento_id">Requerimento:</label>
+                {% if requerimento_id and requerimento %}
+                    <!-- Mostra apenas o número do requerimento como readonly -->
+                    <input type="text" class="form-control" value="{{ requerimento.numero }}" readonly>
+                    <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
+                {% else %}
+                    <!-- Select normal para escolha quando não há requerimento_id -->
+                    <select name="requerimento_id" id="requerimento_id" required>
+                        <option value="">Selecione...</option>
+                        {% for req in requerimentos %}
+                            <option value="{{ req.id }}">
+                                {{ req.numero }} - {{ req.requerente.nome if req.requerente else 'Sem requerente' }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="vistoria_data">Data da Vistoria:</label>
+                <input type="datetime-local" name="vistoria_data" id="vistoria_data" 
+                    value="{% if vistoria %}{{ vistoria.vistoria_data.strftime('%Y-%m-%dT%H:%M') }}{% endif %}" required>
+            </div>
+        </div>
+    </fieldset>
+
+    <!-- Seção 2: Avaliação Técnica da Árvore -->
+    <fieldset class="form-section">
+        <legend>Avaliação Técnica</legend>
+        
+        <div class="form-row">
+            <div class="form-group">
+                 <label for="especie_id">Espécie Confirmada:</label>
+                <div id="especie-selector-container">
+                    <select name="especie_id" id="especie_id">
+                        <option value="">Selecione a espécie</option>
+                        {% for especie in especies %}
+                            <option value="{{ especie.id }}" {% if vistoria and vistoria.especie_id == especie.id %}selected{% endif %}>
+                                {{ especie.nome_popular }} ({{ especie.nome_cientifico }})
+                            </option>
+                        {% endfor %}
+                        <option value="outra">Outra (digitar)...</option>
+                    </select>
+                </div>
+                <div id="nova-especie-container" style="display: none;">
+                    <input type="text" name="nova_especie_popular" id="nova_especie_popular" placeholder="Nome Popular da Nova Espécie" class="form-control" disabled>
+                    <input type="text" name="nova_especie_cientifico" id="nova_especie_cientifico" placeholder="Nome Científico (opcional)" class="form-control" disabled>
+                    <button type="button" id="cancelar-nova-especie" class="btn-secondary" style="margin-top: 5px;">Voltar para seleção</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Condição Fitossanitária:</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="condicoes[]" value="saudavel"> Saudável</label>
+                    <label><input type="checkbox" name="condicoes[]" value="pragas"> Presença de pragas</label>
+                    <label><input type="checkbox" name="condicoes[]" value="doencas"> Sintomas de doenças</label>
+                    <label><input type="checkbox" name="condicoes[]" value="podridao"> Podridão no tronco/raízes</label>
+                    <label><input type="checkbox" name="condicoes[]" value="danos"> Danos mecânicos</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Conflitos Identificados:</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="conflitos[]" value="fiacao"> Fiação elétrica</label>
+                    <label><input type="checkbox" name="conflitos[]" value="calcada"> Calçada danificada</label>
+                    <label><input type="checkbox" name="conflitos[]" value="edificacao"> Edificação</label>
+                    <label><input type="checkbox" name="conflitos[]" value="sinalizacao"> Sinalização de trânsito</label>
+                    <label><input type="checkbox" name="conflitos[]" value="iluminacao"> Iluminação pública</label>
+                    <label><input type="checkbox" name="conflitos[]" value="outros"> Outros</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Risco de Queda:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="risco_queda" value="baixo" required> Baixo</label>
+                    <label><input type="radio" name="risco_queda" value="medio"> Médio</label>
+                    <label><input type="radio" name="risco_queda" value="alto"> Alto</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="diagnostico">Diagnóstico Técnico:</label>
+            <textarea name="diagnostico" id="diagnostico" rows="3">{% if vistoria %}{{ vistoria.diagnostico }}{% endif %}</textarea>
+        </div>
+    </fieldset>
+
+    <!-- Seção 3: Recomendações Técnicas -->
+    <fieldset class="form-section">
+        <legend>Recomendações Técnicas</legend>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label>Ação Recomendada:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="acao_recomendada" value="nenhuma" required> Nenhuma intervenção</label>
+                    <label><input type="radio" name="acao_recomendada" value="poda"> Poda</label>
+                    <label><input type="radio" name="acao_recomendada" value="remoção"> Remoção</label>
+                    <label><input type="radio" name="acao_recomendada" value="transplante"> Transplante</label>
+                </div>
+            </div>
+            
+            <div class="form-group" id="poda-details" style="display:none;">
+                <label>Tipo de Poda:</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="tipo_poda[]" value="limpeza"> Limpeza (galhos mortos)</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="reducao"> Redução de copa</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="elevacao"> Elevação de copa</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="controle"> Controle fitossanitário</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="galhos_cortar">Galhos Específicos para Corte:</label>
+            <textarea name="galhos_cortar" id="galhos_cortar" rows="2" placeholder="Identifique galhos por posição (ex: galho NW a 5m de altura)">{% if vistoria %}{{ vistoria.galhos_cortar }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="medidas_seguranca">Medidas de Segurança:</label>
+            <textarea name="medidas_seguranca" id="medidas_seguranca" rows="2" placeholder="Equipamentos necessários, sinalização, etc.">{% if vistoria %}{{ vistoria.medidas_seguranca }}{% endif %}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="observacoes_tecnicas">Observações Técnicas:</label>
+            <textarea name="observacoes_tecnicas" id="observacoes_tecnicas" rows="3">{% if vistoria %}{{ vistoria.observacoes_tecnicas }}{% endif %}</textarea>
+        </div>
+    </fieldset>
+
+    <!-- Seção 4: Registro Fotográfico -->
+    <fieldset class="form-section">
+        <legend>Registro Fotográfico</legend>
+        <div class="form-group">
+            <label for="fotos">Fotos da Vistoria (mínimo 3 ângulos):</label>
+            <input type="file" name="fotos" id="fotos" multiple accept="image/*" required>
+            <small>Registre: visão geral, detalhes de conflitos, condições fitossanitárias</small>
+        </div>
+        
+        {% if vistoria and vistoria.fotos %}
+        <div class="existing-photos">
+            <h4>Fotos Existentes:</h4>
+            <div class="photo-grid">
+                {% for foto in vistoria.fotos %}
+                <div class="photo-item">
+                    <img src="{{ url_for('vistoria_foto', foto_id=foto.id) }}" alt="Foto existente">
+                    <button type="button" class="btn-remove-photo" data-photo-id="{{ foto.id }}">Remover</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </fieldset>
+
+    <button type="submit" class="btn-submit">Salvar Laudo Técnico</button>
+</form>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vistoria.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mostrar/ocultar detalhes de poda
+    const acaoRadios = document.querySelectorAll('input[name="acao_recomendada"]');
+    const podaDetails = document.getElementById('poda-details');
+    
+    function togglePodaDetails() {
+        const selected = document.querySelector('input[name="acao_recomendada"]:checked');
+        podaDetails.style.display = (selected && selected.value === 'poda') ? 'block' : 'none';
+    }
+    
+    acaoRadios.forEach(radio => {
+        radio.addEventListener('change', togglePodaDetails);
+    });
+    togglePodaDetails();
+    
+    // Remover fotos existentes
+    document.querySelectorAll('.btn-remove-photo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const photoId = this.dataset.photoId;
+            if (confirm('Deseja realmente remover esta foto?')) {
+                fetch(`/vistoria_foto/${photoId}`, { method: 'DELETE' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.closest('.photo-item').remove();
+                        }
+                    });
+            }
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const especieSelect = document.getElementById('especie_id');
+    const novaEspecieContainer = document.getElementById('nova-especie-container');
+    const especieSelectorContainer = document.getElementById('especie-selector-container');
+    const novaEspeciePopularInput = document.getElementById('nova_especie_popular');
+    const novaEspecieCientificoInput = document.getElementById('nova_especie_cientifico');
+    const cancelarBtn = document.getElementById('cancelar-nova-especie');
+
+    especieSelect.addEventListener('change', function() {
+        if (this.value === 'outra') {
+            especieSelectorContainer.style.display = 'none';
+            novaEspecieContainer.style.display = 'block';
+            especieSelect.disabled = true; // Desabilita o select para não ser enviado
+            novaEspeciePopularInput.disabled = false; // Habilita o input para ser enviado
+            novaEspecieCientificoInput.disabled = false;
+            novaEspeciePopularInput.required = true; // Torna o campo obrigatório
+        }
+    });
+
+    cancelarBtn.addEventListener('click', function() {
+        novaEspecieContainer.style.display = 'none';
+        especieSelectorContainer.style.display = 'block';
+        especieSelect.disabled = false;
+        novaEspeciePopularInput.disabled = true;
+        novaEspecieCientificoInput.disabled = true;
+        novaEspeciePopularInput.required = false;
+        novaEspeciePopularInput.value = ''; // Limpa os campos
+        novaEspecieCientificoInput.value = '';
+        especieSelect.value = ''; // Reseta a seleção
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dataField = document.getElementById('vistoria_data');
+    if (!dataField.value) {
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        dataField.value = localDateTime;
+    }
+});
+</script>
+{% endblock %}

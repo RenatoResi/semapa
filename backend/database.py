@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table
+import os
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table, LargeBinary
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
@@ -42,12 +43,12 @@ class Requerente(Base):
 class Arvore(Base):
     __tablename__ = 'arvores'
     id = Column(Integer, primary_key=True)
-    especie = Column(String(100))
     endereco = Column(String(200))
     bairro = Column(String(100))
     latitude = Column(String(20))
     longitude = Column(String(20))
     data_plantio = Column(DateTime)
+    especie_id = Column(Integer, ForeignKey('especies.id'))
     foto = Column(String(200))
     requerimentos = relationship("Requerimento", back_populates="arvore")
     observacao = Column(Text)
@@ -56,6 +57,7 @@ class Arvore(Base):
     user = relationship("User", back_populates="arvores", foreign_keys=[criado_por])
     data_atualizacao = Column(DateTime)
     atualizado_por = Column(Integer, ForeignKey('users.id'))
+    especie = relationship("Especies", back_populates="arvores")
     atualizador = relationship("User", foreign_keys=[atualizado_por])
 
 class Requerimento(Base):
@@ -84,7 +86,40 @@ class Requerimento(Base):
         secondary=ordem_servico_requerimento,
         back_populates="requerimentos"
     )
+    
+class Vistoria(Base):
+    __tablename__ = 'vistoria'
+    id = Column(Integer, primary_key=True)
+    requerimento_id = Column(Integer, ForeignKey('requerimentos.id', ondelete="CASCADE"), nullable=False)
+    vistoria_data = Column(DateTime, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete="SET NULL"), nullable=True)
+    status = Column(String(30), nullable=False, default="Pendente")
+    observacoes = Column(Text)
+    especie_id = Column(Integer, ForeignKey('especies.id'))
+    condicoes = Column(Text)  # Armazenará JSON ou string delimitada
+    conflitos = Column(Text)
+    risco_queda = Column(String(10))
+    diagnostico = Column(Text)
+    acao_recomendada = Column(String(20))
+    tipo_poda = Column(Text)
+    galhos_cortar = Column(Text)
+    medidas_seguranca = Column(Text)
+    observacoes_tecnicas = Column(Text)
 
+    especie = relationship("Especies")
+    requerimento = relationship("Requerimento", backref="vistorias")
+    user = relationship("User", backref="vistorias")
+    fotos = relationship("VistoriaFoto", back_populates="vistoria", cascade="all, delete-orphan")
+
+class VistoriaFoto(Base):
+    __tablename__ = 'vistoria_foto'
+    id = Column(Integer, primary_key=True)
+    vistoria_id = Column(Integer, ForeignKey('vistoria.id', ondelete="CASCADE"), nullable=False)
+    arquivo_nome = Column(String(255))
+    arquivo = Column(LargeBinary, nullable=False)  # Use BYTEA no banco, mas pode usar LargeBinary no SQLAlchemy
+
+    vistoria = relationship("Vistoria", back_populates="fotos")
+    
 class OrdemServico(Base):
     __tablename__ = 'ordens_servico'
     id = Column(Integer, primary_key=True)
@@ -125,12 +160,22 @@ class Especies(Base):
     atrai_fauna = Column(String(10))  # 'sim' ou 'não'
     observacoes = Column(Text)
     link_foto = Column(String(200))  # Caminho/URL da foto
+    arvores = relationship("Arvore", back_populates="especie")
 
     def __repr__(self):
         return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"
 
-# Configuração do banco SQLite
-engine = create_engine('sqlite:///../sistema_semapa.db', echo=True)
+# ==============================
+# CONFIGURAÇÃO DO BANCO POSTGRES
+# ==============================
+
+# Pegue a URL do banco de dados do ambiente, ou use um valor padrão para testes
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://semapa_user:Semapa2025WW@localhost/semapa_arborizacao"
+)
+
+engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 
 def criar_banco():
