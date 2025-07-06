@@ -44,6 +44,7 @@ function renderTabelaRequerimentos() {
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
       <td>${r.arvore_bairro || ''}</td>
+      <td>${r.status || ''}</td>
       <td>
         <button class="btn-editar-inline">Editar</button>
         <button class="btn-selecionar" data-id="${r.id}">Selecionar</button>
@@ -70,6 +71,7 @@ function renderTabelaSelecionados() {
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
       <td>${r.arvore_bairro || ''}</td>
+      <td>${r.status || ''}</td>
       <td>
         <button class="btn-remover-selecionado" data-id="${r.id}">Remover</button>
       </td>
@@ -122,7 +124,8 @@ document.getElementById('filtro-requerimento').addEventListener('input', functio
       (r.prioridade?.toLowerCase() || '').includes(termo) ||
       (r.requerente_nome?.toLowerCase() || '').includes(termo) ||
       (r.arvore_endereco?.toLowerCase() || '').includes(termo) ||
-      (r.arvore_bairro?.toLowerCase() || '').includes(termo)
+      (r.arvore_bairro?.toLowerCase() || '').includes(termo) ||
+      (r.status?.toLowerCase() || '').includes(termo)
     );
   });
   
@@ -189,6 +192,7 @@ document.addEventListener('click', function(e) {
       <td>${r.requerente_nome || ''}</td>
       <td>${r.arvore_endereco || ''}</td>
       <td>${r.arvore_bairro || ''}</td>
+      <td>${r.status || ''}</td>
       <td>
         <button class="btn-salvar-inline" data-id="${r.id}">Salvar</button>
         <button class="btn-cancelar-inline">Cancelar</button>
@@ -323,12 +327,14 @@ function inicializarMapa() {
 
       map.addLayer({
           id: 'semapa-sede',
-          type: 'symbol',
+          type: 'circle',
           source: 'semapa',
-          layout: {
-            'icon-image': 'home-15', // ou 'home-11' para menor
-            'icon-size': 1.5
-        }
+          paint: {
+            'circle-color': '#ffffff',        // Cor de preenchimento: branco
+            'circle-radius': 10,               // Raio do círculo
+            'circle-stroke-color': '#000000', // Cor da borda: preto
+            'circle-stroke-width': 2          // Espessura da borda
+          }
       });
   });
 }

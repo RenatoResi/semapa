@@ -694,7 +694,6 @@ def listar_requerimentos():
     finally:
         session.close()
 
-
 @app.route('/requerimentos/<int:id>', methods=['PUT'])
 @login_required
 def atualizar_requerimento(id):
@@ -775,6 +774,7 @@ def listar_todos_requerimentos():
                 "requerente_nome": r.requerente.nome if r.requerente else "",
                 "requerente_telefone": r.requerente.telefone if r.requerente else "",
                 "observacao": r.observacao,
+                "status": r.status,
                 "arvore_id": arvore.id if arvore else None,
                 "arvore_latitude": arvore.latitude if arvore else None,
                 "arvore_longitude": arvore.longitude if arvore else None,
