@@ -32,3 +32,11 @@ class ArvoreService:
             return session.query(Arvore).all()
         finally:
             session.close()
+
+    @staticmethod
+    def buscar_por_id(arvore_id):
+        session = SessionLocal()
+        try:
+            return session.query(Arvore).filter_by(id=arvore_id).first()
+        finally:
+            session.close()

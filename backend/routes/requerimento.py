@@ -1,36 +1,21 @@
 from flask import Blueprint, request, jsonify
-from database import SessionLocal, Requerimento
+from services import RequerimentoService
 
 requerimento_bp = Blueprint('requerimento', __name__)
 
 @requerimento_bp.route('/requerimento', methods=['POST'])
 def cadastrar_requerimento():
     data = request.json
-    session = SessionLocal()
     try:
-        novo = Requerimento(
-            numero=data['numero'],
-            tipo=data['tipo'],
-            motivo=data['motivo'],
-            prioridade=data.get('prioridade', 'Normal'),
-            requerente_id=data['requerente_id'],
-            arvore_id=data.get('arvore_id'),
-            observacao=data.get('observacao', '')
-        )
-        session.add(novo)
-        session.commit()
+        novo = RequerimentoService.criar(data)
         return jsonify({"message": "Requerimento cadastrado!", "id": novo.id}), 201
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 @requerimento_bp.route('/requerimentos', methods=['GET'])
 def listar_requerimentos():
-    session = SessionLocal()
     try:
-        requerimentos = session.query(Requerimento).all()
+        requerimentos = RequerimentoService.listar()
         return jsonify([{
             "id": r.id,
             "numero": r.numero,
@@ -45,5 +30,3 @@ def listar_requerimentos():
         } for r in requerimentos]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()

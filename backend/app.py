@@ -1,20 +1,15 @@
 from flask import Flask
 from flask_cors import CORS
 from database import criar_banco
-from routes.arvore import arvore_bp
-from routes.requerente import requerente_bp
-from routes.requerimento import requerimento_bp
-from routes.ordem_servico import ordem_servico_bp
+from routes import all_blueprints
 
 def create_app():
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
     criar_banco()
 
-    app.register_blueprint(arvore_bp)
-    app.register_blueprint(requerente_bp)
-    app.register_blueprint(requerimento_bp)
-    app.register_blueprint(ordem_servico_bp)
+    for bp in all_blueprints:
+        app.register_blueprint(bp)
 
     @app.route('/')
     def index():
