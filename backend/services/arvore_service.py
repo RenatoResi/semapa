@@ -1,5 +1,6 @@
 from database import SessionLocal
 from database.models import Arvore
+from sqlalchemy.orm import joinedload
 
 class ArvoreService:
     @staticmethod
@@ -26,17 +27,24 @@ class ArvoreService:
             session.close()
 
     @staticmethod
-    def listar():
+    @staticmethod
+    def listar(com_especie=False):
         session = SessionLocal()
         try:
-            return session.query(Arvore).all()
+            query = session.query(Arvore)
+            if com_especie:
+                query = query.options(joinedload(Arvore.especie))
+            return query.all()
         finally:
             session.close()
 
     @staticmethod
-    def buscar_por_id(arvore_id):
+    def buscar_por_id(arvore_id, com_especie=False):
         session = SessionLocal()
         try:
-            return session.query(Arvore).filter_by(id=arvore_id).first()
+            query = session.query(Arvore)
+            if com_especie:
+                query = query.options(joinedload(Arvore.especie))
+            return query.filter_by(id=arvore_id).first()
         finally:
             session.close()

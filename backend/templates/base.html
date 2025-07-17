@@ -9,18 +9,27 @@
     {% block head_extra %}{% endblock %}
 </head>
 <body>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flashes">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
     <div class="layout">
         <!-- Botão hamburguer -->
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">&#9776;</button>
         <aside class="sidebar">
             <nav>
                 <ul>
-                    <li><a href="{{ url_for('index') }}">Cadastro</a></li>
-                    <li><a href="{{ url_for('requerimento') }}">Requerimentos</a></li>
-                    <li><a href="{{ url_for('requerimento_listar') }}">Listar Requerimentos</a></li>
-                    <li><a href="{{ url_for('os_listar') }}">Ordens de Serviço</a></li>
-                    <li><a href="{{ url_for('lista_especies') }}">Lista de Espécies</a></li>
-                    <li><a href="{{ url_for('vistoria_listar') }}">Vistorias</a></li>
+                    <li><a href="{{ url_for('web.home') }}">Cadastro</a></li>
+                    <li><a href="{{ url_for('web.requerimento') }}">Requerimentos</a></li>
+                    <li><a href="{{ url_for('web.listar_requerimentos') }}">Listar Requerimentos</a></li>
+                    <li><a href="{{ url_for('web.listar_ordens') }}">Ordens de Serviço</a></li>
+                    <li><a href="{{ url_for('web.lista_especies') }}">Lista de Espécies</a></li>
+                    <li><a href="{{ url_for('web.listar_vistorias') }}">Vistorias</a></li>
                 </ul>
             </nav>
             <div class="sidebar-user">
@@ -28,7 +37,7 @@
                 <span style="font-size: 12px;">{{ current_user.email }}</span>
                 <div class="sidebar-actions">
                   <button onclick="abrirModalSenha()">Alterar senha</button>
-                  <a href="{{ url_for('logout') }}">Sair</a>
+                  <a href="{{ url_for('web.logout') }}">Sair</a>
                 </div>
             </div>
             <div id="sidebar-resposta">
@@ -46,7 +55,7 @@
       <div class="modal-content">
         <button class="modal-close" onclick="fecharModalSenha()" title="Fechar">&times;</button>
         <h3>Alterar Senha</h3>
-        <form method="POST" action="{{ url_for('alterar_senha') }}">
+        <form method="POST" action="{{ url_for('web.alterar_senha') }}">
           <input type="password" name="senha_atual" placeholder="Senha atual" required>
           <input type="password" name="nova_senha" placeholder="Nova senha" required>
           <input type="password" name="confirma_senha" placeholder="Confirmar nova senha" required>

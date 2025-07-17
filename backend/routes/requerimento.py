@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from services import RequerimentoService
+from flask_login import login_required
 
 requerimento_bp = Blueprint('requerimento', __name__)
 
 @requerimento_bp.route('/requerimento', methods=['POST'])
+@login_required
 def cadastrar_requerimento():
     data = request.json
     try:
@@ -13,10 +15,11 @@ def cadastrar_requerimento():
         return jsonify({"error": str(e)}), 400
 
 @requerimento_bp.route('/requerimentos', methods=['GET'])
+@login_required
 def listar_requerimentos():
     try:
         requerimentos = RequerimentoService.listar()
-        return jsonify([{
+        lista = [{
             "id": r.id,
             "numero": r.numero,
             "data_abertura": r.data_abertura.isoformat(),
@@ -27,6 +30,7 @@ def listar_requerimentos():
             "requerente_id": r.requerente_id,
             "arvore_id": r.arvore_id,
             "observacao": r.observacao
-        } for r in requerimentos]), 200
+        } for r in requerimentos]
+        return jsonify(lista), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400

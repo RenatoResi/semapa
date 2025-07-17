@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
 from services import OrdemServicoService
+from flask_login import login_required
 
 ordem_servico_bp = Blueprint('ordem_servico', __name__)
 
 @ordem_servico_bp.route('/ordens_servico', methods=['POST'])
+@login_required
 def cadastrar_ordem_servico():
     data = request.json
     try:
@@ -13,10 +15,11 @@ def cadastrar_ordem_servico():
         return jsonify({"error": str(e)}), 400
 
 @ordem_servico_bp.route('/ordens_servico', methods=['GET'])
+@login_required
 def listar_ordens_servico():
     try:
         ordens = OrdemServicoService.listar()
-        return jsonify([{
+        lista = [{
             "id": o.id,
             "numero": o.numero,
             "data_emissao": o.data_emissao.isoformat(),
@@ -25,6 +28,7 @@ def listar_ordens_servico():
             "status": o.status,
             "observacao": o.observacao,
             "requerimento_id": o.requerimento_id
-        } for o in ordens]), 200
+        } for o in ordens]
+        return jsonify(lista), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
