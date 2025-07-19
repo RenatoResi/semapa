@@ -1,13 +1,7 @@
-import os
-from dotenv import load_dotenv
+from semapa import create_app
 
-load_dotenv()
+app = create_app()
 
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'SUA_CHAVE_SECRETA_AQUI_MUDE_ISSO'
-    DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///../sistema_semapa.db'
-    
-    # Configurações de execução
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
-    HOST = os.environ.get('FLASK_RUN_HOST', '0.0.0.0')
-    PORT = int(os.environ.get('FLASK_RUN_PORT', 5000))
+if __name__ == "__main__":
+    # O modo debug, host e porta podem ser lidos da configuração
+    app.run(debug=app.config.get("DEBUG"), host=app.config.get("HOST"), port=app.config.get("PORT"))

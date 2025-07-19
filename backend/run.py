@@ -1,7 +1,19 @@
-from semapa import create_app
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
 
-app = create_app()
+load_dotenv() # Carrega variáveis do .env
 
-if __name__ == "__main__":
-    # O modo debug, host e porta podem ser lidos da configuração
-    app.run(debug=app.config.get("DEBUG"), host=app.config.get("HOST"), port=app.config.get("PORT"))
+# ==============================
+# CONFIGURAÇÃO DA CONEXÃO
+# ==============================
+
+# Pegue a URL do banco de dados do ambiente, ou use um valor padrão para desenvolvimento
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg2://semapa_user:Semapa2025WW@localhost/semapa_arborizacao"
+)
+
+engine = create_engine(DATABASE_URL, echo=True)
+SessionLocal = sessionmaker(bind=engine)

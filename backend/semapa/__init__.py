@@ -1,50 +1,14 @@
-from flask import Flask, g
-from flask_cors import CORS
-from ..config import Config
-from .extensions import login_manager
-from ..database import SessionLocal
+import os
+from dotenv import load_dotenv
 
-def create_app(config_class=Config):
-    app = Flask(__name__, instance_relative_config=True)
-    app.config.from_object(config_class)
+load_dotenv()
 
-    # Inicializar extensões
-    CORS(app, resources={r"/*": {"origins": "*"}})
-    login_manager.init_app(app)
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'SUA_CHAVE_SECRETA_AQUI_MUDE_ISSO'
+    DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///../sistema_semapa.db'
+    
+    # Configurações de execução
+    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() in ('true', '1', 't')
+    HOST = os.environ.get('FLASK_RUN_HOST', '0.0.0.0')
+    PORT = int(os.environ.get('FLASK_RUN_PORT', 5000))
 
-    # Registrar Blueprints
-    from .auth.routes import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-
-    from .main.routes import main_bp
-    app.register_blueprint(main_bp)
-
-    from .requerentes.routes import requerentes_bp
-    app.register_blueprint(requerentes_bp, url_prefix='/api')
-
-    from .arvores.routes import arvores_bp
-    app.register_blueprint(arvores_bp, url_prefix='/api')
-
-    from .requerimentos.routes import requerimentos_bp
-    app.register_blueprint(requerimentos_bp, url_prefix='/api')
-
-    from .os.routes import os_bp
-    app.register_blueprint(os_bp, url_prefix='/api')
-
-    from .vistorias.routes import vistorias_bp
-    app.register_blueprint(vistorias_bp, url_prefix='/api')
-
-    from .especies.routes import especies_bp
-    app.register_blueprint(especies_bp, url_prefix='/api')
-
-    @app.before_request
-    def before_request():
-        g.db = SessionLocal()
-
-    @app.teardown_request
-    def teardown_request(exception=None):
-        db = g.pop('db', None)
-        if db is not None:
-            db.close()
-
-    return app
