@@ -18,7 +18,7 @@ class User(Base, UserMixin):
     password = Column(String(200), nullable=False)
     nome = Column(String(100))
     telefone = Column(String(20))
-    nivel = Column(Integer, nullable=False, default=3)
+    nivel = Column(Integer, nullable=False, default=5)
 
     requerentes = relationship("Requerente", back_populates="user", foreign_keys='Requerente.criado_por')
     arvores = relationship("Arvore", back_populates="user", foreign_keys='Arvore.criado_por')
