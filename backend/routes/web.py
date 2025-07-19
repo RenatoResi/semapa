@@ -7,6 +7,7 @@ from database.models import User
 web_bp = Blueprint('web', __name__)
 
 @web_bp.route('/')
+@login_required
 def home():
     return render_template('index.html')
 
@@ -16,17 +17,27 @@ def login():
 
 @web_bp.route('/login', methods=['POST'])
 def login_post():
-    # Exemplo de login simples — adapte para seu sistema real!
     email = request.form.get('email')
-    senha = request.form.get('senha')
-    # Adapte para checagem real no banco/conferência de hash
-    if email == 'admin@admin.com' and senha == 'senha123':
-        # Aqui você deveria usar login_user(user), veja observação abaixo.
-        flash('Login de exemplo realizado! (implemente login_user)')
+    password = request.form.get('password')
+    print(f"[DEBUG] Tentando login para email: {email}")
+    session = SessionLocal()
+    user = session.query(User).filter_by(email=email).first()
+    session.close()
+    if user:
+        print(f"[DEBUG] Usuário encontrado: id={user.id}, email={user.email}")
+        hash_ok = check_password_hash(user.password, password)
+        print(f"[DEBUG] Hash confere? {hash_ok}")
+    else:
+        print("[DEBUG] Usuário não encontrado!")
+    if user and check_password_hash(user.password, password):
+        from flask_login import login_user
+        login_user(user)
+        print("[DEBUG] Login realizado com sucesso!")
         return redirect(url_for('web.home'))
     else:
-        flash('Usuário ou senha inválidos!')
-        return render_template('login.html'), 401
+        error = 'Usuário ou senha inválidos!'
+        print(f"[DEBUG] Falha no login: {error}")
+        return render_template('login.html', error=error), 401
 
 @web_bp.route('/logout')
 @login_required
@@ -39,11 +50,23 @@ def logout():
 def register():
     if request.method == 'GET':
         return render_template('register.html')
-    # Exemplo: receber dados e criar usuário
     nome = request.form.get('nome')
     email = request.form.get('email')
-    senha = request.form.get('senha')
-    # salve usuário no banco (implemente conforme modelo real)
+    telefone = request.form.get('telefone')
+    password = request.form.get('password')
+    if not nome or not email or not password:
+        error = 'Preencha todos os campos obrigatórios.'
+        return render_template('register.html', error=error)
+    session = SessionLocal()
+    if session.query(User).filter_by(email=email).first():
+        session.close()
+        error = 'E-mail já cadastrado.'
+        return render_template('register.html', error=error)
+    from werkzeug.security import generate_password_hash
+    user = User(nome=nome, email=email, telefone=telefone, password=generate_password_hash(password), nivel=5)
+    session.add(user)
+    session.commit()
+    session.close()
     flash("Usuário cadastrado com sucesso!")
     return redirect(url_for('web.login'))
 

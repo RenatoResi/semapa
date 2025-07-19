@@ -33,11 +33,16 @@
                 </ul>
             </nav>
             <div class="sidebar-user">
-                <strong>{{ current_user.nome }}</strong>
-                <span style="font-size: 12px;">{{ current_user.email }}</span>
-                <div class="sidebar-actions">
-                  <button onclick="abrirModalSenha()">Alterar senha</button>
-                  <a href="{{ url_for('web.logout') }}">Sair</a>
+                {% if current_user.is_authenticated %}
+                  <strong>{{ current_user.nome }}</strong>
+                  <span style="font-size: 12px;">{{ current_user.email }}</span>
+                  <div class="sidebar-actions">
+                    <button onclick="abrirModalSenha()">Alterar senha</button>
+                    <a href="{{ url_for('web.logout') }}">Sair</a>
+                  </div>
+                {% else %}
+                  <a href="{{ url_for('web.login') }}">Entrar</a>
+                {% endif %}
                 </div>
             </div>
             <div id="sidebar-resposta">

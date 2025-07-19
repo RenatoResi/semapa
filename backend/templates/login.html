@@ -97,6 +97,11 @@
     </form>
     <a href="/register" class="register-link">Cadastrar novo usuário</a>
     {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="error-msg">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
     <div class="footer">Secretaria do Meio Ambiente e Política Agrícola</div>
   </div>
 </body>

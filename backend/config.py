@@ -2,7 +2,7 @@ import os
 
 class Config:
     # Configurações padrão
-    SECRET_KEY = os.getenv('SECRET_KEY', 'troque_esse_valor_para_producao')
+    SECRET_KEY = os.getenv('Ammy2025WW', 'troque_esse_valor_para_producao')
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',
         'postgresql+psycopg2://semapa_user:Semapa2025WW@localhost/semapa_arborizacao'
