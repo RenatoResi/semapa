@@ -18,7 +18,7 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <div class="layout">
+    <div>
         <!-- Botão hamburguer -->
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">&#9776;</button>
         <aside class="sidebar">
@@ -44,9 +44,6 @@
                   <a href="{{ url_for('web.login') }}">Entrar</a>
                 {% endif %}
                 </div>
-            </div>
-            <div id="sidebar-resposta">
-                <pre id="resposta"></pre>
             </div>
         </aside>
         <main class="main-content">
