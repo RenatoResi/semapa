@@ -1,1 +1,1 @@
-from .routes import arvores_bp
+from semapa.arvores.routes import arvores_bp

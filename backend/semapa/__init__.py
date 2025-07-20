@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'SUA_CHAVE_SECRETA_AQUI_MUDE_ISSO'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'Ammy2025WW'
     DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///../sistema_semapa.db'
     
     # Configurações de execução

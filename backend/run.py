@@ -25,13 +25,13 @@ login_manager.init_app(app)
 login_manager.login_view = "auth.login"
 
 # Registrar blueprints
-app.register_blueprint(arvores_bp)
-app.register_blueprint(auth_bp)
-app.register_blueprint(especies_bp)
-app.register_blueprint(main_bp)
-app.register_blueprint(os_bp)
-app.register_blueprint(requerimentos_bp)
-app.register_blueprint(vistorias_bp)
+app.register_blueprint(arvores_bp, url_prefix='/arvores')
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(especies_bp, url_prefix='/especies')
+app.register_blueprint(main_bp, url_prefix='/main')
+app.register_blueprint(os_bp, url_prefix='/os')
+app.register_blueprint(requerimentos_bp, url_prefix='/requerimentos')
+app.register_blueprint(vistorias_bp, url_prefix='/vistorias')
 
 # Exemplo de user_loader (ajuste conforme seu modelo User)
 from semapa.models import SessionLocal, User

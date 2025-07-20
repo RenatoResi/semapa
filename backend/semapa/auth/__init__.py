@@ -1,1 +1,1 @@
-from .routes import auth_bp
+from semapa.auth.routes import auth_bp
