@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Listar Requerimentos - Sistema SEMAPA{% endblock %}
+
+{% block content %}
+<h1>Sistema SEMAPA - Requerimentos</h1>
+
+<section>
+    <h2>Listagem de Requerimentos</h2>
+    <input type="text" id="filtro-requerimento" placeholder="Buscar requerimentos..." style="margin-bottom: 10px; width: 300px;">
+    <select id="ordenar-campo">
+        <option value="data_abertura">Data de Abertura</option>
+        <option value="prioridade">Prioridade</option>
+    </select>
+    <select id="ordenar-direcao">
+        <option value="asc">Crescente</option>
+        <option value="desc" selected>Decrescente</option>
+    </select>
+    <button onclick="ordenarRequerimentos()">Ordenar</button>
+    <table id="requerimentos-lista">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Motivo</th>
+                <th>Prioridade</th>
+                <th>Data</th>
+                <th>Requerente</th>
+                <th>Local</th>
+                <th>Bairro</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="paginacao-requerimentos" style="margin-top: 20px;"></div>
+</section>
+
+<section>
+    <h2>Requerimentos Selecionados</h2>
+    <table id="requerimentos-selecionados">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Motivo</th>
+                <th>Prioridade</th>
+                <th>Data</th>
+                <th>Requerente</th>
+                <th>Local</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <button id="btn-gerar-os">Gerar OS</button>
+</section>
+
+<section>
+    <h2>Mapa de Requerimentos</h2>
+    <div id="map"></div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+<script src="{{ url_for('static', filename='js/renderer_requerimento_listar.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroInput = document.getElementById('filtro-requerimento');
+    if (filtroInput) {
+        filtroInput.addEventListener('input', function(e) {
+            const termo = e.target.value.toLowerCase();
+            document.querySelectorAll('#requerimentos-lista tbody tr').forEach(tr => {
+                const campos = Array.from(tr.children).slice(0, -1);
+                const textoLinha = campos.map(td => td.textContent?.toLowerCase() ?? '').join(' ');
+                tr.style.display = textoLinha.includes(termo) ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

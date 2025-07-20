@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Espécies Arbóreas{% endblock %}
+
+{% block content %}
+<h1>Lista de Espécies Arbóreas</h1>
+
+<div class="filtros">
+    <label>
+        Porte:
+        <select id="filtroPorte">
+            <option value="">Todos</option>
+            <option value="pequeno">Pequeno</option>
+            <option value="medio">Médio</option>
+            <option value="grande">Grande</option>
+        </select>
+    </label>
+    <label>
+        Deciduidade:
+        <select id="filtroDeciduidade">
+            <option value="">Todas</option>
+            <option value="sempre-verde">Sempre-verde</option>
+            <option value="semi-decídua">Semi-decídua</option>
+            <option value="decídua">Decídua</option>
+        </select>
+    </label>
+    <label>
+        Fruto Comestível:
+        <select id="filtroFruto">
+            <option value="">Todos</option>
+            <option value="sim">Sim</option>
+            <option value="não">Não</option>
+        </select>
+    </label>
+    <label>
+        Necessidade de Rega:
+        <select id="filtroRega">
+            <option value="">Todos</option>
+            <option value="baixa">Baixa</option>
+            <option value="baixa/moderada">Baixa/Moderada</option>
+            <option value="moderada">Moderada</option>
+            <option value="moderada/alta">Moderada/Alta</option>
+            <option value="alta">Alta</option>
+        </select>
+    </label>
+    <button onclick="resetFiltros()">Limpar Filtros</button>
+</div>
+
+<table id="tabelaEspecies" class="tabela-especies">
+    <thead>
+        <tr>
+            <th>Foto</th>
+            <th>Nome Popular</th>
+            <th>Nome Científico</th>
+            <th>Porte</th>
+            <th>Altura (m)</th>
+            <th>Longevidade</th>
+            <th>Deciduidade</th>
+            <th>Cor da Flor</th>
+            <th>Época de Floração</th>
+            <th>Fruto Comestível</th>
+            <th>Época de Frutificação</th>
+            <th>Necessidade de Rega</th>
+            <th>Observações</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Populado via JS -->
+    </tbody>
+</table>
+<div id="modal-foto" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); justify-content:center; align-items:center;">
+    <span class="fechar-modal" style="position:absolute;top:30px;right:50px;color:#fff;font-size:2.5rem;cursor:pointer;font-weight:bold;z-index:1001;" onclick="fecharModalFoto()">&times;</span>
+    <img id="img-modal-foto" src="" alt="Foto ampliada" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 30px #000;">
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/lista_especies.js') }}"></script>
+{% endblock %}

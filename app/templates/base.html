@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Sistema SEMAPA - Gestão Arbórea{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <div class="layout">
+        <!-- Botão hamburguer -->
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">&#9776;</button>
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('cadastro') }}">Cadastro</a></li>
+                    <li><a href="{{ url_for('requerimento') }}">Requerimentos</a></li>
+                    <li><a href="{{ url_for('requerimento_listar') }}">Listar Requerimentos</a></li>
+                    <li><a href="{{ url_for('os_listar') }}">Ordens de Serviço</a></li>
+                    <li><a href="{{ url_for('lista_especies') }}">Lista de Espécies</a></li>
+                    <li><a href="{{ url_for('vistoria_listar') }}">Vistorias</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <strong>{{ current_user.nome }}</strong>
+                <span style="font-size: 12px;">{{ current_user.email }}</span>
+                <div class="sidebar-actions">
+                  <button onclick="abrirModalSenha()">Alterar senha</button>
+                  <a href="{{ url_for('logout') }}">Sair</a>
+                </div>
+            </div>
+            <div id="sidebar-resposta">
+                <pre id="resposta"></pre>
+            </div>
+        </aside>
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <!-- Backdrop para sidebar mobile -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+    <!-- Modal de alteração de senha -->
+    <div class="modal" id="modalSenha">
+      <div class="modal-content">
+        <button class="modal-close" onclick="fecharModalSenha()" title="Fechar">&times;</button>
+        <h3>Alterar Senha</h3>
+        <form method="POST" action="{{ url_for('alterar_senha') }}">
+          <input type="password" name="senha_atual" placeholder="Senha atual" required>
+          <input type="password" name="nova_senha" placeholder="Nova senha" required>
+          <input type="password" name="confirma_senha" placeholder="Confirmar nova senha" required>
+          <button type="submit">Salvar nova senha</button>
+        </form>
+      </div>
+    </div>
+    <script>
+      function abrirModalSenha() {
+        document.getElementById('modalSenha').style.display = 'flex';
+      }
+      function fecharModalSenha() {
+        document.getElementById('modalSenha').style.display = 'none';
+      }
+      // Fecha modal ao clicar fora do conteúdo
+      window.onclick = function(event) {
+        var modal = document.getElementById('modalSenha');
+        if (event.target === modal) {
+          fecharModalSenha();
+        }
+      }
+
+      // Sidebar responsiva
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.querySelector('.sidebar');
+      const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+      sidebarToggle.onclick = function() {
+        if (sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+          sidebarBackdrop.style.display = 'none';
+        } else {
+          sidebar.classList.add('open');
+          sidebarBackdrop.style.display = 'block';
+        }
+      };
+
+      sidebarBackdrop.onclick = function() {
+        sidebar.classList.remove('open');
+        sidebarBackdrop.style.display = 'none';
+      };
+
+      // Fecha sidebar ao clicar em um link
+      document.querySelectorAll('.sidebar a').forEach(function(link){
+        link.onclick = function() {
+          if(window.innerWidth <= 900){
+            sidebar.classList.remove('open');
+            sidebarBackdrop.style.display = 'none';
+          }
+        }
+      });
+
+      // Fecha sidebar ao redimensionar para desktop
+      window.addEventListener('resize', function() {
+        if(window.innerWidth > 900) {
+          sidebar.classList.remove('open');
+          sidebarBackdrop.style.display = 'none';
+        }
+      });
+
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

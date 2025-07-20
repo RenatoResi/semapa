@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Requerimentos - Sistema SEMAPA{% endblock %}
+
+{% block content %}
+<h1>Sistema SEMAPA - Requerimentos</h1>
+
+<section>
+    <h2>Novo Requerimento</h2>
+    <form id="form-requerimento" autocomplete="off">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="numero">Número do Requerimento</label>
+                <input id="numero" name="numero" type="text" required>
+            </div>
+            <div class="form-group">
+                <label for="data_abertura">Data de Abertura</label>
+                <input id="data_abertura" name="data_abertura" type="date" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" required>
+                    <option value="Poda">Poda</option>
+                    <option value="Remoção">Remoção</option>
+                    <option value="Plantio">Plantio</option>
+                    <option value="Outros">Outros</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select name="status">
+                    <option value="Aberto">Aberto</option>
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Concluído">Concluído</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="prioridade">Prioridade</label>
+                <select name="prioridade">
+                    <option value="Normal">Normal</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="motivo">Motivo</label>
+            <input id="motivo" name="motivo" type="text" required>
+        </div>
+        <div class="form-group">
+            <label for="requerente_id">ID do Requerente</label>
+            <input id="requerente-id" name="requerente_id" type="number" required>
+            <input id="filtro-requerente" placeholder="Buscar requerente...">
+            <table id="tabela-selecao-requerente">
+                <tbody></tbody>
+                <div id="paginacao-requerentes" style="margin-top: 10px;"></div>
+            </table>
+        </div>
+        <div class="form-group">
+            <label for="arvore_id">ID da Árvore</label>
+            <input id="arvore-id" name="arvore_id" type="number" required>
+            <input id="filtro-arvore" placeholder="Buscar árvore...">
+            <table id="tabela-selecao-arvore">
+                <tbody></tbody>
+                <div id="paginacao-arvores" style="margin-top: 10px;"></div>
+            </table>
+        </div>
+        <div class="form-group">
+            <label for="observacao">Observação</label>
+            <textarea id="observacao" name="observacao"></textarea>
+        </div>
+        <button type="submit">Cadastrar</button>
+    </form>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/renderer_requerimento.js') }}"></script>
+{% endblock %}
