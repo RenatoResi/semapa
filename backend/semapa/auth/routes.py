@@ -1,9 +1,9 @@
 from flask import Blueprint, request, render_template, redirect, url_for, g, flash
 from flask_login import login_user, logout_user, login_required, current_user
 import bcrypt
-from ..models import User
+from semapa.models import User
 
-auth_bp = Blueprint('auth', __name__, template_folder='../templates/auth')
+auth_bp = Blueprint('auth', __name__, template_folder='./templates/auth')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
