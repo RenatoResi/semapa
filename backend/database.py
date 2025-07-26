@@ -3,6 +3,9 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateT
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
+from dotenv import load_dotenv
+
+load_dotenv()
 
 Base = declarative_base()
 
@@ -170,10 +173,7 @@ class Especies(Base):
 # ==============================
 
 # Pegue a URL do banco de dados do ambiente, ou use um valor padrão para testes
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://semapa_user:Semapa2025WW@localhost/semapa_arborizacao"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)

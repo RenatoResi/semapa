@@ -12,9 +12,12 @@ from functools import wraps
 from werkzeug.utils import secure_filename
 import io
 from sqlalchemy import or_
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "SUA_CHAVE_SECRETA_AQUI"
+app.secret_key = os.getenv("SECRET_KEY")
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Flask-Login setup
