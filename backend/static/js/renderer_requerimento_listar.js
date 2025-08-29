@@ -336,6 +336,31 @@ function inicializarMapa() {
             'circle-stroke-width': 2          // Espessura da borda
           }
       });
+
+      map.addSource('bairros', {
+        type: 'geojson',
+        data: 'static/files/bairros.geojson'
+      });
+
+      map.addLayer({
+          id: 'bairros-fill',
+          type: 'fill',
+          source: 'bairros',
+          paint: {
+              'fill-color': '#ffff00ff',
+              'fill-opacity': 0.2
+          }
+      });
+
+      map.addLayer({
+          id: 'bairros-borda',
+          type: 'line',
+          source: 'bairros',
+          paint: {
+              'line-color': '#000000ff',
+              'line-width': 2
+          }
+      });
   });
 }
 
@@ -352,16 +377,14 @@ function criarMarcadores() {
         .setLngLat([parseFloat(r.arvore_longitude), parseFloat(r.arvore_latitude)])
         .setPopup(new maplibregl.Popup().setHTML(`
           <strong>${r.tipo || 'Tipo não informado'}</strong><br>
-          ${r.arvore_especie || 'Espécie não informada'}<br>
+          Motivo: ${r.motivo || 'Não informado'}<br>
+          Requerimento: ${r.numero}<br>
+          Data de Abertura: ${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : 'Não informada'}<br>
+          ${r.data_abertura ? diasDesdeAbertura(r.data_abertura) : '-'} dias pendentes<br>
           Endereço: ${r.arvore_endereco || 'Não cadastrado'}<br>
           Bairro: ${r.arvore_bairro || 'Não cadastrado'}<br>
-          Requerimento: ${r.numero}<br>
-          ${r.data_abertura ? diasDesdeAbertura(r.data_abertura) : '-'} dias pendentes<br>
-          Motivo: ${r.motivo || 'Não informado'}<br>
           Requerente: ${r.requerente_nome || 'Não informado'}<br>
-          Telefone: ${r.requerente_telefone || 'Não informado'}<br>
-          Data de Abertura: ${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : 'Não informada'}<br>
-          Prioridade: ${r.prioridade || ''}
+          Telefone: ${r.requerente_telefone || 'Não informado'}
         `))
         .addTo(map);
       marcadoresMapa[r.id] = marker;
