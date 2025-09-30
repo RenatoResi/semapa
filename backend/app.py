@@ -793,6 +793,71 @@ def listar_todos_requerimentos():
     finally:
         session.close()
 
+# NOVA ROTA PARA REQUERIMENTOS CONCLUÍDOS
+@app.route('/requerimentos/concluidos', methods=['GET'])
+@login_required
+def listar_requerimentos_concluidos():
+    session = SessionLocal()
+    try:
+        order_by = request.args.get('order_by', 'data_atualizacao')
+        direction = request.args.get('direction', 'desc').lower()
+        
+        campos_validos = {
+            'id': Requerimento.id,
+            'numero': Requerimento.numero,
+            'tipo': Requerimento.tipo,
+            'motivo': Requerimento.motivo,
+            'prioridade': Requerimento.prioridade,
+            'status': Requerimento.status,
+            'data_abertura': Requerimento.data_abertura,
+            'data_atualizacao': Requerimento.data_atualizacao
+        }
+        
+        campo_ordenacao = campos_validos.get(order_by, Requerimento.data_atualizacao)
+        if direction == 'asc':
+            ordenacao = campo_ordenacao.asc()
+        else:
+            ordenacao = campo_ordenacao.desc()
+        
+        requerimentos = (
+            session.query(Requerimento)
+            .options(joinedload(Requerimento.arvore))
+            .filter(sa.func.lower(Requerimento.status) == 'concluído')
+            .order_by(ordenacao)
+            .all()
+        )
+        
+        requerimentos_json = []
+        for r in requerimentos:
+            arvore = r.arvore
+            requerimento_data = {
+                "id": r.id,
+                "numero": r.numero,
+                "tipo": r.tipo,
+                "motivo": r.motivo,
+                "prioridade": r.prioridade,
+                "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
+                "data_conclusao": r.data_atualizacao.isoformat() if r.data_atualizacao else None,  # Usando data_atualizacao como data de conclusão
+                "requerente_nome": r.requerente.nome if r.requerente else "",
+                "requerente_telefone": r.requerente.telefone if r.requerente else "",
+                "observacao": r.observacao,
+                "status": r.status,
+                "arvore_id": arvore.id if arvore else None,
+                "arvore_latitude": arvore.latitude if arvore else None,
+                "arvore_longitude": arvore.longitude if arvore else None,
+                "arvore_especie": arvore.especie.nome_popular if arvore and arvore.especie else "",
+                "arvore_endereco": arvore.endereco if arvore else "",
+                "arvore_bairro": arvore.bairro if arvore else ""
+            }
+            requerimentos_json.append(requerimento_data)
+        
+        return jsonify(requerimentos_json), 200
+    except Exception as e:
+        print(f"Erro no backend: {str(e)}")
+        return jsonify({"error": "Erro interno no servidor"}), 500
+    finally:
+        session.close()
+
 # -------------------- ORDEM DE SERVIÇO --------------------
 
 @app.route('/ordens_servico', methods=['GET', 'POST'])
@@ -806,7 +871,7 @@ def ordens_servico():
 def listar_ordens_servico():
     session = SessionLocal()
     try:
-        ordens = session.query(OrdemServico).all()
+        ordens = session.query(OrdemServico).filter(sa.func.lower(OrdemServico.status) != 'concluída').all()
         ordens_json = []
         for os in ordens:
             # Carregar requerimentos com dados completos
@@ -1050,30 +1115,55 @@ def criar_vistoria():
 # Rota para exibir formulário de edição
 @app.route('/vistorias/<int:id>/editar', methods=['GET'])
 @login_required
+@nivel_requerido(1, 2)
 def editar_vistoria(id):
     session = SessionLocal()
     try:
         vistoria = session.query(Vistoria).options(
-            joinedload(Vistoria.fotos)
+            joinedload(Vistoria.fotos),
+            joinedload(Vistoria.requerimento),
+            joinedload(Vistoria.especie)
         ).get(id)
         if not vistoria:
             flash("Vistoria não encontrada", "error")
             return redirect(url_for('listar_vistorias'))
         
+        # Buscar todos os requerimentos e espécies para os selects
         requerimentos = session.query(Requerimento).all()
         especies = session.query(Especies).all()
-        return render_template(
-            'vistoria_form.html',
-            vistoria=vistoria,
-            requerimentos=requerimentos,
-            especies=especies
-        )
+
+        # Processar dados para o template
+        vistoria_data = {
+            'id': vistoria.id,
+            'requerimento_id': vistoria.requerimento_id,
+            'vistoria_data': vistoria.vistoria_data,
+            'especie_id': vistoria.especie_id,
+            'risco_queda': vistoria.risco_queda,
+            'diagnostico': vistoria.diagnostico,
+            'acao_recomendada': vistoria.acao_recomendada,
+            'galhos_cortar': vistoria.galhos_cortar,
+            'medidas_seguranca': vistoria.medidas_seguranca,
+            'observacoes_tecnicas': vistoria.observacoes_tecnicas,
+            # Converter strings separadas por vírgula em listas
+            'condicoes': vistoria.condicoes.split(',') if vistoria.condicoes else [],
+            'conflitos': vistoria.conflitos.split(',') if vistoria.conflitos else [],
+            'tipo_poda': vistoria.tipo_poda.split(',') if vistoria.tipo_poda else []
+        }
+        
+        return render_template('vistoria_form.html', 
+                             vistoria=vistoria_data,
+                             requerimento=vistoria.requerimento,
+                             requerimento_id=vistoria.requerimento_id,
+                             requerimentos=requerimentos,
+                             especies=especies,
+                             is_edit=True)  # Flag para indicar que é edição
     finally:
         session.close()
 
 # Rota para processar atualização de vistoria
 @app.route('/vistorias/<int:id>', methods=['POST'])
 @login_required
+@nivel_requerido(1, 2)
 def atualizar_vistoria(id):
     data = request.form
     files = request.files.getlist('fotos')
@@ -1111,6 +1201,7 @@ def atualizar_vistoria(id):
                 especie_id = int(especie_id_str)
         # --- Fim da Lógica para Espécie ---
 
+        # Atualizar campos da vistoria
         vistoria.vistoria_data = datetime.strptime(data['vistoria_data'], '%Y-%m-%dT%H:%M')
         vistoria.requerimento_id = int(data['requerimento_id'])
         vistoria.especie_id = especie_id

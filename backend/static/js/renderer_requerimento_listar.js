@@ -5,11 +5,13 @@ let paginaReq = 1;
 const porPagina = 5;
 let map;
 let marcadoresMapa = {};
+let modoVisualizacao = 'nao-concluidos'; // 'nao-concluidos' ou 'concluidos'
 
 // Carrega todos os requerimentos e inicializa filtrados
 async function carregarSelecao() {
   try {
-    const res = await fetch('/requerimentos/todos');
+    const endpoint = modoVisualizacao === 'concluidos' ? '/requerimentos/concluidos' : '/requerimentos/todos';
+    const res = await fetch(endpoint);
     if (!res.ok) throw new Error(`Erro HTTP! Status: ${res.status}`);
     requerimentosDisponiveis = await res.json();
     filteredRequerimentos = [...requerimentosDisponiveis];
@@ -20,7 +22,7 @@ async function carregarSelecao() {
     criarMarcadores();  // Atualiza o mapa com todos os dados iniciais
   } catch (error) {
     console.error('Erro ao carregar requerimentos:', error);
-    document.getElementById('resposta').innerText = `Erro: ${error.message}`;
+    document.getElementById('resposta') && (document.getElementById('resposta').innerText = `Erro: ${error.message}`);
   }
 }
 
@@ -31,10 +33,26 @@ function renderTabelaRequerimentos() {
   tbody.innerHTML = '';
   const inicio = (paginaReq - 1) * porPagina;
   const fim = inicio + porPagina;
+  
   filteredRequerimentos.slice(inicio, fim).forEach(r => {
-    if (requerimentosSelecionados.some(sel => sel.id === r.id)) return;
+    if (modoVisualizacao === 'nao-concluidos' && requerimentosSelecionados.some(sel => sel.id === r.id)) return;
+    
     const tr = document.createElement('tr');
     tr.dataset.id = r.id;
+    
+    let acoes = '';
+    if (modoVisualizacao === 'nao-concluidos') {
+      acoes = `
+        <button class="btn-editar-inline">Editar</button>
+        <button class="btn-selecionar" data-id="${r.id}">Selecionar</button>
+      `;
+    }
+    
+    let dataConclusao = '';
+    if (modoVisualizacao === 'concluidos') {
+      dataConclusao = `<td>${r.data_conclusao ? new Date(r.data_conclusao).toLocaleDateString() : ''}</td>`;
+    }
+    
     tr.innerHTML = `
       <td>${r.numero}</td>
       <td>${r.tipo}</td>
@@ -45,10 +63,8 @@ function renderTabelaRequerimentos() {
       <td>${r.arvore_endereco || ''}</td>
       <td>${r.arvore_bairro || ''}</td>
       <td>${r.status || ''}</td>
-      <td>
-        <button class="btn-editar-inline">Editar</button>
-        <button class="btn-selecionar" data-id="${r.id}">Selecionar</button>
-      </td>
+      ${dataConclusao}
+      <td>${acoes}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -79,6 +95,44 @@ function renderTabelaSelecionados() {
     tbody.appendChild(tr);
   });
 }
+
+// Função para alternar entre modos de visualização
+function alternarModoVisualizacao() {
+  const switchElement = document.getElementById('switch-concluidos');
+  const tituloSecao = document.getElementById('titulo-secao');
+  const labelSwitch = document.getElementById('label-switch');
+  const secaoSelecionados = document.getElementById('secao-selecionados');
+  const colunaDataConclusao = document.getElementById('coluna-data-conclusao');
+  const colunaAcoes = document.getElementById('coluna-acoes');
+  
+  if (switchElement.checked) {
+    modoVisualizacao = 'concluidos';
+    tituloSecao.textContent = 'Listagem de Requerimentos Concluídos';
+    labelSwitch.textContent = 'Mostrar Requerimentos Não Concluídos';
+    secaoSelecionados.style.display = 'none'; // Esconde tabela de selecionados
+    colunaDataConclusao.style.display = 'table-cell'; // Mostra coluna data conclusão
+    colunaAcoes.style.display = 'none'; // Esconde coluna ações
+  } else {
+    modoVisualizacao = 'nao-concluidos';
+    tituloSecao.textContent = 'Listagem de Requerimentos Não Concluídos';
+    labelSwitch.textContent = 'Mostrar Requerimentos Concluídos';
+    secaoSelecionados.style.display = 'block'; // Mostra tabela de selecionados
+    colunaDataConclusao.style.display = 'none'; // Esconde coluna data conclusão
+    colunaAcoes.style.display = 'table-cell'; // Mostra coluna ações
+  }
+  
+  // Limpa seleções e recarrega dados
+  requerimentosSelecionados = [];
+  carregarSelecao();
+}
+
+// Event listener para o switch
+document.addEventListener('DOMContentLoaded', function() {
+  const switchElement = document.getElementById('switch-concluidos');
+  if (switchElement) {
+    switchElement.addEventListener('change', alternarModoVisualizacao);
+  }
+});
 
 // Paginação
 function atualizarPaginacaoReq() {
@@ -140,9 +194,10 @@ document.getElementById('filtro-requerimento').addEventListener('input', functio
 async function ordenarRequerimentos() {
   const campo = document.getElementById('ordenar-campo').value;
   const direcao = document.getElementById('ordenar-direcao').value;
-  const res = await fetch(`/requerimentos?order_by=${campo}&direction=${direcao}`);
+  const endpoint = modoVisualizacao === 'concluidos' ? '/requerimentos/concluidos' : '/requerimentos';
+  const res = await fetch(`${endpoint}?order_by=${campo}&direction=${direcao}`);
   const data = await res.json();
-  requerimentosDisponiveis = data.requerimentos;
+  requerimentosDisponiveis = modoVisualizacao === 'concluidos' ? data : data.requerimentos;
   filteredRequerimentos = [...requerimentosDisponiveis];
   paginaReq = 1;
   renderTabelaRequerimentos();
@@ -152,8 +207,8 @@ async function ordenarRequerimentos() {
 
 // Selecionar e remover requerimento
 document.addEventListener('click', function(e) {
-  // Selecionar
-  if (e.target.classList.contains('btn-selecionar')) {
+  // Selecionar (apenas para não concluídos)
+  if (e.target.classList.contains('btn-selecionar') && modoVisualizacao === 'nao-concluidos') {
     const id = parseInt(e.target.dataset.id);
     const req = requerimentosDisponiveis.find(r => r.id === id);
     if (req && !requerimentosSelecionados.some(r => r.id === id)) {
@@ -171,8 +226,8 @@ document.addEventListener('click', function(e) {
     renderTabelaSelecionados();
     criarMarcadores();
   }
-  // Editar inline
-  if (e.target.classList.contains('btn-editar-inline')) {
+  // Editar inline (apenas para não concluídos)
+  if (e.target.classList.contains('btn-editar-inline') && modoVisualizacao === 'nao-concluidos') {
     const tr = e.target.closest('tr');
     const id = parseInt(tr.dataset.id);
     const r = requerimentosDisponiveis.find(r => r.id === id);
@@ -233,8 +288,10 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Gerar OS apenas para selecionados
+// Gerar OS apenas para selecionados (apenas para não concluídos)
 document.getElementById('btn-gerar-os').addEventListener('click', async function() {
+  if (modoVisualizacao === 'concluidos') return;
+  
   if (!requerimentosSelecionados.length) {
     alert('Selecione pelo menos um requerimento!');
     return;
@@ -380,7 +437,8 @@ function criarMarcadores() {
           Motivo: ${r.motivo || 'Não informado'}<br>
           Requerimento: ${r.numero}<br>
           Data de Abertura: ${r.data_abertura ? new Date(r.data_abertura).toLocaleDateString() : 'Não informada'}<br>
-          ${r.data_abertura ? diasDesdeAbertura(r.data_abertura) : '-'} dias pendentes<br>
+          ${r.data_abertura && modoVisualizacao === 'nao-concluidos' ? diasDesdeAbertura(r.data_abertura) : '-'} ${modoVisualizacao === 'nao-concluidos' ? 'dias pendentes' : ''}<br>
+          ${modoVisualizacao === 'concluidos' && r.data_conclusao ? 'Data de Conclusão: ' + new Date(r.data_conclusao).toLocaleDateString() + '<br>' : ''}
           Endereço: ${r.arvore_endereco || 'Não cadastrado'}<br>
           Bairro: ${r.arvore_bairro || 'Não cadastrado'}<br>
           Requerente: ${r.requerente_nome || 'Não informado'}<br>

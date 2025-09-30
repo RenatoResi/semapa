@@ -5,8 +5,16 @@
 {% block content %}
 <h1>Sistema SEMAPA - Requerimentos</h1>
 
+<!-- NOVO SWITCH PARA ALTERNAR ENTRE CONCLUÍDOS E NÃO CONCLUÍDOS -->
+<section style="margin-bottom: 20px;">
+    <label for="switch-concluidos" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" id="switch-concluidos" style="transform: scale(1.5);">
+        <span id="label-switch">Mostrar Requerimentos Concluídos</span>
+    </label>
+</section>
+
 <section>
-    <h2>Listagem de Requerimentos</h2>
+    <h2 id="titulo-secao">Listagem de Requerimentos Não Concluídos</h2>
     <input type="text" id="filtro-requerimento" placeholder="Buscar requerimentos..." style="margin-bottom: 10px; width: 300px;">
     <select id="ordenar-campo">
         <option value="data_abertura">Data de Abertura</option>
@@ -29,7 +37,8 @@
                 <th>Local</th>
                 <th>Bairro</th>
                 <th>Status</th>
-                <th>Ações</th>
+                <th id="coluna-data-conclusao" style="display: none;">Data Conclusão</th>
+                <th id="coluna-acoes">Ações</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -37,7 +46,7 @@
     <div id="paginacao-requerimentos" style="margin-top: 20px;"></div>
 </section>
 
-<section>
+<section id="secao-selecionados">
     <h2>Requerimentos Selecionados</h2>
     <table id="requerimentos-selecionados">
         <thead>

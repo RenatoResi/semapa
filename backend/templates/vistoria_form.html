@@ -67,11 +67,16 @@
             <div class="form-group">
                 <label>Condição Fitossanitária:</label>
                 <div class="checkbox-group">
-                    <label><input type="checkbox" name="condicoes[]" value="saudavel"> Saudável</label>
-                    <label><input type="checkbox" name="condicoes[]" value="pragas"> Presença de pragas</label>
-                    <label><input type="checkbox" name="condicoes[]" value="doencas"> Sintomas de doenças</label>
-                    <label><input type="checkbox" name="condicoes[]" value="podridao"> Podridão no tronco/raízes</label>
-                    <label><input type="checkbox" name="condicoes[]" value="danos"> Danos mecânicos</label>
+                    <label><input type="checkbox" name="condicoes[]" value="saudavel" 
+                        {% if vistoria and 'saudavel' in vistoria.condicoes %}checked{% endif %}> Saudável</label>
+                    <label><input type="checkbox" name="condicoes[]" value="pragas" 
+                        {% if vistoria and 'pragas' in vistoria.condicoes %}checked{% endif %}> Presença de pragas</label>
+                    <label><input type="checkbox" name="condicoes[]" value="doencas" 
+                        {% if vistoria and 'doencas' in vistoria.condicoes %}checked{% endif %}> Sintomas de doenças</label>
+                    <label><input type="checkbox" name="condicoes[]" value="podridao" 
+                        {% if vistoria and 'podridao' in vistoria.condicoes %}checked{% endif %}> Podridão no tronco/raízes</label>
+                    <label><input type="checkbox" name="condicoes[]" value="danos" 
+                        {% if vistoria and 'danos' in vistoria.condicoes %}checked{% endif %}> Danos mecânicos</label>
                 </div>
             </div>
         </div>
@@ -80,21 +85,30 @@
             <div class="form-group">
                 <label>Conflitos Identificados:</label>
                 <div class="checkbox-group">
-                    <label><input type="checkbox" name="conflitos[]" value="fiacao"> Fiação elétrica</label>
-                    <label><input type="checkbox" name="conflitos[]" value="calcada"> Calçada danificada</label>
-                    <label><input type="checkbox" name="conflitos[]" value="edificacao"> Edificação</label>
-                    <label><input type="checkbox" name="conflitos[]" value="sinalizacao"> Sinalização de trânsito</label>
-                    <label><input type="checkbox" name="conflitos[]" value="iluminacao"> Iluminação pública</label>
-                    <label><input type="checkbox" name="conflitos[]" value="outros"> Outros</label>
+                    <label><input type="checkbox" name="conflitos[]" value="fiacao" 
+                        {% if vistoria and 'fiacao' in vistoria.conflitos %}checked{% endif %}> Fiação elétrica</label>
+                    <label><input type="checkbox" name="conflitos[]" value="calcada" 
+                        {% if vistoria and 'calcada' in vistoria.conflitos %}checked{% endif %}> Calçada danificada</label>
+                    <label><input type="checkbox" name="conflitos[]" value="edificacao" 
+                        {% if vistoria and 'edificacao' in vistoria.conflitos %}checked{% endif %}> Edificação</label>
+                    <label><input type="checkbox" name="conflitos[]" value="sinalizacao" 
+                        {% if vistoria and 'sinalizacao' in vistoria.conflitos %}checked{% endif %}> Sinalização de trânsito</label>
+                    <label><input type="checkbox" name="conflitos[]" value="iluminacao" 
+                        {% if vistoria and 'iluminacao' in vistoria.conflitos %}checked{% endif %}> Iluminação pública</label>
+                    <label><input type="checkbox" name="conflitos[]" value="outros" 
+                        {% if vistoria and 'outros' in vistoria.conflitos %}checked{% endif %}> Outros</label>
                 </div>
             </div>
             
             <div class="form-group">
                 <label>Risco de Queda:</label>
                 <div class="radio-group">
-                    <label><input type="radio" name="risco_queda" value="baixo" required> Baixo</label>
-                    <label><input type="radio" name="risco_queda" value="medio"> Médio</label>
-                    <label><input type="radio" name="risco_queda" value="alto"> Alto</label>
+                    <label><input type="radio" name="risco_queda" value="baixo" required
+                        {% if vistoria and vistoria.risco_queda == 'baixo' %}checked{% endif %}> Baixo</label>
+                    <label><input type="radio" name="risco_queda" value="medio"
+                        {% if vistoria and vistoria.risco_queda == 'medio' %}checked{% endif %}> Médio</label>
+                    <label><input type="radio" name="risco_queda" value="alto"
+                        {% if vistoria and vistoria.risco_queda == 'alto' %}checked{% endif %}> Alto</label>
                 </div>
             </div>
         </div>
@@ -113,20 +127,28 @@
             <div class="form-group">
                 <label>Ação Recomendada:</label>
                 <div class="radio-group">
-                    <label><input type="radio" name="acao_recomendada" value="nenhuma" required> Nenhuma intervenção</label>
-                    <label><input type="radio" name="acao_recomendada" value="poda"> Poda</label>
-                    <label><input type="radio" name="acao_recomendada" value="remoção"> Remoção</label>
-                    <label><input type="radio" name="acao_recomendada" value="transplante"> Transplante</label>
+                    <label><input type="radio" name="acao_recomendada" value="nenhuma" required
+                        {% if vistoria and vistoria.acao_recomendada == 'nenhuma' %}checked{% endif %}> Nenhuma intervenção</label>
+                    <label><input type="radio" name="acao_recomendada" value="poda"
+                        {% if vistoria and vistoria.acao_recomendada == 'poda' %}checked{% endif %}> Poda</label>
+                    <label><input type="radio" name="acao_recomendada" value="remoção"
+                        {% if vistoria and vistoria.acao_recomendada == 'remoção' %}checked{% endif %}> Remoção</label>
+                    <label><input type="radio" name="acao_recomendada" value="transplante"
+                        {% if vistoria and vistoria.acao_recomendada == 'transplante' %}checked{% endif %}> Transplante</label>
                 </div>
             </div>
             
-            <div class="form-group" id="poda-details" style="display:none;">
+            <div class="form-group" id="poda-details" style="display: '{{ 'block' if vistoria and vistoria.acao_recomendada == 'poda' else 'none' }}';">
                 <label>Tipo de Poda:</label>
                 <div class="checkbox-group">
-                    <label><input type="checkbox" name="tipo_poda[]" value="limpeza"> Limpeza (galhos mortos)</label>
-                    <label><input type="checkbox" name="tipo_poda[]" value="reducao"> Redução de copa</label>
-                    <label><input type="checkbox" name="tipo_poda[]" value="elevacao"> Elevação de copa</label>
-                    <label><input type="checkbox" name="tipo_poda[]" value="controle"> Controle fitossanitário</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="limpeza"
+                        {% if vistoria and 'limpeza' in vistoria.tipo_poda %}checked{% endif %}> Limpeza (galhos mortos)</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="reducao"
+                        {% if vistoria and 'reducao' in vistoria.tipo_poda %}checked{% endif %}> Redução de copa</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="elevacao"
+                        {% if vistoria and 'elevacao' in vistoria.tipo_poda %}checked{% endif %}> Elevação de copa</label>
+                    <label><input type="checkbox" name="tipo_poda[]" value="controle"
+                        {% if vistoria and 'controle' in vistoria.tipo_poda %}checked{% endif %}> Controle fitossanitário</label>
                 </div>
             </div>
         </div>
@@ -182,7 +204,7 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar/ocultar detalhes de poda
+    // Mostrar/ocultar detalhes de poda - FUNCIONA TANTO NA CRIAÇÃO QUANTO NA EDIÇÃO
     const acaoRadios = document.querySelectorAll('input[name="acao_recomendada"]');
     const podaDetails = document.getElementById('poda-details');
     
@@ -194,7 +216,48 @@ document.addEventListener('DOMContentLoaded', function() {
     acaoRadios.forEach(radio => {
         radio.addEventListener('change', togglePodaDetails);
     });
+    
+    // Executar na inicialização para mostrar/ocultar baseado no valor pré-selecionado
     togglePodaDetails();
+    
+    // Lógica para nova espécie
+    const especieSelect = document.getElementById('especie_id');
+    const novaEspecieContainer = document.getElementById('nova-especie-container');
+    const especieSelectorContainer = document.getElementById('especie-selector-container');
+    const novaEspeciePopularInput = document.getElementById('nova_especie_popular');
+    const novaEspecieCientificoInput = document.getElementById('nova_especie_cientifico');
+    const cancelarBtn = document.getElementById('cancelar-nova-especie');
+
+    especieSelect.addEventListener('change', function() {
+        if (this.value === 'outra') {
+            especieSelectorContainer.style.display = 'none';
+            novaEspecieContainer.style.display = 'block';
+            especieSelect.disabled = true;
+            novaEspeciePopularInput.disabled = false;
+            novaEspecieCientificoInput.disabled = false;
+            novaEspeciePopularInput.required = true;
+        }
+    });
+
+    cancelarBtn.addEventListener('click', function() {
+        novaEspecieContainer.style.display = 'none';
+        especieSelectorContainer.style.display = 'block';
+        especieSelect.disabled = false;
+        novaEspeciePopularInput.disabled = true;
+        novaEspecieCientificoInput.disabled = true;
+        novaEspeciePopularInput.required = false;
+        novaEspeciePopularInput.value = '';
+        novaEspecieCientificoInput.value = '';
+        especieSelect.value = '';
+    });
+    
+    // Auto-preencher data se estiver vazio (apenas para criação)
+    const dataField = document.getElementById('vistoria_data');
+    if (!dataField.value) {
+        const now = new Date();
+        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        dataField.value = localDateTime;
+    }
     
     // Remover fotos existentes
     document.querySelectorAll('.btn-remove-photo').forEach(btn => {
@@ -211,47 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const especieSelect = document.getElementById('especie_id');
-    const novaEspecieContainer = document.getElementById('nova-especie-container');
-    const especieSelectorContainer = document.getElementById('especie-selector-container');
-    const novaEspeciePopularInput = document.getElementById('nova_especie_popular');
-    const novaEspecieCientificoInput = document.getElementById('nova_especie_cientifico');
-    const cancelarBtn = document.getElementById('cancelar-nova-especie');
-
-    especieSelect.addEventListener('change', function() {
-        if (this.value === 'outra') {
-            especieSelectorContainer.style.display = 'none';
-            novaEspecieContainer.style.display = 'block';
-            especieSelect.disabled = true; // Desabilita o select para não ser enviado
-            novaEspeciePopularInput.disabled = false; // Habilita o input para ser enviado
-            novaEspecieCientificoInput.disabled = false;
-            novaEspeciePopularInput.required = true; // Torna o campo obrigatório
-        }
-    });
-
-    cancelarBtn.addEventListener('click', function() {
-        novaEspecieContainer.style.display = 'none';
-        especieSelectorContainer.style.display = 'block';
-        especieSelect.disabled = false;
-        novaEspeciePopularInput.disabled = true;
-        novaEspecieCientificoInput.disabled = true;
-        novaEspeciePopularInput.required = false;
-        novaEspeciePopularInput.value = ''; // Limpa os campos
-        novaEspecieCientificoInput.value = '';
-        especieSelect.value = ''; // Reseta a seleção
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const dataField = document.getElementById('vistoria_data');
-    if (!dataField.value) {
-        const now = new Date();
-        const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-        dataField.value = localDateTime;
-    }
 });
 </script>
 {% endblock %}
