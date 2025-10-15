@@ -1,0 +1,210 @@
+-- public.especies definition
+
+-- Drop table
+
+-- DROP TABLE public.especies;
+
+CREATE TABLE public.especies (
+	id serial4 NOT NULL,
+	nome_popular varchar(100) NOT NULL,
+	nome_cientifico varchar(150) NOT NULL,
+	porte varchar(20) NOT NULL,
+	altura_min float8 NULL,
+	altura_max float8 NULL,
+	longevidade_min int4 NULL,
+	longevidade_max int4 NULL,
+	deciduidade varchar(30) NULL,
+	cor_flor varchar(50) NULL,
+	epoca_floracao varchar(50) NULL,
+	fruto_comestivel varchar(10) NULL,
+	epoca_frutificacao varchar(50) NULL,
+	necessidade_rega varchar(20) NULL,
+	atrai_fauna varchar(10) NULL,
+	observacoes text NULL,
+	link_foto varchar(200) NULL,
+	CONSTRAINT especies_nome_popular_key UNIQUE (nome_popular),
+	CONSTRAINT especies_pkey PRIMARY KEY (id)
+);
+
+
+-- public.users definition
+
+-- Drop table
+
+-- DROP TABLE public.users;
+
+CREATE TABLE public.users (
+	id serial4 NOT NULL,
+	email varchar(100) NOT NULL,
+	"password" varchar(200) NOT NULL,
+	nome varchar(100) NULL,
+	telefone varchar(20) NULL,
+	nivel int4 NOT NULL,
+	ativo bool DEFAULT true NULL,
+	ultimo_login timestamp NULL,
+	CONSTRAINT users_email_key UNIQUE (email),
+	CONSTRAINT users_pkey PRIMARY KEY (id)
+);
+
+
+-- public.arvores definition
+
+-- Drop table
+
+-- DROP TABLE public.arvores;
+
+CREATE TABLE public.arvores (
+	id serial4 NOT NULL,
+	endereco varchar(200) NULL,
+	bairro varchar(100) NULL,
+	latitude varchar(20) NULL,
+	longitude varchar(20) NULL,
+	data_plantio timestamp NULL,
+	foto varchar(200) NULL,
+	observacao text NULL,
+	data_criacao timestamp NULL,
+	criado_por int4 NULL,
+	data_atualizacao timestamp NULL,
+	atualizado_por int4 NULL,
+	especie_id int4 NULL,
+	CONSTRAINT arvores_pkey PRIMARY KEY (id),
+	CONSTRAINT arvores_atualizado_por_fkey FOREIGN KEY (atualizado_por) REFERENCES public.users(id),
+	CONSTRAINT arvores_criado_por_fkey FOREIGN KEY (criado_por) REFERENCES public.users(id),
+	CONSTRAINT fk_especies FOREIGN KEY (especie_id) REFERENCES public.especies(id)
+);
+
+
+-- public.ordens_servico definition
+
+-- Drop table
+
+-- DROP TABLE public.ordens_servico;
+
+CREATE TABLE public.ordens_servico (
+	id serial4 NOT NULL,
+	numero varchar(20) NULL,
+	data_emissao timestamp NULL,
+	data_execucao timestamp NULL,
+	responsavel varchar(100) NULL,
+	status varchar(30) NULL,
+	observacao text NULL,
+	criado_por int4 NULL,
+	data_atualizacao timestamp NULL,
+	atualizado_por int4 NULL,
+	CONSTRAINT ordens_servico_numero_key UNIQUE (numero),
+	CONSTRAINT ordens_servico_pkey PRIMARY KEY (id),
+	CONSTRAINT ordens_servico_atualizado_por_fkey FOREIGN KEY (atualizado_por) REFERENCES public.users(id),
+	CONSTRAINT ordens_servico_criado_por_fkey FOREIGN KEY (criado_por) REFERENCES public.users(id)
+);
+
+
+-- public.requerentes definition
+
+-- Drop table
+
+-- DROP TABLE public.requerentes;
+
+CREATE TABLE public.requerentes (
+	id serial4 NOT NULL,
+	nome varchar(100) NULL,
+	telefone varchar(20) NULL,
+	observacao text NULL,
+	data_criacao timestamp NULL,
+	criado_por int4 NULL,
+	data_atualizacao timestamp NULL,
+	atualizado_por int4 NULL,
+	CONSTRAINT requerentes_pkey PRIMARY KEY (id),
+	CONSTRAINT requerentes_atualizado_por_fkey FOREIGN KEY (atualizado_por) REFERENCES public.users(id),
+	CONSTRAINT requerentes_criado_por_fkey FOREIGN KEY (criado_por) REFERENCES public.users(id)
+);
+
+
+-- public.requerimentos definition
+
+-- Drop table
+
+-- DROP TABLE public.requerimentos;
+
+CREATE TABLE public.requerimentos (
+	id serial4 NOT NULL,
+	numero varchar(20) NULL,
+	data_abertura timestamp NULL,
+	tipo text NULL,
+	motivo text NULL,
+	status varchar(30) NULL,
+	prioridade varchar(20) NULL,
+	requerente_id int4 NULL,
+	arvore_id int4 NULL,
+	observacao text NULL,
+	data_criacao timestamp NULL,
+	criado_por int4 NULL,
+	data_atualizacao timestamp NULL,
+	atualizado_por int4 NULL,
+	CONSTRAINT requerimentos_numero_key UNIQUE (numero),
+	CONSTRAINT requerimentos_pkey PRIMARY KEY (id),
+	CONSTRAINT requerimentos_arvore_id_fkey FOREIGN KEY (arvore_id) REFERENCES public.arvores(id),
+	CONSTRAINT requerimentos_atualizado_por_fkey FOREIGN KEY (atualizado_por) REFERENCES public.users(id),
+	CONSTRAINT requerimentos_criado_por_fkey FOREIGN KEY (criado_por) REFERENCES public.users(id),
+	CONSTRAINT requerimentos_requerente_id_fkey FOREIGN KEY (requerente_id) REFERENCES public.requerentes(id)
+);
+
+
+-- public.vistoria definition
+
+-- Drop table
+
+-- DROP TABLE public.vistoria;
+
+CREATE TABLE public.vistoria (
+	id serial4 NOT NULL,
+	requerimento_id int4 NOT NULL,
+	vistoria_data timestamp NOT NULL,
+	user_id int4 NOT NULL,
+	status varchar(30) DEFAULT 'Pendente'::character varying NOT NULL,
+	observacoes text NULL,
+	especie_id int4 NULL,
+	condicoes text NULL,
+	conflitos text NULL,
+	risco_queda varchar(10) NULL,
+	diagnostico text NULL,
+	acao_recomendada varchar(20) NULL,
+	tipo_poda text NULL,
+	galhos_cortar text NULL,
+	medidas_seguranca text NULL,
+	observacoes_tecnicas text NULL,
+	CONSTRAINT vistoria_pkey PRIMARY KEY (id),
+	CONSTRAINT vistoria_especie_id_fkey FOREIGN KEY (especie_id) REFERENCES public.especies(id),
+	CONSTRAINT vistoria_requerimento_id_fkey FOREIGN KEY (requerimento_id) REFERENCES public.requerimentos(id) ON DELETE CASCADE,
+	CONSTRAINT vistoria_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+
+-- public.vistoria_foto definition
+
+-- Drop table
+
+-- DROP TABLE public.vistoria_foto;
+
+CREATE TABLE public.vistoria_foto (
+	id serial4 NOT NULL,
+	vistoria_id int4 NOT NULL,
+	arquivo_nome varchar(255) NULL,
+	arquivo bytea NOT NULL,
+	CONSTRAINT vistoria_foto_pkey PRIMARY KEY (id),
+	CONSTRAINT vistoria_foto_vistoria_id_fkey FOREIGN KEY (vistoria_id) REFERENCES public.vistoria(id) ON DELETE CASCADE
+);
+
+
+-- public.ordem_servico_requerimento definition
+
+-- Drop table
+
+-- DROP TABLE public.ordem_servico_requerimento;
+
+CREATE TABLE public.ordem_servico_requerimento (
+	ordem_servico_id int4 NOT NULL,
+	requerimento_id int4 NOT NULL,
+	CONSTRAINT ordem_servico_requerimento_pkey PRIMARY KEY (ordem_servico_id, requerimento_id),
+	CONSTRAINT ordem_servico_requerimento_ordem_servico_id_fkey FOREIGN KEY (ordem_servico_id) REFERENCES public.ordens_servico(id),
+	CONSTRAINT ordem_servico_requerimento_requerimento_id_fkey FOREIGN KEY (requerimento_id) REFERENCES public.requerimentos(id)
+);
