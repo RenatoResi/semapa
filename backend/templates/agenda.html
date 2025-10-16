@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda Semanal - SEMAPA{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-calendar-week"></i> Programação Semanal</h2>
+            <p class="text-muted">Planejamento das próximas 3 semanas de atividades de arborização urbana</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.cargo in ['engenheiro', 'secretario'] %}
+            <a href="{{ url_for('agenda.nova_tarefa') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nova Tarefa
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cards das Semanas -->
+    <div class="row">
+        {% for agenda in agendas %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 {% if agenda.aprovada %}border-success{% endif %}">
+                <div class="card-header {% if agenda.aprovada %}bg-success text-white{% else %}bg-light{% endif %}">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar"></i> 
+                        Semana {{ agenda.numero_semana }}/{{ agenda.ano }}
+                        {% if agenda.aprovada %}
+                        <span class="badge bg-light text-success float-end">Aprovada</span>
+                        {% endif %}
+                    </h5>
+                    <small>
+                        {{ agenda.semana_inicio.strftime('%d/%m') }} a 
+                        {{ agenda.semana_fim.strftime('%d/%m/%Y') }}
+                    </small>
+                </div>
+                
+                <div class="card-body">
+                    {% if agenda.vazia %}
+                        <p class="text-muted text-center py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                            Nenhuma atividade programada
+                        </p>
+                    {% else %}
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2">Resumo:</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><i class="fas fa-tasks text-primary"></i> 
+                                    {{ agenda.tarefas|length }} tarefa(s) programada(s)
+                                </li>
+                                <li><i class="fas fa-hourglass-half text-warning"></i> 
+                                    {{ agenda.tarefas|selectattr('status', 'equalto', 'planejada')|list|length }} pendente(s)
+                                </li>
+                                <li><i class="fas fa-check-circle text-success"></i> 
+                                    {{ agenda.tarefas|selectattr('status', 'equalto', 'concluida')|list|length }} concluída(s)
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Lista de Tarefas Preview -->
+                        <div class="tarefas-preview">
+                            {% for tarefa in agenda.tarefas[:3] %}
+                            <div class="border-start border-3 border-{{ 'success' if tarefa.status == 'concluida' else 'primary' if tarefa.status == 'em_andamento' else 'secondary' }} ps-2 mb-2">
+                                <small class="text-muted">{{ tarefa.data_prevista.strftime('%d/%m') }}</small>
+                                <div><strong>{{ tarefa.tipo_atividade|upper }}</strong></div>
+                                <div class="text-truncate small">{{ tarefa.local }}</div>
+                            </div>
+                            {% endfor %}
+                            
+                            {% if agenda.tarefas|length > 3 %}
+                            <small class="text-muted">+ {{ agenda.tarefas|length - 3 }} mais...</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    {% if not agenda.vazia %}
+                    <a href="{{ url_for('agenda.ver_semana', agenda_id=agenda.id) }}" 
+                       class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-eye"></i> Ver Detalhes
+                    </a>
+                    
+                    {% if current_user.cargo == 'secretario' and not agenda.aprovada %}
+                    <form action="{{ url_for('agenda.aprovar_semana', agenda_id=agenda.id) }}" 
+                          method="POST" class="mt-2">
+                        <button type="submit" class="btn btn-sm btn-success w-100" 
+                                onclick="return confirm('Confirmar aprovação da agenda semanal?')">
+                            <i class="fas fa-check"></i> Aprovar Semana
+                        </button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Legenda -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="mb-3">Legenda de Status:</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <span class="badge bg-secondary">Planejada</span> - Aguardando aprovação
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-info">Aprovada</span> - Aprovada pelo secretário
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-primary">Em Andamento</span> - Execução iniciada
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-success">Concluída</span> - Finalizada
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

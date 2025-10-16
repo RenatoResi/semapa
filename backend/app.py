@@ -13,12 +13,14 @@ from werkzeug.utils import secure_filename
 import io
 from sqlalchemy import or_
 from dotenv import load_dotenv
+from routes.agenda_routes import agenda_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 CORS(app, resources={r"/*": {"origins": "*"}})
+app.register_blueprint(agenda_bp)
 
 # Flask-Login setup
 login_manager = LoginManager()
