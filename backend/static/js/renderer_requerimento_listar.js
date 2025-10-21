@@ -207,7 +207,7 @@ async function ordenarRequerimentos() {
 
 // Selecionar e remover requerimento
 document.addEventListener('click', function(e) {
-  // Selecionar (apenas para não concluídos)
+  // Selecionar (apenas para não concluídos) - botão da tabela
   if (e.target.classList.contains('btn-selecionar') && modoVisualizacao === 'nao-concluidos') {
     const id = parseInt(e.target.dataset.id);
     const req = requerimentosDisponiveis.find(r => r.id === id);
@@ -218,6 +218,23 @@ document.addEventListener('click', function(e) {
       criarMarcadores();
     }
   }
+
+  // Selecionar pelo botão no popup do mapa
+  if (e.target.classList.contains('btn-selecionar-mapa') && modoVisualizacao === 'nao-concluidos') {
+    const id = parseInt(e.target.dataset.id);
+    const req = requerimentosDisponiveis.find(r => r.id === id);
+    if (req && !requerimentosSelecionados.some(r => r.id === id)) {
+      requerimentosSelecionados.push(req);
+      renderTabelaRequerimentos();
+      renderTabelaSelecionados();
+      criarMarcadores();
+    }
+    // fechar popup do marcador selecionado
+    if (map && marcadoresMapa[id] && marcadoresMapa[id].getPopup) {
+      marcadoresMapa[id].getPopup().remove();
+    }
+  }
+
   // Remover da seleção
   if (e.target.classList.contains('btn-remover-selecionado')) {
     const id = parseInt(e.target.dataset.id);
@@ -430,6 +447,13 @@ function criarMarcadores() {
   filteredRequerimentos.forEach(r => {
     if (r.arvore_latitude && r.arvore_longitude) {
       const selecionado = requerimentosSelecionados.some(sel => sel.id == r.id);
+
+      // botão selecionar no popup (apenas para não concluídos e quando não selecionado)
+      let botaoSelecionar = '';
+      if (modoVisualizacao === 'nao-concluidos' && !selecionado) {
+        botaoSelecionar = `<br><button class="btn-selecionar-mapa" data-id="${r.id}">Selecionar</button>`;
+      }
+
       const marker = new maplibregl.Marker({ element: criarMarcadorCor((r.prioridade || '').toLowerCase(), selecionado) })
         .setLngLat([parseFloat(r.arvore_longitude), parseFloat(r.arvore_latitude)])
         .setPopup(new maplibregl.Popup().setHTML(`
@@ -443,6 +467,7 @@ function criarMarcadores() {
           Bairro: ${r.arvore_bairro || 'Não cadastrado'}<br>
           Requerente: ${r.requerente_nome || 'Não informado'}<br>
           Telefone: ${r.requerente_telefone || 'Não informado'}
+          ${botaoSelecionar}
         `))
         .addTo(map);
       marcadoresMapa[r.id] = marker;
