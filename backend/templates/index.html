@@ -105,15 +105,9 @@
     <tbody></tbody>
     <div id="paginacao-arvores" style="margin-top: 20px;"></div>
 </table>
-
-<div id="map"></div>
-<button onclick="gerarKML()" class="btn-kml">
-    Gerar KML de Todas as Árvores
-</button>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
 <script src="{{ url_for('static', filename='js/renderer.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {

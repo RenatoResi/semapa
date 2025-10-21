@@ -40,7 +40,6 @@ formArvore?.addEventListener('submit', async function(e) {
     exibirResposta(await response.json());
     formArvore.reset();
     listarArvores();
-    carregarArvoresNoMapa();
     window.location.href = 'requerimento';
 });
 
@@ -125,90 +124,6 @@ async function gerarKMLArvore(arvoreId) {
     } catch (error) {
         console.error('Erro ao gerar KML da árvore:', error);
         document.getElementById('resposta').innerText = 'Erro ao gerar KML da árvore: ' + error.message;
-    }
-}
-
-// Mapa
-const map = new maplibregl.Map({
-    container: 'map',
-    style: {
-        version: 8,
-        sources: {
-            'satellite': {
-                type: 'raster',
-                tiles: [
-                    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-                ],
-                tileSize: 256,
-                attribution: '© Esri'
-            }
-        },
-        layers: [{
-            id: 'satellite-layer',
-            type: 'raster',
-            source: 'satellite',
-            minzoom: 0,
-            maxzoom: 19
-        }]
-    },
-    center: [-47.7319, -21.3381],
-    zoom: 13
-});
-map.addControl(new maplibregl.NavigationControl());
-let marker = null;
-map.on('click', function(e) {
-    const { lng, lat } = e.lngLat;
-    if (marker) marker.remove();
-    marker = new maplibregl.Marker().setLngLat([lng, lat]).addTo(map);
-    const latField = document.querySelector('input[name="latitude"]');
-    const lngField = document.querySelector('input[name="longitude"]');
-    if (latField) latField.value = lat.toFixed(6);
-    if (lngField) lngField.value = lng.toFixed(6);
-});
-map.on('load', function () {
-    map.addSource('perimetros', {
-        type: 'geojson',
-        data: 'static/files/cravinhos.geojson' // Caminho para seu arquivo
-    });
-
-    map.addLayer({
-        id: 'perimetros-fill',
-        type: 'fill',
-        source: 'perimetros',
-        paint: {
-            'fill-color': '#0080ff',
-            'fill-opacity': 0
-        }
-    });
-
-    map.addLayer({
-        id: 'perimetros-borda',
-        type: 'line',
-        source: 'perimetros',
-        paint: {
-            'line-color': '#0050a0',
-            'line-width': 2
-        }
-    });
-});
-
-async function carregarArvoresNoMapa() {
-    try {
-        const res = await fetch('/arvores/todos'); // ou um valor alto para pegar todas
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-        const arvores = data.arvores || data; // compatível com ambos formatos
-
-        arvores.forEach(a => {
-            new maplibregl.Marker({ color: 'green' })
-                .setLngLat([parseFloat(a.longitude), parseFloat(a.latitude)])
-                .setPopup(new maplibregl.Popup().setHTML(`<strong>${a.especie}</strong><br>${a.endereco}`))
-                .addTo(map);
-        });
-    } catch (error) {
-        console.error('Erro ao carregar árvores no mapa:', error);
     }
 }
 
@@ -353,5 +268,4 @@ setupAutocomplete('endereco', '/api/sugestoes/enderecos');
 window.onload = () => {
     listarRequerentes(1);
     listarArvores(1);
-    carregarArvoresNoMapa();
 };

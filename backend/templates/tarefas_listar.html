@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Agenda Semanal - Semana {{ semana_atual.numero_semana }}/{{ semana_atual.ano }}{% endblock %}
+{% block title %}Agenda Semanal - Semana {{ semana_atual.numero_semana }}/52 Ano{{ semana_atual.ano }}{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -9,7 +9,7 @@
 {% block content %}
 <div class="container mt-4">
     <h3 class="mb-4">
-        <i class="fas fa-calendar-week"></i> Agenda Semanal {{ semana_atual.numero_semana }}/{{ semana_atual.ano }}
+        <i class="fas fa-calendar-week"></i> Agenda Semanal {{ semana_atual.numero_semana }}/52 Ano{{ semana_atual.ano }}
     </h3>
 
     <!-- Navegação entre semanas e busca -->
