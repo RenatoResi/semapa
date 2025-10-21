@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, flash
 from flask_cors import CORS
-from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User, Vistoria, VistoriaFoto
+from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User, Vistoria, VistoriaFoto, AgendaTarefa, AgendaSemanal
 import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
 import sqlalchemy as sa
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 import bcrypt
 from functools import wraps
@@ -206,6 +206,12 @@ def vistoria_form():
 @nivel_requerido(1, 2, 3)
 def lista_especies():
     return render_template('lista_especies.html')
+
+@app.route('/agenda')
+@login_required
+@nivel_requerido(1, 2, 3)
+def agenda():
+    return redirect(url_for('listar_tarefas'))
 
 # -------------------- Rotas Auxiliares --------------------
 
@@ -1372,5 +1378,67 @@ def atualizar_especie(id):
     finally:
         session.close()
 
+
+@app.route('/agenda/tarefas')
+@login_required
+def listar_tarefas():
+    semana_num = request.args.get('semana', type=int)
+    busca = request.args.get('q', default="", type=str).strip()
+
+    hoje = datetime.today().date()
+    ano_atual = hoje.year
+
+    if semana_num is None:
+        semana_num = hoje.isocalendar()[1]
+
+    # Calcula segunda-feira da semana (ISO 8601)
+    inicio_semana = datetime.strptime(f'{ano_atual}-{semana_num}-1', "%Y-%W-%w").date()
+
+    # Números semana anterior e próxima para paginação
+    semana_anterior = semana_num - 1 if semana_num > 1 else 52
+    semana_proxima = semana_num + 1 if semana_num < 52 else 1
+
+    fim_semana = inicio_semana + timedelta(days=6)
+
+    session = SessionLocal()
+    try:
+        query = session.query(AgendaTarefa).filter(
+            AgendaTarefa.data_prevista >= inicio_semana,
+            AgendaTarefa.data_prevista <= fim_semana
+        )
+
+        if busca:
+            like_pattern = f"%{busca}%"
+            query = query.filter(or_(
+                AgendaTarefa.descricao.ilike(like_pattern),
+                AgendaTarefa.local.ilike(like_pattern),
+                AgendaTarefa.tipo_atividade.ilike(like_pattern)
+            ))
+
+        tarefas = query.order_by(AgendaTarefa.data_prevista, AgendaTarefa.hora_inicio).all()
+
+        tarefas_por_dia = {}
+        for tarefa in tarefas:
+            tarefas_por_dia.setdefault(tarefa.data_prevista, []).append(tarefa)
+
+        # Criando o objeto semana_atual para o template
+        class Semana:
+            pass
+
+        semana_atual = Semana()
+        semana_atual.numero_semana = semana_num
+        semana_atual.ano = ano_atual
+        semana_atual.semana_inicio = inicio_semana
+
+        return render_template('tarefas_listar.html',
+                               semana_atual=semana_atual,
+                               tarefas_por_dia=tarefas_por_dia,
+                               semana_anterior=semana_anterior,
+                               semana_proxima=semana_proxima,
+                               busca=busca,
+                               timedelta=timedelta 
+        )
+    finally:
+        session.close()
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)

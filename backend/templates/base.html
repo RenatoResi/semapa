@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    {% block head_extra %}{% endblock %}
+    {% block head %}{% endblock %}
 </head>
 <body>
     <div class="layout">
@@ -21,6 +21,7 @@
                     <li><a href="{{ url_for('os_listar') }}">Ordens de Serviço</a></li>
                     <li><a href="{{ url_for('lista_especies') }}">Lista de Espécies</a></li>
                     <li><a href="{{ url_for('vistoria_listar') }}">Vistorias</a></li>
+                    <li><a href="{{ url_for('agenda') }}">Agenda</a></li>
                 </ul>
             </nav>
             <div class="sidebar-user">

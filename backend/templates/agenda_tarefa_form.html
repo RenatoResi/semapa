@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Nova Tarefa - SEMAPA{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="mb-3">
+        <i class="fas fa-tasks"></i>
+        {% if tarefa %}Editar Tarefa{% else %}Nova Tarefa{% endif %}
+    </h3>
+
+    <form action="{% if tarefa %}{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}{% else %}{{ url_for('nova_tarefa') }}{% endif %}" method="POST">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control" rows="3" required>{{ tarefa.descricao if tarefa else '' }}</textarea>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Tipo de Atividade</label>
+                <select name="tipo_atividade" class="form-select" required>
+                    <option value="">Selecione...</option>
+                    {% for tipo in ['Poda', 'Plantio', 'Remoção', 'Inspeção', 'Outro'] %}
+                    <option value="{{ tipo | lower }}" {% if tarefa and tarefa.tipo_atividade == tipo.lower() %}selected{% endif %}>{{ tipo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Prioridade</label>
+                <select name="prioridade" class="form-select">
+                    {% for p in ['baixa','normal','alta','urgente'] %}
+                    <option value="{{ p }}" {% if tarefa and tarefa.prioridade == p %}selected{% endif %}>
+                        {{ p | capitalize }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Local</label>
+                <input type="text" name="local" class="form-control" value="{{ tarefa.local if tarefa else '' }}" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Endereço</label>
+                <input type="text" name="endereco" class="form-control" value="{{ tarefa.endereco if tarefa else '' }}">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Data Prevista</label>
+                <input type="date" name="data_prevista" class="form-control"
+                       value="{{ tarefa.data_prevista.strftime('%Y-%m-%d') if tarefa else '' }}" required>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Hora Início</label>
+                <input type="time" name="hora_inicio" class="form-control" value="{{ tarefa.hora_inicio or '' }}">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Hora Fim</label>
+                <input type="time" name="hora_fim" class="form-control" value="{{ tarefa.hora_fim or '' }}">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Chefe de Equipe</label>
+                <select name="chefe_equipe_id" class="form-select">
+                    <option value="">Selecione...</option>
+                    {% for chefe in chefes %}
+                    <option value="{{ chefe.id }}" {% if tarefa and tarefa.chefe_equipe_id == chefe.id %}selected{% endif %}>
+                        {{ chefe.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" class="form-control" rows="3">{{ tarefa.observacoes if tarefa else '' }}</textarea>
+        </div>
+
+        <div class="text-end mt-3">
+            <a href="{{ url_for('agenda.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                {% if tarefa %}Salvar Alterações{% else %}Criar Tarefa{% endif %}
+            </button>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}
