@@ -14,14 +14,6 @@
 
     <!-- Navegação entre semanas e busca -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <div>
-            <a href="{{ url_for('listar_tarefas', semana=semana_anterior) }}" class="btn btn-outline-primary me-2">
-                &laquo; Semana Anterior
-            </a>
-            <a href="{{ url_for('listar_tarefas', semana=semana_proxima) }}" class="btn btn-outline-primary">
-                Próxima Semana &raquo;
-            </a>
-        </div>
         <form class="d-flex justify-content-end align-items-center mb-4 flex-wrap">
             <form class="d-flex" method="GET" action="{{ url_for('listar_tarefas') }}">
                 <input type="hidden" name="semana" value="{{ semana_atual.numero_semana }}">

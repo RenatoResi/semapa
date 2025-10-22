@@ -213,6 +213,12 @@ def lista_especies():
 def agenda():
     return redirect(url_for('listar_tarefas'))
 
+@app.route('/agenda/nova_tarefa')
+@login_required
+@nivel_requerido(1, 2, 3)
+def nova_tarefa():
+    return render_template('agenda_tarefa_form.html')
+
 # -------------------- Rotas Auxiliares --------------------
 
 @app.route('/api/especies_autocomplete')
@@ -1440,5 +1446,8 @@ def listar_tarefas():
         )
     finally:
         session.close()
+
+
+
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5001)
