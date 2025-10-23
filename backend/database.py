@@ -168,73 +168,33 @@ class Especies(Base):
     def __repr__(self):
         return f"<Especies(nome_popular='{self.nome_popular}', nome_cientifico='{self.nome_cientifico}')>"
 
-# === INTEGRAÇÃO DE AGENDA SEMANAL ===
+# ===  AGENDA DE TAREFAS SEMANAL ===
 
-class AgendaSemanal(Base):
-    __tablename__ = 'agenda_semanal'
+class Tarefa(Base):
+    __tablename__ = 'tarefas'
     id = Column(Integer, primary_key=True)
-    semana_inicio = Column(DateTime, nullable=False)
-    semana_fim = Column(DateTime, nullable=False)
-    ano = Column(Integer, nullable=False)
-    numero_semana = Column(Integer, nullable=False)
-    aprovada = Column(Integer, default=0)
-    aprovada_por = Column(Integer, ForeignKey('users.id'))
-    aprovada_em = Column(DateTime)
-    criada_por = Column(Integer, ForeignKey('users.id'), nullable=False)
-    criada_em = Column(DateTime, default=datetime.now)
-    atualizada_em = Column(DateTime, default=datetime.now)
-    tarefas = relationship("AgendaTarefa", back_populates="agenda", cascade="all, delete-orphan")
-    criador = relationship("User", foreign_keys=[criada_por])
-    aprovador = relationship("User", foreign_keys=[aprovada_por])
-
-class AgendaTarefa(Base):
-    __tablename__ = 'agenda_tarefas'
-    id = Column(Integer, primary_key=True)
-    agenda_id = Column(Integer, ForeignKey('agenda_semanal.id'), nullable=False)
     descricao = Column(Text, nullable=False)
-    tipo_atividade = Column(String(50), nullable=False)  # poda, plantio, etc
-    local = Column(Text, nullable=False)
-    endereco = Column(Text)
-    latitude = Column(Float)
-    longitude = Column(Float)
+    requerimento_id = Column(Integer, ForeignKey('requerimentos.id'))
+    endereco = Column(String(100))
+    bairro = Column(String(100))
+    latitude = Column(String(20))
+    longitude = Column(String(20))
     data_prevista = Column(Date, nullable=False)
-    hora_inicio = Column(String(10))
-    hora_fim = Column(String(10))
+    periodo = Column(String(20))  # manha, tarde
+    complexidade = Column(String(30), default='3 - caminhao rapido') # 1 - solo rapido, 2 - solo demorado, 3 - caminhao rapido, 4 - caminhao demorado, 5 - guindaste
     prioridade = Column(String(20), default='normal')
     status = Column(String(30), default='planejada')
     observacoes = Column(Text)
     chefe_equipe_id = Column(Integer, ForeignKey('users.id'))
     criada_por = Column(Integer, ForeignKey('users.id'), nullable=False)
     criada_em = Column(DateTime, default=datetime.now)
+    atualizada_por = Column(Integer, ForeignKey('users.id'), nullable=False)
     atualizada_em = Column(DateTime, default=datetime.now)
     concluida_em = Column(DateTime)
-    agenda = relationship("AgendaSemanal", back_populates="tarefas")
-    trabalhadores = relationship("AgendaTarefaTrabalhador", back_populates="tarefa", cascade="all, delete-orphan")
-    historico = relationship("AgendaHistorico", back_populates="tarefa", cascade="all, delete-orphan")
+
     chefe_equipe = relationship("User", foreign_keys=[chefe_equipe_id])
     criador = relationship("User", foreign_keys=[criada_por])
-
-class AgendaTarefaTrabalhador(Base):
-    __tablename__ = 'agenda_tarefas_trabalhadores'
-    id = Column(Integer, primary_key=True)
-    tarefa_id = Column(Integer, ForeignKey('agenda_tarefas.id'), nullable=False)
-    trabalhador_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    atribuido_em = Column(DateTime, default=datetime.now)
-    atribuido_por = Column(Integer, ForeignKey('users.id'), nullable=False)
-    tarefa = relationship("AgendaTarefa", back_populates="trabalhadores")
-    trabalhador = relationship("User", foreign_keys=[trabalhador_id])
-    atribuidor = relationship("User", foreign_keys=[atribuido_por])
-
-class AgendaHistorico(Base):
-    __tablename__ = 'agenda_historico'
-    id = Column(Integer, primary_key=True)
-    tarefa_id = Column(Integer, ForeignKey('agenda_tarefas.id'), nullable=False)
-    usuario_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    acao = Column(String(50), nullable=False)  # criada, editada, concluida, etc
-    descricao = Column(Text)
-    data_hora = Column(DateTime, default=datetime.now)
-    tarefa = relationship("AgendaTarefa", back_populates="historico")
-    usuario = relationship("User", foreign_keys=[usuario_id])
+    atualizador = relationship("User", foreign_keys=[atualizada_por])
 
 # === FIM INTEGRAÇÃO DE AGENDA SEMANAL ===
 

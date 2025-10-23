@@ -1,26 +1,24 @@
 from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, flash
 from flask_cors import CORS
-from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User, Vistoria, VistoriaFoto, AgendaTarefa, AgendaSemanal
+from database import SessionLocal, Requerente, Arvore, Requerimento, OrdemServico, Especies, User, Vistoria, VistoriaFoto, Tarefa
 import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
 import sqlalchemy as sa
 from datetime import datetime, timedelta
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import bcrypt
 from functools import wraps
 from werkzeug.utils import secure_filename
 import io
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from dotenv import load_dotenv
-from routes.agenda_routes import agenda_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
 CORS(app, resources={r"/*": {"origins": "*"}})
-app.register_blueprint(agenda_bp)
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -213,11 +211,6 @@ def lista_especies():
 def agenda():
     return redirect(url_for('listar_tarefas'))
 
-@app.route('/agenda/nova_tarefa')
-@login_required
-@nivel_requerido(1, 2, 3)
-def nova_tarefa():
-    return render_template('agenda_tarefa_form.html')
 
 # -------------------- Rotas Auxiliares --------------------
 
@@ -1384,69 +1377,146 @@ def atualizar_especie(id):
     finally:
         session.close()
 
+# ---------------------------- AGENDA DE TAREFAS --------------------
 
-@app.route('/agenda/tarefas')
+def get_week_dates(ref_date):
+    # Retorna início e fim da semana útil (segunda a sexta)
+    inicio = ref_date - timedelta(days=ref_date.weekday())
+    return [inicio + timedelta(days=i) for i in range(5)]
+
+@app.route('/tarefas', methods=['GET'])
 @login_required
 def listar_tarefas():
-    semana_num = request.args.get('semana', type=int)
-    busca = request.args.get('q', default="", type=str).strip()
+    # Controle de semana por query param, padrão: semana atual
+    semana_str = request.args.get("semana")
+    hoje = datetime.now().date()
+    if semana_str and semana_str.isdigit():
+        ref_week = int(semana_str)
+        ref_year = hoje.isocalendar()[0]
+        inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
+    else:
+        inicio_semana = hoje - timedelta(days=hoje.weekday())
+    dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
+    
+    sessao = SessionLocal()
+    try:
+        tarefas = sessao.query(Tarefa).filter(
+            Tarefa.data_prevista >= inicio_semana,
+            Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
+        ).all()
+    finally:
+        sessao.close()
+    
+    tarefas_por_dia = {dia: [] for dia in dias_semana}
+    for tarefa in tarefas:
+        tarefas_por_dia.setdefault(tarefa.data_prevista, []).append(tarefa)
 
-    hoje = datetime.today().date()
-    ano_atual = hoje.year
+    return render_template(
+        "tarefas_listar.html",
+        dias_semana=dias_semana,
+        tarefas_por_dia=tarefas_por_dia,
+        semana_inicio=inicio_semana,
+        semana_fim=inicio_semana + timedelta(days=4),
+        timedelta=timedelta
+    )
 
-    if semana_num is None:
-        semana_num = hoje.isocalendar()[1]
+@app.route('/tarefas/nova', methods=['GET', 'POST'])
+@login_required
+def nova_tarefa():
+    sessao = SessionLocal()
+    try:
+        if request.method == 'POST':
+            form = request.form
+            tarefa = Tarefa(
+                descricao=form['descricao'],
+                data_prevista=form['data_prevista'],
+                prioridade=form.get('prioridade', 'normal'),
+                status=form.get('status', 'planejada'),
+                observacoes=form.get('observacoes'),
+                chefe_equipe_id=form.get('chefe_equipe_id'),
+                criada_por=current_user.id,
+                atualizada_por=current_user.id,
+                periodo=form.get('periodo'),
+                complexidade=form.get('complexidade'),
+                endereco=form.get('endereco'),
+                bairro=form.get('bairro'),
+                latitude=form.get('latitude'),
+                longitude=form.get('longitude'),
+                requerimento_id=form.get('requerimento_id')
+            )
+            sessao.add(tarefa)
+            sessao.commit()
+            flash("Tarefa criada com sucesso!", "success")
+            return redirect(url_for('listar_tarefas'))
+        # GET
+        return render_template("tarefa_form.html", tarefa=None, current_year=datetime.now().year)
+    finally:
+        sessao.close()
 
-    # Calcula segunda-feira da semana (ISO 8601)
-    inicio_semana = datetime.strptime(f'{ano_atual}-{semana_num}-1', "%Y-%W-%w").date()
+@app.route('/tarefas/<int:tarefa_id>/editar', methods=['GET', 'POST'])
+@login_required
+def editar_tarefa(tarefa_id):
+    sessao = SessionLocal()
+    try:
+        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        if not tarefa:
+            flash("Tarefa não encontrada", "error")
+            return redirect(url_for('listar_tarefas'))
+        if request.method == 'POST':
+            form = request.form
+            tarefa.descricao = form['descricao']
+            tarefa.data_prevista = form['data_prevista']
+            tarefa.prioridade = form.get('prioridade', 'normal')
+            tarefa.status = form.get('status', 'planejada')
+            tarefa.observacoes = form.get('observacoes')
+            tarefa.chefe_equipe_id = form.get('chefe_equipe_id')
+            tarefa.atualizada_por = current_user.id
+            tarefa.atualizada_em = datetime.now()
+            tarefa.periodo = form.get('periodo')
+            tarefa.complexidade = form.get('complexidade')
+            tarefa.endereco = form.get('endereco')
+            tarefa.bairro = form.get('bairro')
+            tarefa.latitude = form.get('latitude')
+            tarefa.longitude = form.get('longitude')
+            tarefa.requerimento_id = form.get('requerimento_id')
+            sessao.commit()
+            flash("Tarefa atualizada com sucesso!", "success")
+            return redirect(url_for('listar_tarefas'))
+        # GET
+        return render_template("tarefa_form.html", tarefa=tarefa, current_year=datetime.now().year)
+    finally:
+        sessao.close()
 
-    # Números semana anterior e próxima para paginação
-    semana_anterior = semana_num - 1 if semana_num > 1 else 52
-    semana_proxima = semana_num + 1 if semana_num < 52 else 1
-
-    fim_semana = inicio_semana + timedelta(days=6)
+@app.route('/api/requerimento')
+@login_required
+def api_requerimento():
+    req_numero = request.args.get('numero')
+    if not req_numero:
+        return jsonify({'error': 'Número do requerimento não informado'}), 400
 
     session = SessionLocal()
     try:
-        query = session.query(AgendaTarefa).filter(
-            AgendaTarefa.data_prevista >= inicio_semana,
-            AgendaTarefa.data_prevista <= fim_semana
-        )
+        req_numero = req_numero.strip()
+        requerimento = session.query(Requerimento).filter(Requerimento.numero == req_numero).first()
+        if not requerimento:
+            return jsonify({'error': 'Requerimento não encontrado'}), 404
 
-        if busca:
-            like_pattern = f"%{busca}%"
-            query = query.filter(or_(
-                AgendaTarefa.descricao.ilike(like_pattern),
-                AgendaTarefa.local.ilike(like_pattern),
-                AgendaTarefa.tipo_atividade.ilike(like_pattern)
-            ))
+        arvore = None
+        if requerimento.arvore_id:
+            arvore = session.query(Arvore).get(requerimento.arvore_id)
 
-        tarefas = query.order_by(AgendaTarefa.data_prevista, AgendaTarefa.hora_inicio).all()
+        if not arvore:
+            return jsonify({'error': 'Árvore não encontrada para este requerimento'}), 404
 
-        tarefas_por_dia = {}
-        for tarefa in tarefas:
-            tarefas_por_dia.setdefault(tarefa.data_prevista, []).append(tarefa)
-
-        # Criando o objeto semana_atual para o template
-        class Semana:
-            pass
-
-        semana_atual = Semana()
-        semana_atual.numero_semana = semana_num
-        semana_atual.ano = ano_atual
-        semana_atual.semana_inicio = inicio_semana
-
-        return render_template('tarefas_listar.html',
-                               semana_atual=semana_atual,
-                               tarefas_por_dia=tarefas_por_dia,
-                               semana_anterior=semana_anterior,
-                               semana_proxima=semana_proxima,
-                               busca=busca,
-                               timedelta=timedelta 
-        )
+        return jsonify({
+            'endereco': arvore.endereco,
+            'bairro': arvore.bairro,
+            'latitude': arvore.latitude,
+            'longitude': arvore.longitude,
+            'prioridade': requerimento.prioridade.lower() if requerimento.prioridade else 'normal'
+        })
     finally:
         session.close()
-
 
 
 if __name__ == "__main__":

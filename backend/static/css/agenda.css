@@ -48,23 +48,40 @@
 }
 .task-card:last-child { margin-bottom: 0; }
 
-.task-card.status-concluida { border-color: #22c55e; }
-.task-card.status-em_andamento { border-color: #f59e42; }
 .task-card.status-planejada { border-color: #2563eb; }
+.task-card.status-aprovada { border-color: #10b981; }
+.task-card.status-em_andamento { border-color: #f59e42; }
+.task-card.status-concluida { border-color: #22c55e; }
+.task-card.status-cancelada { border-color: #ef4444; }
 
 .task-title {
     font-weight: 600;
     font-size: 1.05em;
     margin-bottom: 0.2em;
 }
-.task-location {
+
+.task-description {
     font-size: 0.95em;
+    color: #374151;
+    margin-bottom: 0.3em;
+}
+
+.task-location {
+    font-size: 0.9em;
     color: #64748b;
 }
+
 .task-status {
     font-size: 0.85em;
-    color: #2563eb;
     margin-top: 0.3em;
+    color: #2563eb;
+}
+
+.task-time {
+    font-size: 0.85em;
+    color: #64748b;
+    margin-top: 0.2em;
+    font-weight: 600;
 }
 
 .add-task-btn {
@@ -72,18 +89,6 @@
     width: calc(100% - 1rem);
     border-radius: 6px;
     font-size: 0.95em;
-}
-
-@media (max-width: 900px) {
-    .week-agenda {
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-}
-@media (max-width: 600px) {
-    .week-agenda {
-        grid-template-columns: 1fr;
-    }
 }
 
 .period-header {
@@ -94,11 +99,6 @@
     text-align: left;
     border-bottom: 1px solid #dbeafe;
     padding-bottom: 2px;
-}
-.task-time {
-    font-size: 0.85em;
-    color: #64748b;
-    margin-top: 0.2em;
 }
 
 .week-nav-bottom {
@@ -132,7 +132,6 @@
     text-decoration: none;
 }
 
-/* Links gerais dentro da agenda */
 .week-agenda a,
 .week-nav-bottom a,
 .add-task-btn {
@@ -158,3 +157,16 @@
     background: #1d4ed8;
     text-decoration: none;
 }
+
+@media (max-width: 900px) {
+    .week-agenda {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+}
+@media (max-width: 600px) {
+    .week-agenda {
+        grid-template-columns: 1fr;
+    }
+}
+

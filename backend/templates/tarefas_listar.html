@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Agenda Semanal - Semana {{ semana_atual.numero_semana }}/52 Ano{{ semana_atual.ano }}{% endblock %}
+{% block title %}Agenda Semanal - Tarefas da Semana{% endblock %}
 
 {% block head %}
     {{ super() }}
@@ -8,26 +8,22 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h3 class="mb-4">
-        <i class="fas fa-calendar-week"></i> Agenda Semanal {{ semana_atual.numero_semana }}/52 Ano{{ semana_atual.ano }}
-    </h3>
+    <h3 class="mb-4"><i class="fas fa-calendar-week"></i> Tarefas Semanais {{ semana_inicio.strftime('%d/%m/%Y') }} - {{ semana_fim.strftime('%d/%m/%Y') }}</h3>
 
     <!-- Navegação entre semanas e busca -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <form class="d-flex justify-content-end align-items-center mb-4 flex-wrap">
-            <form class="d-flex" method="GET" action="{{ url_for('listar_tarefas') }}">
-                <input type="hidden" name="semana" value="{{ semana_atual.numero_semana }}">
-                <input type="text" name="q" class="form-control me-2" placeholder="Buscar tarefas..." value="{{ busca or '' }}">
-                <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
-            </form>
+        <form class="d-flex" method="GET" action="{{ url_for('listar_tarefas') }}">
+            <input type="hidden" name="semana" value="{{ semana_inicio.isocalendar()[1] }}">
+            <input type="text" name="q" class="form-control me-2" placeholder="Buscar tarefas..." value="{{ busca or '' }}">
+            <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
         </form>
     </div>
 
-    <!-- Agenda semanal em grid -->
+    <!-- Grid semanal -->
     <div class="week-agenda">
         {% set dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
         {% for i in range(5) %}
-            {% set dia = semana_atual.semana_inicio + timedelta(days=i) %}
+            {% set dia = semana_inicio + timedelta(days=i) %}
             <div class="day-column">
                 <div class="day-header">
                     {{ dias_semana[i] }}
@@ -35,20 +31,19 @@
                 </div>
                 <div class="tasks-list">
                     {% set tarefas_dia = tarefas_por_dia.get(dia, []) %}
-                    <!-- Separar manhã e tarde -->
-                    {% set tarefas_manha = tarefas_dia | selectattr('hora_inicio', 'defined') | selectattr('hora_inicio', 'lt', '12:00') | list %}
-                    {% set tarefas_tarde = tarefas_dia | selectattr('hora_inicio', 'defined') | selectattr('hora_inicio', 'ge', '12:00') | list %}
+                    {% set tarefas_manha = tarefas_dia | selectattr('periodo', 'equalto', 'manha') | list %}
+                    {% set tarefas_tarde = tarefas_dia | selectattr('periodo', 'equalto', 'tarde') | list %}
 
                     <div class="period-header">Manhã</div>
                     {% if tarefas_manha %}
                         {% for tarefa in tarefas_manha %}
-                            <div class="task-card status-{{ tarefa.status }}">
-                                <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
-                                <div class="task-title">{{ tarefa.tipo_atividade | capitalize }}</div>
-                                <div class="task-location">{{ tarefa.local }}</div>
-                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                                <div class="task-time">{{ tarefa.hora_inicio.strftime('%H:%M') if tarefa.hora_inicio else '' }}</div>
-                            </div>
+                        <div class="task-card status-{{ tarefa.status }}">
+                            <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
+                            <div class="task-title">{{ tarefa.descricao }}</div>
+                            <div class="task-location">{{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</div>
+                            <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
+                            <div class="task-time">{{ tarefa.periodo|capitalize }}</div>
+                        </div>
                         {% endfor %}
                     {% else %}
                         <p class="text-muted text-center small mt-2">Sem tarefas</p>
@@ -57,23 +52,22 @@
                     <div class="period-header">Tarde</div>
                     {% if tarefas_tarde %}
                         {% for tarefa in tarefas_tarde %}
-                            <div class="task-card status-{{ tarefa.status }}">
-                                <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
-                                <div class="task-title">{{ tarefa.tipo_atividade | capitalize }}</div>
-                                <div class="task-location">{{ tarefa.local }}</div>
-                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                                <div class="task-time">{{ tarefa.hora_inicio.strftime('%H:%M') if tarefa.hora_inicio else '' }}</div>
-                            </div>
+                        <div class="task-card status-{{ tarefa.status }}">
+                            <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
+                            <div class="task-title">{{ tarefa.descricao }}</div>
+                            <div class="task-location">{{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</div>
+                            <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
+                            <div class="task-time">{{ tarefa.periodo|capitalize }}</div>
+                        </div>
                         {% endfor %}
                     {% else %}
                         <p class="text-muted text-center small mt-2">Sem tarefas</p>
                     {% endif %}
                 </div>
                 {% if current_user.nivel <= 3 %}
-                <a href="{{ url_for('agenda.nova_tarefa') }}?data_prevista={{ dia.strftime('%Y-%m-%d') }}"
-                   class="btn btn-outline-success add-task-btn">
-                    <i class="fas fa-plus"></i> Adicionar Tarefa
-                </a>
+                    <a href="{{ url_for('nova_tarefa') }}?data_prevista={{ dia.strftime('%Y-%m-%d') }}" class="btn btn-outline-success add-task-btn">
+                        <i class="fas fa-plus"></i> Adicionar Tarefa
+                    </a>
                 {% endif %}
             </div>
         {% endfor %}
