@@ -67,16 +67,26 @@
     <div class="row">
         {% for agenda in agendas %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100 {% if agenda.aprovada %}border-success{% else %}border-secondary{% endif %} shadow-sm">
-                <div class="card-header {% if agenda.aprovada %}bg-success text-white{% else %}bg-light{% endif %}">
+            <div class="card h-100 {% if agenda.aprovada|default(false) %}border-success{% else %}border-secondary{% endif %} shadow-sm">
+                <div class="card-header {% if agenda.aprovada|default(false) %}bg-success text-white{% else %}bg-light{% endif %}">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar"></i>
-                        Semana {{ agenda.numero_semana }}/{{ agenda.ano }}
+                        Semana {{ agenda.numero_semana }} / {{ agenda.ano }}
                         {% if agenda.aprovada %}
                         <span class="badge bg-light text-success float-end">Aprovada</span>
                         {% endif %}
                     </h5>
-                    <small>{{ agenda.semana_inicio.strftime('%d/%m') }} a {{ agenda.semana_fim.strftime('%d/%m/%Y') }}</small>
+                    <small>
+                        {% if agenda.vazia %}
+                            {{ agenda.semana_inicio.strftime('%d/%m') if agenda.semana_inicio is not string and agenda.semana_inicio is not none else agenda.semana_inicio|string }}
+                            a 
+                            {{ agenda.semana_fim.strftime('%d/%m/%Y') if agenda.semana_fim is not string and agenda.semana_fim is not none else agenda.semana_fim|string }}
+                        {% else %}
+                            {{ agenda.semana_inicio.strftime('%d/%m') }}
+                            a 
+                            {{ agenda.semana_fim.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    </small>
                 </div>
 
                 <div class="card-body">
@@ -117,7 +127,19 @@
                         </a>
                     {% endif %}
                     {% if current_user.nivel <= 2 and not agenda.aprovada %}
-                        <form action="{{ url_for('agenda.aprovar_semana', agenda_id=agenda.id) }}" method="POST">
+                        {% if agenda.id %}
+                            <form action="{{ url_for('agenda.aprovar_semana', agenda_id=agenda.id) }}" method="POST">
+                                <button type="submit" class="btn btn-success btn-sm w-100"
+                                    onclick="return confirm('Confirmar aprovação da agenda semanal?')">
+                                    <i class="fas fa-check"></i> Aprovar Semana
+                                </button>
+                            </form>
+                            {% else %}
+                            <!-- Pode colocar um botão desabilitado ou nenhum botão para agendas fake -->
+                            <button class="btn btn-secondary btn-sm w-100" disabled>
+                                <i class="fas fa-check"></i> Aprovar Indisponível
+                            </button>
+                        {% endif %}
                             <button type="submit" class="btn btn-success btn-sm w-100"
                                 onclick="return confirm('Confirmar aprovação da agenda semanal?')">
                                 <i class="fas fa-check"></i> Aprovar Semana
@@ -135,7 +157,7 @@
         <div class="card">
             <div class="card-body text-center">
                 <h5 class="mb-3"><i class="fas fa-link"></i> Atalhos úteis</h5>
-                <a href="{{ url_for('nova_tarefa') }}" class="btn btn-outline-primary btn-sm me-2">
+                <a href="{{ url_for('agenda.nova_tarefa') }}" class="btn btn-outline-primary btn-sm me-2">
                     <i class="fas fa-plus"></i> Nova Tarefa
                 </a>
                 <a href="{{ url_for('agenda.index') }}" class="btn btn-outline-info btn-sm me-2">

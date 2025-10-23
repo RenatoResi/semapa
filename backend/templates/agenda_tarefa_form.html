@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Nova Tarefa - SEMAPA{% endblock %}
+{% block title %}{{ "Editar Tarefa" if tarefa else "Nova Tarefa" }} - SEMAPA{% endblock %}
 {% block content %}
 
 <div class="container mt-4">
@@ -8,7 +8,7 @@
         {% if tarefa %}Editar Tarefa{% else %}Nova Tarefa{% endif %}
     </h3>
 
-    <form action="{% if tarefa %}{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}{% else %}{{ url_for('nova_tarefa') }}{% endif %}" method="POST">
+    <form action="{% if tarefa %}{{ url_for('agenda.editar_tarefa', tarefa_id=tarefa.id) }}{% else %}{{ url_for('agenda.nova_tarefa') }}{% endif %}" method="POST">
 
         <div class="row">
             <div class="col-md-6 mb-3">
@@ -53,7 +53,7 @@
             <div class="col-md-3 mb-3">
                 <label class="form-label">Data Prevista</label>
                 <input type="date" name="data_prevista" class="form-control"
-                       value="{{ tarefa.data_prevista.strftime('%Y-%m-%d') if tarefa else '' }}" required>
+                       value="{% if tarefa %}{{ tarefa.data_prevista.strftime('%Y-%m-%d') }}{% endif %}" required>
             </div>
             <div class="col-md-3 mb-3">
                 <label class="form-label">Hora Início</label>

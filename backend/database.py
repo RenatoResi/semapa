@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Text, Float, Table, LargeBinary
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Date, Text, Float, Table, LargeBinary
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
@@ -197,7 +197,7 @@ class AgendaTarefa(Base):
     endereco = Column(Text)
     latitude = Column(Float)
     longitude = Column(Float)
-    data_prevista = Column(DateTime, nullable=False)
+    data_prevista = Column(Date, nullable=False)
     hora_inicio = Column(String(10))
     hora_fim = Column(String(10))
     prioridade = Column(String(20), default='normal')

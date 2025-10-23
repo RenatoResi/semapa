@@ -317,24 +317,37 @@ def aprovar_semana(agenda_id):
 
 # ========== FUNÇÕES AUXILIARES ==========
 
+class AgendaFake:
+    def __init__(self, data):
+        self.semana_inicio = data['semana_inicio']
+        self.semana_fim = data['semana_fim']
+        self.numero_semana = data['numero_semana']
+        self.ano = data['ano']
+        self.vazia = data.get('vazia', False)
+        self.aprovada = False
+        self.tarefas = []
+        self.id = None  # Atributo necessário para o template
+
+# Função modificada para retornar objetos AgendaFake em vez de dicionários simples
 def gerar_semanas_vazias(quantidade=3):
-    """Gera placeholders para semanas vazias"""
     hoje = datetime.now().date()
     inicio_semana = hoje - timedelta(days=hoje.weekday())
-    
+
     semanas = []
     for i in range(quantidade):
         inicio = inicio_semana + timedelta(weeks=i)
         fim = inicio + timedelta(days=6)
-        semanas.append({
+        data = {
             'semana_inicio': inicio,
             'semana_fim': fim,
             'numero_semana': inicio.isocalendar()[1],
             'ano': inicio.year,
             'vazia': True
-        })
-    
+        }
+        semanas.append(AgendaFake(data))
+
     return semanas
+
 
 
 def obter_ou_criar_agenda(session, data):
