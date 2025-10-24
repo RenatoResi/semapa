@@ -4,39 +4,30 @@
 
 <div class="container-fluid py-4">
   <div class="mx-auto bg-white p-4 shadow-sm rounded-4" style="max-width: 1100px;">
-    <h3 class="mb-4">{{ "Editar" if tarefa else "Cadastrar nova" }} tarefa</h3>
+    <h3 class="mb-4">
+        {{ "Editar" if tarefa else "Cadastrar nova" }} tarefa
+        {% if tarefa.reagendada and tarefa.reagendada > 0 %}
+            <span class="badge bg-warning text-dark ms-2">R{{ tarefa.reagendada }}</span>
+        {% endif %}
+    </h3>
 
     <form method="POST" class="row g-3">
-      <div class="col-12 col-md-5">
+      <div class="col-12 col-md-6">
         <label for="requerimento_numero" class="form-label">Requerimento</label>
-        <div class="input-group">
-          <input type="text" id="requerimento_numero" name="requerimento_numero"
-              class="form-control" style="max-width: 7em;" placeholder="Num."
-              value="{{ tarefa.requerimento_numero if tarefa else '' }}">
-          <span class="input-group-text">/</span>
-          <select id="requerimento_ano" name="requerimento_ano" class="form-select" style="max-width: 6em;">
-            {% set ano_atual = current_year %}
-            {% for ano in range(ano_atual - 2, ano_atual + 1) %}
-            <option value="{{ ano }}"
-              {% if tarefa and tarefa.requerimento_ano == ano %}
-                selected
-              {% elif not tarefa and ano == ano_atual %}
-                selected
-              {% endif %}>{{ ano }}</option>
-            {% endfor %}
-          </select>
-        </div>
+        <input type="text" id="requerimento_numero" name="requerimento_numero"
+            class="form-control" placeholder="Ex: 9999/2025"
+            value="{{ tarefa.requerimento_numero if tarefa else '' }}" required>
       </div>
 
       <div class="col-12 col-md-8">
         <label class="form-label">Descrição</label>
-        <textarea name="descricao" class="form-control" rows="6" required>{{ tarefa.descricao if tarefa else "" }}</textarea>
+        <textarea name="descricao" class="form-control" rows="3" required>{{ tarefa.descricao if tarefa else "" }}</textarea>
       </div>
 
       <div class="col-12 col-md-4">
         <label class="form-label">Data Prevista</label>
         <input type="date" name="data_prevista" class="form-control" required
-            value="{{ tarefa.data_prevista.strftime('%Y-%m-%d') if tarefa else request.args.get('data_prevista','') }}">
+            value="{{ tarefa.data_prevista.strftime('%Y-%m-%d') if tarefa.data_prevista else '' }}">
       </div>
 
       <div class="row g-3">
@@ -66,7 +57,6 @@
           <option value="tarde" {% if tarefa and tarefa.periodo == 'tarde' %}selected{% endif %}>Tarde</option>
         </select>
       </div>
-
       <div class="col-12 col-md-3">
         <label class="form-label">Complexidade</label>
         <select name="complexidade" class="form-select">
@@ -78,7 +68,6 @@
           <option value="5 - guindaste" {% if tarefa and tarefa.complexidade == '5 - guindaste' %}selected{% endif %}>5 - Guindaste</option>
         </select>
       </div>
-
       <div class="col-12 col-md-3">
         <label class="form-label">Prioridade</label>
         <select name="prioridade" class="form-select">
@@ -87,11 +76,10 @@
           {% endfor %}
         </select>
       </div>
-
       <div class="col-12 col-md-3">
         <label class="form-label">Status</label>
         <select name="status" class="form-select">
-          {% for st in ['planejada','aprovada','em_andamento','concluida','cancelada'] %}
+          {% for st in ['planejada','aprovada','reagendada','concluida','cancelada'] %}
           <option value="{{ st }}" {% if tarefa and tarefa.status == st %}selected{% endif %}>{{ st | capitalize }}</option>
           {% endfor %}
         </select>
@@ -111,30 +99,27 @@
 </div>
 
 <script>
-document.getElementById("requerimento_numero").addEventListener("change", fazerBuscaRequerimento);
-document.getElementById("requerimento_ano").addEventListener("change", fazerBuscaRequerimento);
-
-function fazerBuscaRequerimento() {
-  var numero = document.getElementById("requerimento_numero").value.trim();
-  var ano = document.getElementById("requerimento_ano").value;
-  if (!numero || !ano) return;
-  var numeroCompleto = numero + '/' + ano;
+document.getElementById("requerimento_numero").addEventListener("change", function () {
+  var numeroCompleto = this.value.trim();
+  if (!numeroCompleto) return;
   fetch('/api/requerimento?numero=' + encodeURIComponent(numeroCompleto))
     .then(response => {
       if (!response.ok) throw new Error('Requerimento não encontrado');
       return response.json();
     })
     .then(data => {
+      if(data.descricao) document.querySelector('textarea[name="descricao"]').value = data.descricao;
       if(data.endereco) document.querySelector('input[name="endereco"]').value = data.endereco;
       if(data.bairro) document.querySelector('input[name="bairro"]').value = data.bairro;
       if(data.latitude) document.querySelector('input[name="latitude"]').value = data.latitude;
       if(data.longitude) document.querySelector('input[name="longitude"]').value = data.longitude;
       if(data.prioridade) document.querySelector('select[name="prioridade"]').value = data.prioridade.toLowerCase();
+      if(data.observacoes) document.querySelector('textarea[name="observacoes"]').value = data.observacoes;
     })
     .catch(error => {
       alert(error.message);
     });
-}
+});
 </script>
 
 <style>

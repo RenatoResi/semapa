@@ -191,6 +191,7 @@ class Tarefa(Base):
     atualizada_por = Column(Integer, ForeignKey('users.id'), nullable=False)
     atualizada_em = Column(DateTime, default=datetime.now)
     concluida_em = Column(DateTime)
+    reagendada = Column(Integer, default=0)
 
     chefe_equipe = relationship("User", foreign_keys=[chefe_equipe_id])
     criador = relationship("User", foreign_keys=[criada_por])

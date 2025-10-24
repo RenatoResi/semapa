@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Detalhes da Tarefa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h4 class="mb-0">
+        <i class="fas fa-tasks me-2"></i>Detalhes da Tarefa
+        {% if tarefa.reagendada and tarefa.reagendada > 0 %}
+          <span class="badge bg-warning text-dark ms-2">R{{ tarefa.reagendada }}</span>
+        {% endif %}
+      </h4>
+      <a href="{{ url_for('listar_tarefas') }}" class="btn btn-light btn-sm">← Voltar</a>
+    </div>
+    <div class="card-body">
+      <h4 class="card-title mb-3">{{ tarefa.descricao }}</h4>
+
+      <p><strong>Endereço:</strong> {{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</p>
+      <p><strong>Período:</strong> {{ tarefa.periodo|capitalize }}</p>
+      <p><strong>Status atual:</strong> <span class="badge bg-info text-dark">{{ tarefa.status|capitalize }}</span></p>
+      <p><strong>Complexidade:</strong> {{ tarefa.complexidade|capitalize }}</p>
+      <p><strong>Observações:</strong> {{ tarefa.observacoes or 'Nenhuma' }}</p>
+
+      <hr>
+      <form method="POST" action="{{ url_for('atualizar_tarefa_status', tarefa_id=tarefa.id) }}">
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" name="acao" value="concluir" class="btn btn-success"><i class="fas fa-check me-2"></i>Concluir</button>
+            <button type="submit" name="acao" value="cancelar" class="btn btn-danger"><i class="fas fa-times me-2"></i>Cancelar</button>
+            <a href="{{ url_for('reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning">
+                <i class="fas fa-calendar-alt me-2"></i>Reagendar
+            </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

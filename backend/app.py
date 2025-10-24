@@ -5,7 +5,7 @@ import os
 from simplekml import Kml
 from sqlalchemy.orm import joinedload
 import sqlalchemy as sa
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import bcrypt
 from functools import wraps
@@ -1379,25 +1379,46 @@ def atualizar_especie(id):
 
 # ---------------------------- AGENDA DE TAREFAS --------------------
 
-def get_week_dates(ref_date):
-    # Retorna início e fim da semana útil (segunda a sexta)
-    inicio = ref_date - timedelta(days=ref_date.weekday())
-    return [inicio + timedelta(days=i) for i in range(5)]
+def get_week_navigation(semana_atual, ano_atual):
+    # Semana anterior
+    if semana_atual == 1:
+        ano_anterior = ano_atual - 1
+        # Semana ISO: pegue quantas semanas tem o ano anterior (52 ou 53)
+        ultima_semana = date(ano_anterior, 12, 28).isocalendar()[1]
+        semana_anterior = ultima_semana
+    else:
+        semana_anterior = semana_atual - 1
+        ano_anterior = ano_atual
+
+    # Próxima semana
+    semanas_no_ano = date(ano_atual, 12, 28).isocalendar()[1]
+    if semana_atual >= semanas_no_ano:
+        semana_proxima = 1
+        ano_proxima = ano_atual + 1
+    else:
+        semana_proxima = semana_atual + 1
+        ano_proxima = ano_atual
+
+    return (semana_anterior, ano_anterior, semana_proxima, ano_proxima)
 
 @app.route('/tarefas', methods=['GET'])
 @login_required
 def listar_tarefas():
-    # Controle de semana por query param, padrão: semana atual
     semana_str = request.args.get("semana")
+    ano_str = request.args.get("ano")
     hoje = datetime.now().date()
     if semana_str and semana_str.isdigit():
         ref_week = int(semana_str)
-        ref_year = hoje.isocalendar()[0]
-        inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
+        ref_year = int(ano_str) if ano_str and ano_str.isdigit() else hoje.isocalendar()[0]
     else:
-        inicio_semana = hoje - timedelta(days=hoje.weekday())
+        ref_week = hoje.isocalendar()[1]
+        ref_year = hoje.isocalendar()[0]
+
+    inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
     dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
-    
+
+    semana_anterior, ano_anterior, semana_proxima, ano_proxima = get_week_navigation(ref_week, ref_year)
+
     sessao = SessionLocal()
     try:
         tarefas = sessao.query(Tarefa).filter(
@@ -1417,16 +1438,27 @@ def listar_tarefas():
         tarefas_por_dia=tarefas_por_dia,
         semana_inicio=inicio_semana,
         semana_fim=inicio_semana + timedelta(days=4),
+        semana_anterior=semana_anterior,
+        ano_anterior=ano_anterior,
+        semana_proxima=semana_proxima,
+        ano_proxima=ano_proxima,
         timedelta=timedelta
     )
+
+def buscar_requerimento_id(session, numero_completo):
+    requerimento = session.query(Requerimento).filter(Requerimento.numero == numero_completo).first()
+    return requerimento.id if requerimento else None
 
 @app.route('/tarefas/nova', methods=['GET', 'POST'])
 @login_required
 def nova_tarefa():
-    sessao = SessionLocal()
+    session = SessionLocal()
     try:
         if request.method == 'POST':
             form = request.form
+            requerimento_numero = form.get('requerimento_numero', '').strip()
+            requerimento_id = buscar_requerimento_id(session, requerimento_numero)
+
             tarefa = Tarefa(
                 descricao=form['descricao'],
                 data_prevista=form['data_prevista'],
@@ -1442,16 +1474,17 @@ def nova_tarefa():
                 bairro=form.get('bairro'),
                 latitude=form.get('latitude'),
                 longitude=form.get('longitude'),
-                requerimento_id=form.get('requerimento_id')
+                requerimento_id=requerimento_id
             )
-            sessao.add(tarefa)
-            sessao.commit()
+            session.add(tarefa)
+            session.commit()
             flash("Tarefa criada com sucesso!", "success")
             return redirect(url_for('listar_tarefas'))
         # GET
         return render_template("tarefa_form.html", tarefa=None, current_year=datetime.now().year)
     finally:
-        sessao.close()
+        session.close()
+
 
 @app.route('/tarefas/<int:tarefa_id>/editar', methods=['GET', 'POST'])
 @login_required
@@ -1462,6 +1495,7 @@ def editar_tarefa(tarefa_id):
         if not tarefa:
             flash("Tarefa não encontrada", "error")
             return redirect(url_for('listar_tarefas'))
+
         if request.method == 'POST':
             form = request.form
             tarefa.descricao = form['descricao']
@@ -1482,7 +1516,8 @@ def editar_tarefa(tarefa_id):
             sessao.commit()
             flash("Tarefa atualizada com sucesso!", "success")
             return redirect(url_for('listar_tarefas'))
-        # GET
+
+        # GET, preencher formulário totalmente
         return render_template("tarefa_form.html", tarefa=tarefa, current_year=datetime.now().year)
     finally:
         sessao.close()
@@ -1507,16 +1542,133 @@ def api_requerimento():
 
         if not arvore:
             return jsonify({'error': 'Árvore não encontrada para este requerimento'}), 404
+        
+        observacoes_concat = ''
+        if requerimento.observacao:
+            observacoes_concat += requerimento.observacao
+        if requerimento.observacao and arvore.observacao:
+            observacoes_concat += ';\n'
+        if arvore.observacao:
+            observacoes_concat += arvore.observacao
 
         return jsonify({
+            'descricao': requerimento.tipo + ' - ' + requerimento.motivo,
             'endereco': arvore.endereco,
             'bairro': arvore.bairro,
             'latitude': arvore.latitude,
             'longitude': arvore.longitude,
-            'prioridade': requerimento.prioridade.lower() if requerimento.prioridade else 'normal'
+            'prioridade': requerimento.prioridade.lower() if requerimento.prioridade else 'normal',
+            'observacoes': observacoes_concat or ''
         })
     finally:
         session.close()
+
+@app.route('/tarefas/<int:tarefa_id>/detalhes')
+@login_required
+def tarefa_detalhes(tarefa_id):
+    sessao = SessionLocal()
+    try:
+        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        if not tarefa:
+            flash("Tarefa não encontrada.", "error")
+            return redirect(url_for('listar_tarefas'))
+        return render_template("tarefa_detalhes.html", tarefa=tarefa)
+    finally:
+        sessao.close()
+
+
+@app.route('/tarefas/<int:tarefa_id>/status', methods=['POST'])
+@login_required
+def atualizar_tarefa_status(tarefa_id):
+    sessao = SessionLocal()
+    try:
+        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        if not tarefa:
+            flash("Tarefa não encontrada.", "error")
+            return redirect(url_for('listar_tarefas'))
+
+        acao = request.form.get('acao')
+        if acao == 'concluir':
+            tarefa.status = 'concluida'
+        elif acao == 'cancelar':
+            tarefa.status = 'cancelada'
+
+        tarefa.atualizada_por = current_user.id
+        tarefa.atualizada_em = datetime.now()
+        sessao.commit()
+        flash("Status atualizado com sucesso!", "success")
+        return redirect(url_for('tarefa_detalhes', tarefa_id=tarefa.id))
+    finally:
+        sessao.close()
+
+@app.route('/tarefas/<int:tarefa_id>/reagendar', methods=['GET', 'POST'])
+@login_required
+def reagendar_tarefa(tarefa_id):
+    sessao = SessionLocal()
+    try:
+        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        if not tarefa:
+            flash("Tarefa não encontrada", "error")
+            return redirect(url_for('listar_tarefas'))
+
+        if request.method == 'POST':
+            form = request.form
+            nova_data = form.get('data_prevista')
+            if not nova_data:
+                flash("Escolha uma nova data.", "error")
+                return render_template("tarefa_form.html", tarefa=tarefa, current_year=datetime.now().year, is_reagendar=True)
+
+            # Marcar tarefa original como prorrogada e incrementar
+            tarefa.status = 'prorrogada'
+            tarefa.atualizada_por = current_user.id
+            tarefa.atualizada_em = datetime.now()
+            sessao.commit()
+
+            # Cria nova tarefa com dados copiados e nova data
+            nova_tarefa = Tarefa(
+                descricao = tarefa.descricao,
+                requerimento_id = tarefa.requerimento_id,
+                endereco = tarefa.endereco,
+                bairro = tarefa.bairro,
+                latitude = tarefa.latitude,
+                longitude = tarefa.longitude,
+                periodo = tarefa.periodo,
+                complexidade = tarefa.complexidade,
+                prioridade = tarefa.prioridade,
+                status = 'reagendada',
+                observacoes = tarefa.observacoes,
+                chefe_equipe_id = tarefa.chefe_equipe_id,
+                criada_por = current_user.id,
+                atualizada_por = current_user.id,
+                data_prevista = datetime.strptime(nova_data, '%Y-%m-%d').date(),
+                reagendada = tarefa.reagendada
+            )
+            sessao.add(nova_tarefa)
+            sessao.commit()
+            flash("Tarefa reagendada com sucesso!", "success")
+            return redirect(url_for('listar_tarefas'))
+
+        # GET: mostra form já preenchido, menos data
+        tarefa_para_form = Tarefa(
+            descricao = tarefa.descricao,
+            requerimento_id = tarefa.requerimento_id,
+            endereco = tarefa.endereco,
+            bairro = tarefa.bairro,
+            latitude = tarefa.latitude,
+            longitude = tarefa.longitude,
+            periodo = tarefa.periodo,
+            complexidade = tarefa.complexidade,
+            prioridade = tarefa.prioridade,
+            status = tarefa.status,
+            observacoes = tarefa.observacoes,
+            chefe_equipe_id = tarefa.chefe_equipe_id,
+            reagendada = (tarefa.reagendada or 0) + 1
+        )
+        # Data prevista em branco!
+        tarefa_para_form.data_prevista = None
+        return render_template("tarefa_form.html", tarefa=tarefa_para_form, current_year=datetime.now().year, is_reagendar=True)
+    finally:
+        sessao.close()
 
 
 if __name__ == "__main__":

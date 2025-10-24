@@ -132,7 +132,8 @@
     text-decoration: none;
 }
 
-.week-agenda a,
+/* Removido o seletor geral .week-agenda a para que card-link não fique azul */
+
 .week-nav-bottom a,
 .add-task-btn {
     color: #fff !important;
@@ -140,23 +141,57 @@
     text-decoration: none;
 }
 
-.week-agenda a:visited,
 .week-nav-bottom a:visited,
 .add-task-btn:visited {
     color: #fff !important;
     background: #2563eb;
 }
 
-.week-agenda a:hover,
 .week-nav-bottom a:hover,
 .add-task-btn:hover,
-.week-agenda a:focus,
 .week-nav-bottom a:focus,
 .add-task-btn:focus {
     color: #fff !important;
     background: #1d4ed8;
     text-decoration: none;
 }
+
+/* Estilos para os cards links, mantém fundo branco */
+.task-card-link {
+    display: block;
+    background: #fff;
+    border-left: 4px solid #2563eb;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.75rem 0.75rem 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    position: relative;
+    transition: box-shadow 0.2s, background-color 0.2s;
+    color: #212529;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.task-card-link:hover,
+.task-card-link:focus {
+    background-color: #e9f0ff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-decoration: none;
+    color: #212529;
+}
+
+.task-card-link .task-title,
+.task-card-link .task-location,
+.task-card-link .task-status {
+    color: inherit;
+}
+
+/* mantém as cores das bordas dos status */
+.task-card-link.status-planejada { border-color: #2563eb; }
+.task-card-link.status-aprovada { border-color: #10b981; }
+.task-card-link.status-em_andamento { border-color: #f59e42; }
+.task-card-link.status-concluida { border-color: #22c55e; }
+.task-card-link.status-cancelada { border-color: #ef4444; }
 
 @media (max-width: 900px) {
     .week-agenda {
@@ -170,3 +205,28 @@
     }
 }
 
+.add-task-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #22c55e;
+    color: #fff !important;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3em;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.22);
+    border: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+}
+.add-task-fab:hover,
+.add-task-fab:focus {
+    background: #16a34a;
+    color: #fff !important;
+    box-shadow: 0 4px 16px rgba(34,197,94,0.25);
+}
+
+.day-header {
+    position: relative;
+}

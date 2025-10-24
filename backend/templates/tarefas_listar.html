@@ -12,10 +12,10 @@
 
     <!-- Navegação entre semanas e busca -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <form class="d-flex" method="GET" action="{{ url_for('listar_tarefas') }}">
+        <form class="d-flex flex-grow-1 me-3" method="GET" action="{{ url_for('listar_tarefas') }}">
             <input type="hidden" name="semana" value="{{ semana_inicio.isocalendar()[1] }}">
             <input type="text" name="q" class="form-control me-2" placeholder="Buscar tarefas..." value="{{ busca or '' }}">
-            <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+            <button class="btn btn-primary px-4" type="submit"><i class="fas fa-search me-2"></i>Buscar</button>
         </form>
     </div>
 
@@ -26,9 +26,12 @@
             {% set dia = semana_inicio + timedelta(days=i) %}
             <div class="day-column">
                 <div class="day-header">
-                    {{ dias_semana[i] }}
-                    <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
+                    <div class="text-start">
+                        <div>{{ dias_semana[i] }}</div>
+                        <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
+                    </div>
                 </div>
+
                 <div class="tasks-list">
                     {% set tarefas_dia = tarefas_por_dia.get(dia, []) %}
                     {% set tarefas_manha = tarefas_dia | selectattr('periodo', 'equalto', 'manha') | list %}
@@ -37,13 +40,12 @@
                     <div class="period-header">Manhã</div>
                     {% if tarefas_manha %}
                         {% for tarefa in tarefas_manha %}
-                        <div class="task-card status-{{ tarefa.status }}">
-                            <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
+                        <a href="{{ url_for('tarefa_detalhes', tarefa_id=tarefa.id) }}" class="task-card status-{{ tarefa.status }} task-card-link">
                             <div class="task-title">{{ tarefa.descricao }}</div>
                             <div class="task-location">{{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</div>
-                            <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                            <div class="task-time">{{ tarefa.periodo|capitalize }}</div>
-                        </div>
+                            <div class="task-status">Status: {{ tarefa.status | capitalize }} {% if tarefa.reagendada and tarefa.reagendada > 0 %}<span class="badge bg-warning text-dark ms-2">R{{ tarefa.reagendada }}</span>{% endif %}</div>
+                            <div class="task-status">Dificuldade: {{ tarefa.complexidade|capitalize }}</div>
+                        </a>
                         {% endfor %}
                     {% else %}
                         <p class="text-muted text-center small mt-2">Sem tarefas</p>
@@ -52,13 +54,12 @@
                     <div class="period-header">Tarde</div>
                     {% if tarefas_tarde %}
                         {% for tarefa in tarefas_tarde %}
-                        <div class="task-card status-{{ tarefa.status }}">
-                            <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="stretched-link text-decoration-none"></a>
+                        <a href="{{ url_for('tarefa_detalhes', tarefa_id=tarefa.id) }}" class="task-card status-{{ tarefa.status }} task-card-link">
                             <div class="task-title">{{ tarefa.descricao }}</div>
                             <div class="task-location">{{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</div>
                             <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                            <div class="task-time">{{ tarefa.periodo|capitalize }}</div>
-                        </div>
+                            <div class="task-status">Dificuldade: {{ tarefa.complexidade|capitalize }}</div>
+                        </a>
                         {% endfor %}
                     {% else %}
                         <p class="text-muted text-center small mt-2">Sem tarefas</p>
@@ -75,10 +76,10 @@
 
     <!-- Navegação entre semanas -->
     <div class="week-nav-bottom">
-        <a href="{{ url_for('listar_tarefas', semana=semana_anterior) }}" class="btn btn-lg btn-primary week-nav-btn me-3">
+        <a href="{{ url_for('listar_tarefas', semana=semana_anterior, ano=ano_anterior) }}" class="btn btn-lg btn-primary week-nav-btn me-3">
             &laquo; Semana Anterior
         </a>
-        <a href="{{ url_for('listar_tarefas', semana=semana_proxima) }}" class="btn btn-lg btn-primary week-nav-btn">
+        <a href="{{ url_for('listar_tarefas', semana=semana_proxima, ano=ano_proxima) }}" class="btn btn-lg btn-primary week-nav-btn">
             Próxima Semana &raquo;
         </a>
     </div>
