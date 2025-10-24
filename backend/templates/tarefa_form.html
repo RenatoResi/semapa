@@ -16,7 +16,7 @@
         <label for="requerimento_numero" class="form-label">Requerimento</label>
         <input type="text" id="requerimento_numero" name="requerimento_numero"
             class="form-control" placeholder="Ex: 9999/2025"
-            value="{{ tarefa.requerimento_numero if tarefa else '' }}" required>
+            value="{{ tarefa.requerimento_numero if tarefa else '' }}">
       </div>
 
       <div class="col-12 col-md-8">
@@ -84,7 +84,18 @@
           {% endfor %}
         </select>
       </div>
-
+      <div class="col-12 col-md-3">
+        <label class="form-label">Chefe da Equipe</label>
+        <select name="chefe_equipe_id" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for chefe in chefes %}
+            <option value="{{ chefe.id }}"
+                {% if tarefa and tarefa.chefe_equipe_id == chefe.id %}selected{% endif %}>
+                {{ chefe.nome }}
+            </option>
+            {% endfor %}
+        </select>
+      </div>
       <div class="col-12">
         <label class="form-label">Observações</label>
         <textarea name="observacoes" class="form-control">{{ tarefa.observacoes if tarefa else '' }}</textarea>

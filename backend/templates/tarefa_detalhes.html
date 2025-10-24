@@ -11,29 +11,34 @@
           <span class="badge bg-warning text-dark ms-2">R{{ tarefa.reagendada }}</span>
         {% endif %}
       </h4>
-      <a href="{{ url_for('listar_tarefas') }}" class="btn btn-light btn-sm">← Voltar</a>
+      <div>
+        <a href="{{ url_for('listar_tarefas') }}" class="btn btn-light btn-sm me-2">← Voltar</a>
+        <a href="{{ url_for('editar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-secondary btn-sm">Editar</a>
+      </div>
     </div>
     <div class="card-body">
       <h4 class="card-title mb-3">{{ tarefa.descricao }}</h4>
 
+      <p><strong>Requerimento:</strong> {{ tarefa.requerimento_numero }}</p>
+      <p><strong>Data prevista:</strong> {{ tarefa.data_prevista.strftime('%d/%m/%Y') }}</p>
       <p><strong>Endereço:</strong> {{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</p>
       <p><strong>Período:</strong> {{ tarefa.periodo|capitalize }}</p>
       <p><strong>Status atual:</strong> <span class="badge bg-info text-dark">{{ tarefa.status|capitalize }}</span></p>
       <p><strong>Complexidade:</strong> {{ tarefa.complexidade|capitalize }}</p>
+      <p><strong>Chefe da Equipe:</strong> {{ tarefa.chefe_equipe.nome }}</p>
       <p><strong>Observações:</strong> {{ tarefa.observacoes or 'Nenhuma' }}</p>
 
       <hr>
       <form method="POST" action="{{ url_for('atualizar_tarefa_status', tarefa_id=tarefa.id) }}">
         <div class="d-flex flex-wrap gap-2">
-            <button type="submit" name="acao" value="concluir" class="btn btn-success"><i class="fas fa-check me-2"></i>Concluir</button>
-            <button type="submit" name="acao" value="cancelar" class="btn btn-danger"><i class="fas fa-times me-2"></i>Cancelar</button>
-            <a href="{{ url_for('reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning">
-                <i class="fas fa-calendar-alt me-2"></i>Reagendar
-            </a>
+          <button type="submit" name="acao" value="concluir" class="btn btn-success"><i class="fas fa-check me-2"></i>Concluir</button>
+          <button type="submit" name="acao" value="cancelar" class="btn btn-danger"><i class="fas fa-times me-2"></i>Cancelar</button>
+          <a href="{{ url_for('reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning">
+            <i class="fas fa-calendar-alt me-2"></i>Reagendar
+          </a>
         </div>
       </form>
     </div>
   </div>
 </div>
-
 {% endblock %}

@@ -88,7 +88,8 @@
     margin: 0.5rem;
     width: calc(100% - 1rem);
     border-radius: 6px;
-    font-size: 0.95em;
+    font-size: 1.1em;
+    text-align: center;
 }
 
 .period-header {
@@ -160,7 +161,7 @@
 .task-card-link {
     display: block;
     background: #fff;
-    border-left: 4px solid #2563eb;
+    border-left: 8px solid #2563eb;
     border-radius: 8px;
     margin-bottom: 1rem;
     padding: 0.75rem 0.75rem 0.75rem 1rem;
@@ -192,6 +193,7 @@
 .task-card-link.status-em_andamento { border-color: #f59e42; }
 .task-card-link.status-concluida { border-color: #22c55e; }
 .task-card-link.status-cancelada { border-color: #ef4444; }
+.task-card-link.status-prorrogada { border-color: #fbbf24; }
 
 @media (max-width: 900px) {
     .week-agenda {

@@ -1452,13 +1452,17 @@ def buscar_requerimento_id(session, numero_completo):
 @app.route('/tarefas/nova', methods=['GET', 'POST'])
 @login_required
 def nova_tarefa():
+    def buscar_requerimento_id(session, numero_completo):
+        requerimento = session.query(Requerimento).filter(Requerimento.numero == numero_completo).first()
+        return requerimento.id if requerimento else None
+
     session = SessionLocal()
     try:
+        chefes = session.query(User).filter(User.nivel == 4).order_by(User.nome).all()
         if request.method == 'POST':
             form = request.form
             requerimento_numero = form.get('requerimento_numero', '').strip()
             requerimento_id = buscar_requerimento_id(session, requerimento_numero)
-
             tarefa = Tarefa(
                 descricao=form['descricao'],
                 data_prevista=form['data_prevista'],
@@ -1481,7 +1485,16 @@ def nova_tarefa():
             flash("Tarefa criada com sucesso!", "success")
             return redirect(url_for('listar_tarefas'))
         # GET
-        return render_template("tarefa_form.html", tarefa=None, current_year=datetime.now().year)
+        data_prevista_ini = request.args.get('data_prevista', '')
+        tarefa = type('FakeTarefa', (), {})()
+        tarefa.data_prevista = None
+        tarefa.chefe_equipe_id = None
+        if data_prevista_ini:
+            try:
+                tarefa.data_prevista = datetime.strptime(data_prevista_ini, "%Y-%m-%d").date()
+            except Exception:
+                tarefa.data_prevista = None
+        return render_template("tarefa_form.html", tarefa=tarefa, chefes=chefes, current_year=datetime.now().year)
     finally:
         session.close()
 
@@ -1496,8 +1509,16 @@ def editar_tarefa(tarefa_id):
             flash("Tarefa não encontrada", "error")
             return redirect(url_for('listar_tarefas'))
 
+        chefes = sessao.query(User).filter(User.nivel == 4).order_by(User.nome).all()
+
         if request.method == 'POST':
             form = request.form
+            requerimento_numero = form.get('requerimento_numero', '').strip()
+            requerimento_id = None
+            if requerimento_numero:
+                requerimento = sessao.query(Requerimento).filter(Requerimento.numero == requerimento_numero).first()
+                requerimento_id = requerimento.id if requerimento else None
+
             tarefa.descricao = form['descricao']
             tarefa.data_prevista = form['data_prevista']
             tarefa.prioridade = form.get('prioridade', 'normal')
@@ -1512,13 +1533,13 @@ def editar_tarefa(tarefa_id):
             tarefa.bairro = form.get('bairro')
             tarefa.latitude = form.get('latitude')
             tarefa.longitude = form.get('longitude')
-            tarefa.requerimento_id = form.get('requerimento_id')
+            tarefa.requerimento_id = requerimento_id
             sessao.commit()
             flash("Tarefa atualizada com sucesso!", "success")
             return redirect(url_for('listar_tarefas'))
 
         # GET, preencher formulário totalmente
-        return render_template("tarefa_form.html", tarefa=tarefa, current_year=datetime.now().year)
+        return render_template("tarefa_form.html", tarefa=tarefa, chefes=chefes, current_year=datetime.now().year)
     finally:
         sessao.close()
 
