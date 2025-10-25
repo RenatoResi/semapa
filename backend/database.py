@@ -83,12 +83,14 @@ class Requerimento(Base):
     data_atualizacao = Column(DateTime)
     atualizado_por = Column(Integer, ForeignKey('users.id'))
     atualizador = relationship("User", foreign_keys=[atualizado_por])
-    # RELAÇÃO CORRETA: muitos-para-muitos com OrdemServico
+
+    # RELAÇÃO CORRETA: muitos-para-muitos
     ordens_servico = relationship(
         "OrdemServico",
         secondary=ordem_servico_requerimento,
         back_populates="requerimentos"
     )
+    tarefas = relationship("Tarefa", back_populates="requerimento")  # ADICIONAR ESTA LINHA
     
 class Vistoria(Base):
     __tablename__ = 'vistoria'
@@ -196,6 +198,12 @@ class Tarefa(Base):
     chefe_equipe = relationship("User", foreign_keys=[chefe_equipe_id])
     criador = relationship("User", foreign_keys=[criada_por])
     atualizador = relationship("User", foreign_keys=[atualizada_por])
+    requerimento = relationship("Requerimento", back_populates="tarefas")
+    
+    @property
+    def requerimento_numero(self):
+        """Retorna o número do requerimento vinculado"""
+        return self.requerimento.numero if self.requerimento else ''
 
 # === FIM INTEGRAÇÃO DE AGENDA SEMANAL ===
 

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, render_template, redirect, url_fo
 from flask_login import login_required, current_user
 from database import SessionLocal, Tarefa, Requerimento, Arvore, User
 from datetime import datetime, timedelta, date
+from sqlalchemy import or_ 
 
 tarefas_bp = Blueprint('tarefas', __name__, url_prefix='/tarefas')
 
@@ -40,9 +41,10 @@ def buscar_requerimento_id(session, numero_completo):
 @tarefas_bp.route('/', methods=['GET'])
 @login_required
 def listar_tarefas():
-    """Lista tarefas da semana"""
+    """Lista tarefas da semana com opção de busca"""
     semana_str = request.args.get("semana")
     ano_str = request.args.get("ano")
+    busca = request.args.get("q", "").strip().lower()
     hoje = datetime.now().date()
     
     if semana_str and semana_str.isdigit():
@@ -59,16 +61,37 @@ def listar_tarefas():
 
     sessao = SessionLocal()
     try:
-        tarefas = sessao.query(Tarefa).filter(
-            Tarefa.data_prevista >= inicio_semana,
-            Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
-        ).all()
+        if busca:
+            # Se há busca, retorna TODAS as tarefas que correspondem (sem limite de semana)
+            from sqlalchemy import or_
+            tarefas = sessao.query(Tarefa).filter(
+                or_(
+                    Tarefa.descricao.ilike(f'%{busca}%'),
+                    Tarefa.endereco.ilike(f'%{busca}%'),
+                    Tarefa.bairro.ilike(f'%{busca}%'),
+                    Tarefa.observacoes.ilike(f'%{busca}%')
+                )
+            ).order_by(Tarefa.data_prevista.desc()).all()
+            
+            # Se há resultados, usar a semana da primeira tarefa encontrada
+            if tarefas:
+                primeira_tarefa_data = tarefas[0].data_prevista
+                inicio_semana = primeira_tarefa_data - timedelta(days=primeira_tarefa_data.weekday())
+                dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
+        else:
+            # Se não há busca, retorna tarefas da semana especificada
+            tarefas = sessao.query(Tarefa).filter(
+                Tarefa.data_prevista >= inicio_semana,
+                Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
+            ).order_by(Tarefa.data_prevista.asc()).all()
     finally:
         sessao.close()
     
     tarefas_por_dia = {dia: [] for dia in dias_semana}
     for tarefa in tarefas:
-        tarefas_por_dia.setdefault(tarefa.data_prevista, []).append(tarefa)
+        # Adicionar tarefa apenas se ela estiver dentro da semana mostrada
+        if tarefa.data_prevista in tarefas_por_dia:
+            tarefas_por_dia[tarefa.data_prevista].append(tarefa)
 
     return render_template(
         "tarefas_listar.html",
@@ -80,7 +103,8 @@ def listar_tarefas():
         ano_anterior=ano_anterior,
         semana_proxima=semana_proxima,
         ano_proxima=ano_proxima,
-        timedelta=timedelta
+        timedelta=timedelta,
+        busca=busca
     )
 
 @tarefas_bp.route('/nova', methods=['GET', 'POST'])
