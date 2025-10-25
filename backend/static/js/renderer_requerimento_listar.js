@@ -90,13 +90,13 @@ function alternarModoVisualizacao() {
   if (switchElement.checked) {
     modoVisualizacao = 'concluidos';
     tituloSecao.textContent = 'Listagem de Requerimentos Concluídos';
-    labelSwitch.textContent = 'Mostrar Requerimentos Não Concluídos';
+    labelSwitch.textContent = 'Mostrar Requerimentos Concluídos';
     secaoSelecionados.style.display = 'none'; // Esconde tabela de selecionados
     colunaDataConclusao.style.display = 'table-cell'; // Mostra coluna data conclusão
     colunaAcoes.style.display = 'none'; // Esconde coluna ações
   } else {
     modoVisualizacao = 'nao-concluidos';
-    tituloSecao.textContent = 'Listagem de Requerimentos Não Concluídos';
+    tituloSecao.textContent = 'Listagem de Requerimentos Em Aberto';
     labelSwitch.textContent = 'Mostrar Requerimentos Concluídos';
     secaoSelecionados.style.display = 'block'; // Mostra tabela de selecionados
     colunaDataConclusao.style.display = 'none'; // Esconde coluna data conclusão
