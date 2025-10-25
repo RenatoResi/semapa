@@ -5,7 +5,7 @@
 {% block content %}
 <h1>Lista de Vistorias</h1>
 
-<a href="{{ url_for('nova_vistoria') }}" class="btn-nova-vistoria">Nova Vistoria</a>
+<a href="{{ url_for('vistorias.nova_vistoria') }}" class="btn-nova-vistoria">Nova Vistoria</a>
 
 <table id="tabela-vistorias">
     <thead>
@@ -29,13 +29,13 @@
             <td>{{ v.user.nome if v.user else 'N/A' }}</td>
             <td>
                 {% for foto in v.fotos %}
-                <a href="{{ url_for('vistoria_foto', foto_id=foto.id) }}" target="_blank">
-                    <img src="{{ url_for('vistoria_foto', foto_id=foto.id) }}" alt="Foto" width="50">
+                <a href="{{ url_for('vistorias.vistoria_foto', foto_id=foto.id) }}" target="_blank">
+                    <img src="{{ url_for('vistorias.vistoria_foto', foto_id=foto.id) }}" alt="Foto" width="50">
                 </a>
                 {% endfor %}
             </td>
             <td>
-                <a href="{{ url_for('editar_vistoria', id=v.id) }}" class="btn-editar">Editar</a>
+                <a href="{{ url_for('vistorias.editar_vistoria', id=v.id) }}" class="btn-editar">Editar</a>
             </td>
         </tr>
         {% endfor %}

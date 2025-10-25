@@ -5,7 +5,7 @@
 {% block content %}
 <h1>{% if vistoria %}Editar Vistoria{% else %}Nova Vistoria{% endif %}</h1>
 
-<form method="POST" action="{% if vistoria %}{{ url_for('atualizar_vistoria', id=vistoria.id) }}{% else %}{{ url_for('criar_vistoria') }}{% endif %}" enctype="multipart/form-data">
+<form method="POST" action="{% if vistoria %}{{ url_for('vistorias.atualizar_vistoria', id=vistoria.id) }}{% else %}{{ url_for('vistorias.criar_vistoria') }}{% endif %}" enctype="multipart/form-data">
     <input type="hidden" name="requerimento_id" value="{{ requerimento_id or (vistoria.requerimento_id if vistoria else '') }}">
     
     <!-- Seção 1: Dados Básicos -->
@@ -184,7 +184,7 @@
             <div class="photo-grid">
                 {% for foto in vistoria.fotos %}
                 <div class="photo-item">
-                    <img src="{{ url_for('vistoria_foto', foto_id=foto.id) }}" alt="Foto existente">
+                    <img src="{{ url_for('vistorias.vistoria_foto', foto_id=foto.id) }}" alt="Foto existente">
                     <button type="button" class="btn-remove-photo" data-photo-id="{{ foto.id }}">Remover</button>
                 </div>
                 {% endfor %}
