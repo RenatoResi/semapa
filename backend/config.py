@@ -27,7 +27,7 @@ class TestingConfig(Config):
     """Configurações de teste"""
     DEBUG = True
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = "sqlite:///sistema_semapa.db"  # Usa o arquivo real
 
 
 config = {
