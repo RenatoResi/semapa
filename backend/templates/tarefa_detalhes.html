@@ -29,15 +29,19 @@
       <p><strong>Observações:</strong> {{ tarefa.observacoes or 'Nenhuma' }}</p>
 
       <hr>
-      <form method="POST" action="{{ url_for('tarefas.atualizar_tarefa_status', tarefa_id=tarefa.id) }}">
-        <div class="d-flex flex-wrap gap-2">
+      <div class="d-flex flex-wrap gap-2">
+        <!-- Formulário para Concluir/Cancelar -->
+        <form method="POST" action="{{ url_for('tarefas.atualizar_tarefa_status', tarefa_id=tarefa.id) }}" class="d-inline">
           <button type="submit" name="acao" value="concluir" class="btn btn-success"><i class="fas fa-check me-2"></i>Concluir</button>
           <button type="submit" name="acao" value="cancelar" class="btn btn-danger"><i class="fas fa-times me-2"></i>Cancelar</button>
-          <a href="{{ url_for('tarefas.reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning">
-            <i class="fas fa-calendar-alt me-2"></i>Reagendar
-          </a>
-        </div>
-      </form>
+        </form>
+        <!-- Botão de Reagendar -->
+        <a href="{{ url_for('tarefas.reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning"><i class="fas fa-calendar-alt me-2"></i>Reagendar</a>
+        <!-- Formulário de Excluir -->
+        <form method="POST" action="{{ url_for('tarefas.excluir_tarefa', tarefa_id=tarefa.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.');" class="d-inline">
+          <button type="submit" class="btn btn-outline-danger"><i class="fas fa-trash-alt me-2"></i>Excluir</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>

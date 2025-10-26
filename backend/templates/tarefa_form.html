@@ -19,15 +19,25 @@
             value="{{ tarefa.requerimento_numero if tarefa else '' }}">
       </div>
 
-      <div class="col-12 col-md-8">
-        <label class="form-label">Descrição</label>
-        <textarea name="descricao" class="form-control" rows="3" required>{{ tarefa.descricao if tarefa else "" }}</textarea>
-      </div>
 
       <div class="col-12 col-md-4">
         <label class="form-label">Data Prevista</label>
         <input type="date" name="data_prevista" class="form-control" required
             value="{{ tarefa.data_prevista.strftime('%Y-%m-%d') if tarefa.data_prevista else '' }}">
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label class="form-label">Período</label>
+        <select name="periodo" class="form-select">
+          <option value="">Selecione...</option>
+          <option value="manha" {% if tarefa and tarefa.periodo == 'manha' %}selected{% endif %}>Manhã</option>
+          <option value="tarde" {% if tarefa and tarefa.periodo == 'tarde' %}selected{% endif %}>Tarde</option>
+        </select>
+      </div>
+      
+      <div class="col-12 col-md-8">
+        <label class="form-label">Descrição</label>
+        <textarea name="descricao" class="form-control" rows="3" required>{{ tarefa.descricao if tarefa else "" }}</textarea>
       </div>
 
       <div class="row g-3">
@@ -49,14 +59,6 @@
         </div>
       </div>
 
-      <div class="col-12 col-md-3">
-        <label class="form-label">Período</label>
-        <select name="periodo" class="form-select">
-          <option value="">Selecione...</option>
-          <option value="manha" {% if tarefa and tarefa.periodo == 'manha' %}selected{% endif %}>Manhã</option>
-          <option value="tarde" {% if tarefa and tarefa.periodo == 'tarde' %}selected{% endif %}>Tarde</option>
-        </select>
-      </div>
       <div class="col-12 col-md-3">
         <label class="form-label">Complexidade</label>
         <select name="complexidade" class="form-select">

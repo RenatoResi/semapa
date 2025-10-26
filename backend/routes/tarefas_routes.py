@@ -254,6 +254,10 @@ def reagendar_tarefa(tarefa_id):
             return redirect(url_for('tarefas.listar_tarefas'))
 
         if request.method == 'POST':
+            # É necessário buscar os chefes aqui também para o caso de erro no POST
+            chefes = sessao.query(User).filter(User.nivel == 4).order_by(User.nome).all()
+
+            # ... (código do POST)
             form = request.form
             nova_data = form.get('data_prevista')
             if not nova_data:
@@ -291,6 +295,9 @@ def reagendar_tarefa(tarefa_id):
             return redirect(url_for('tarefas.listar_tarefas'))
 
         # GET - mostra form já preenchido, menos data
+        # Busca a lista de chefes para popular o dropdown
+        chefes = sessao.query(User).filter(User.nivel == 4).order_by(User.nome).all()
+
         tarefa_para_form = Tarefa(
             descricao=tarefa.descricao,
             requerimento_id=tarefa.requerimento_id,
@@ -306,11 +313,33 @@ def reagendar_tarefa(tarefa_id):
             chefe_equipe_id=tarefa.chefe_equipe_id,
             reagendada=(tarefa.reagendada or 0) + 1
         )
+        tarefa_para_form.requerimento = tarefa.requerimento  # Carrega o objeto do requerimento
         # Data prevista em branco!
         tarefa_para_form.data_prevista = None
-        return render_template("tarefa_form.html", tarefa=tarefa_para_form, current_year=datetime.now().year, is_reagendar=True)
+        return render_template("tarefa_form.html", tarefa=tarefa_para_form, chefes=chefes, current_year=datetime.now().year, is_reagendar=True)
     finally:
         sessao.close()
+
+@tarefas_bp.route('/<int:tarefa_id>/excluir', methods=['POST'])
+@login_required
+def excluir_tarefa(tarefa_id):
+    """Exclui uma tarefa permanentemente."""
+    sessao = SessionLocal()
+    try:
+        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        if not tarefa:
+            flash("Tarefa não encontrada.", "error")
+            return redirect(url_for('tarefas.listar_tarefas'))
+
+        sessao.delete(tarefa)
+        sessao.commit()
+        flash("Tarefa excluída com sucesso!", "success")
+    except Exception as e:
+        sessao.rollback()
+        flash(f"Erro ao excluir a tarefa: {str(e)}", "error")
+    finally:
+        sessao.close()
+    return redirect(url_for('tarefas.listar_tarefas'))
 
 # -------------------- API DE SUPORTE --------------------
 
