@@ -84,6 +84,12 @@ Se for a primeira vez executando com um novo banco de dados, as tabelas precisam
 # Inicie o servidor de desenvolvimento do Flask
 python app.py
 ```
+# Digitar no terminal:
+$env:FLASK_ENV = "development"
+flask run
+# Ou entao
+gunicorn --config gunicorn_config.py wsgi:app
+
 
 A aplicação estará disponível em `http://0.0.0.0:5001`.
 
