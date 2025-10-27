@@ -1,0 +1,50 @@
+/* --- Estilos dos Marcadores do Mapa --- */
+.map-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px #0004;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Estado Selecionado */
+.map-marker.selected {
+  width: 26px;
+  height: 26px;
+  border: 4px solid #2196f3;
+  background-color: #2196f3;
+}
+
+/* Cores por Prioridade */
+.map-marker.priority-urgente { background-color: red; }
+.map-marker.priority-alta { background-color: yellow; }
+.map-marker.priority-normal { background-color: green; }
+.map-marker.priority-baixa { background-color: #6495ED; } /* Cornflower Blue */
+
+/* Marcador do Usuário */
+.user-location-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #007bff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 8px rgba(0,123,255,0.6);
+}
+
+/* --- Botões de Controle do Mapa --- */
+.maplibregl-ctrl-icon.location-btn {
+  font-size: 16px;
+}
+
+/* --- Estilos da Tabela e Botões --- */
+.btn-whatsapp {
+  background-color: #25D366;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 5px;
+}

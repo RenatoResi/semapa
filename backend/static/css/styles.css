@@ -484,7 +484,23 @@ input.erro {
     max-height: 200px;
     overflow-y: auto;
     width: 100%;
+}.map-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 4px #0004;
 }
+.map-marker.selected {
+  width: 26px;
+  height: 26px;
+  border: 4px solid #2196f3;
+  background-color: #2196f3;
+}
+.map-marker.priority-urgente { background-color: red; }
+.map-marker.priority-alta { background-color: yellow; }
+.map-marker.priority-normal { background-color: green; }
+
 .autocomplete-item {
     padding: 6px 10px;
     cursor: pointer;

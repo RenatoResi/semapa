@@ -477,13 +477,15 @@ function criarMarcadores() {
 
 function criarMarcadorCor(prioridade, selecionado = false) {
   const el = document.createElement('div');
-  el.style.width = selecionado ? '26px' : '18px';
-  el.style.height = selecionado ? '26px' : '18px';
-  el.style.borderRadius = '50%';
-  el.style.border = selecionado ? '4px solid #2196f3' : '2px solid #fff';
-  el.style.boxShadow = '0 0 4px #0004';
-  el.style.background = selecionado ? '#2196f3' :
-    (prioridade === 'urgente' ? 'red' : prioridade === 'alta' ? 'yellow' : 'green');
+  el.className = 'map-marker';
+
+  if (selecionado) {
+    el.classList.add('selected');
+  } else {
+    // Usa 'normal' como fallback se a prioridade não for uma das esperadas
+    const priorityClass = ['urgente', 'alta', 'baixa'].includes(prioridade) ? prioridade : 'normal';
+    el.classList.add(`priority-${priorityClass}`);
+  }
   return el;
 }
 
@@ -580,12 +582,7 @@ function mostrarMinhaLocalizacao() {
 
     // criar elemento do marcador (bolinha azul)
     const el = document.createElement('div');
-    el.style.width = '18px';
-    el.style.height = '18px';
-    el.style.borderRadius = '50%';
-    el.style.background = '#007bff';
-    el.style.border = '3px solid #fff';
-    el.style.boxShadow = '0 0 8px rgba(0,123,255,0.6)';
+    el.className = 'user-location-marker';
 
     usuarioMarker = new maplibregl.Marker({ element: el })
       .setLngLat([lon, lat])
@@ -608,9 +605,8 @@ function adicionarControleMinhaLocalizacao() {
     onAdd: function(mapInstance) {
       this._btn = document.createElement('button');
       this._btn.type = 'button';
-      this._btn.title = 'Minha localização';
-      this._btn.className = 'maplibregl-ctrl-icon';
-      this._btn.style.fontSize = '16px';
+      this._btn.title = 'Mostrar minha localização';
+      this._btn.className = 'maplibregl-ctrl-icon location-btn';
       this._btn.textContent = '📍';
       this._btn.onclick = mostrarMinhaLocalizacao;
 
