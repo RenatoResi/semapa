@@ -14,34 +14,29 @@
 </section>
 
 <section>
-    <h2 id="titulo-secao">Listagem de Requerimentos Em Aberto</h2>
-    <input type="text" id="filtro-requerimento" placeholder="Buscar requerimentos..." style="margin-bottom: 10px; width: 300px;">
-    <select id="ordenar-campo">
-        <option value="data_abertura">Data de Abertura</option>
-        <option value="prioridade">Prioridade</option>
-    </select>
-    <select id="ordenar-direcao">
-        <option value="asc">Crescente</option>
-        <option value="desc" selected>Decrescente</option>
-    </select>
-    <button onclick="ordenarRequerimentos()">Ordenar</button>
+  <h2 id="titulo-secao">Listagem de Requerimentos Em Aberto</h2>
+  <input type="text" id="filtro-requerimento" placeholder="Buscar requerimentos..." style="margin-bottom: 10px; width: 300px;">
+  
+  <!-- Container para a tabela ou os cards (dependendo do modo responsivo) -->
+  <div class="table-responsive" id="tabela-container">
     <table id="requerimentos-lista">
-        <thead>
-            <tr>
-                <th>Número</th>
-                <th>Tipo</th>
-                <th>Motivo</th>
-                <th>Data</th>
-                <th>Requerente</th>
-                <th>Local</th>
-                <th>Bairro</th>
-                <th id="coluna-data-conclusao" style="display: none;">Data Conclusão</th>
-                <th id="coluna-acoes">Ações</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th>Data</th>
+          <th>Requerente</th>
+          <th>Local</th>
+          <th>Bairro</th>
+          <th id="coluna-data-conclusao" style="display: none;">Data Conclusão</th>
+          <th id="coluna-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
     </table>
-    <div id="paginacao-requerimentos" style="margin-top: 20px;"></div>
+  </div>
+  <div id="paginacao-requerimentos" style="margin-top: 20px;"></div>
 </section>
 
 <section id="secao-selecionados">

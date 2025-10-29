@@ -16,15 +16,23 @@ def login():
         session = SessionLocal()
         try:
             user = session.query(User).filter_by(email=email).first()
+            
+            # Verificar se o usuário existe e a senha está correta
             if user and bcrypt.checkpw(senha.encode(), user.password.encode()):
+                # Verificar se o usuário está ativo
+                if not user.ativo:
+                    return render_template('login.html', 
+                        error="Sua conta ainda não foi ativada. Aguarde a liberação do acesso.")
+                
                 login_user(user)
-                return redirect(url_for('pages.dashboard'))
+                return redirect(url_for('dashboard.dashboard'))
             else:
                 return render_template('login.html', error="E-mail ou senha inválidos")
         finally:
             session.close()
     
     return render_template('login.html')
+
 
 
 @auth_bp.route('/logout')
@@ -57,12 +65,13 @@ def register():
                 email=email,
                 telefone=telefone,
                 password=hash_senha,
+                ativo=False,  # Usuário inicia inativo
                 nivel=3  # Nível padrão para novos usuários
             )
             session.add(novo)
             session.commit()
             
-            return render_template('login.html', error="Cadastro realizado. Faça login.")
+            return render_template('login.html', error="Cadastro realizado. Aguarde nossa verificação para liberar seu login.")
         except Exception as e:
             session.rollback()
             return render_template('register.html', error=f"Erro ao registrar: {str(e)}")

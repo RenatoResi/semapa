@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for
 from flask_login import login_required, current_user
-from database import SessionLocal, Vistoria, Requerimento
+from database import SessionLocal, Vistoria, Requerimento, User, Arvore, Especies, OrdemServico
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func as sa_func
 from functools import wraps
@@ -10,12 +10,6 @@ pages_bp = Blueprint('pages', __name__)
 
 
 # -------------------- ROTAS --------------------
-
-@pages_bp.route('/dashboard')
-@login_required
-def dashboard():
-    """Dashboard principal do usuário"""
-    return render_template('base.html')
 
 
 @pages_bp.route('/')

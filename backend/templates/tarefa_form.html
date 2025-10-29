@@ -13,7 +13,7 @@
                 <label for="requerimento_numero">Requerimento</label>
                 <input type="text" id="requerimento_numero" name="requerimento_numero"
                     placeholder="Ex: 9999/2025"
-                    value="{{ tarefa.requerimento_numero if tarefa else '' }}">
+                    value="{{ tarefa.requerimento_numero if tarefa.requerimento_numero else '' }}">
             </div>
             <div class="form-group">
                 <label for="data_prevista">Data Prevista</label>
@@ -135,5 +135,15 @@ document.getElementById("requerimento_numero").addEventListener("change", functi
       alert(error.message);
     });
 });
+
+// Carregar dados do requerimento se vier pré-preenchido
+document.addEventListener('DOMContentLoaded', function() {
+    const requerimentoInput = document.getElementById("requerimento_numero");
+    if (requerimentoInput.value.trim()) {
+        // Dispara o evento change manualmente
+        requerimentoInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+});
+
 </script>
 {% endblock %}

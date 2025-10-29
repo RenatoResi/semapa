@@ -18,8 +18,17 @@
         <!-- Botão hamburguer -->
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">&#9776;</button>
         <aside class="sidebar">
+            <div class="sidebar-user">
+                <strong>{{ current_user.nome }}</strong>
+                <span style="font-size: 12px;">{{ current_user.email }}</span>
+                <div class="sidebar-actions">
+                  <button onclick="abrirModalSenha()">Alterar senha</button>
+                  <a href="{{ url_for('auth.logout') }}">Sair</a>
+                </div>
+            </div>
             <nav>
                 <ul>
+                    <li><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a></li>
                     <li><a href="{{ url_for('pages.index') }}">Cadastro</a></li>
                     <li><a href="{{ url_for('pages.requerimento') }}">Requerimentos</a></li>
                     <li><a href="{{ url_for('pages.requerimento_listar') }}">Listar Requerimentos</a></li>
@@ -29,14 +38,6 @@
                     <li><a href="{{ url_for('pages.agenda') }}">Agenda</a></li>
                 </ul>
             </nav>
-            <div class="sidebar-user">
-                <strong>{{ current_user.nome }}</strong>
-                <span style="font-size: 12px;">{{ current_user.email }}</span>
-                <div class="sidebar-actions">
-                  <button onclick="abrirModalSenha()">Alterar senha</button>
-                  <a href="{{ url_for('auth.logout') }}">Sair</a>
-                </div>
-            </div>
             <div id="sidebar-resposta">
                 <pre id="resposta"></pre>
             </div>

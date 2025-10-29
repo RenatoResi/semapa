@@ -162,10 +162,10 @@
     {% if not busca %}
     <div class="week-nav-bottom">
         <a href="{{ url_for('tarefas.listar_tarefas', semana=semana_anterior, ano=ano_anterior) }}" class="btn btn-lg btn-primary week-nav-btn me-3">
-            &laquo; Semana Anterior
+            &laquo; Semana
         </a>
         <a href="{{ url_for('tarefas.listar_tarefas', semana=semana_proxima, ano=ano_proxima) }}" class="btn btn-lg btn-primary week-nav-btn">
-            Próxima Semana &raquo;
+            Semana &raquo;
         </a>
     </div>
     {% endif %}

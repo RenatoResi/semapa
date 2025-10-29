@@ -54,6 +54,7 @@ def register_blueprints(app):
     from routes.requerimentos_routes import requerimentos_bp
     from routes.arvores_routes import arvores_bp
     from routes.requerentes_routes import requerentes_bp
+    from routes.dashboard_routes import dashboard_bp
 
     blueprints = [
         auth_bp,
@@ -65,6 +66,7 @@ def register_blueprints(app):
         requerimentos_bp,
         arvores_bp,
         requerentes_bp,
+        dashboard_bp
     ]
 
     for blueprint in blueprints:

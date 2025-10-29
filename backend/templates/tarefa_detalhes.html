@@ -1,7 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Detalhes da Tarefa{% endblock %}
 
+
 {% block content %}
+{% set endereco_completo = tarefa.endereco %}
+{% if tarefa.bairro %}
+  {% set endereco_completo = endereco_completo ~ ", " ~ tarefa.bairro %}
+{% endif %}
+
+{% set dados_whatsapp = {
+  "telefone": tarefa.chefe_equipe.telefone,
+  "data": tarefa.data_prevista.strftime('%d/%m/%Y'),
+  "periodo": tarefa.periodo,
+  "descricao": tarefa.descricao,
+  "endereco": endereco_completo,
+  "observacoes": tarefa.observacoes
+} %}
+
 <div class="container mt-4">
   <div class="card shadow-sm">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
@@ -19,25 +34,37 @@
     <div class="card-body">
       <h4 class="card-title mb-3">{{ tarefa.descricao }}</h4>
 
+
       <p><strong>Requerimento:</strong> {{ tarefa.requerimento_numero }}</p>
       <p><strong>Data prevista:</strong> {{ tarefa.data_prevista.strftime('%d/%m/%Y') }}</p>
-      <p><strong>Endereço:</strong> {{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}</p>
+      <p><strong>Endereço:</strong>
+        <a href="https://www.google.com/maps/search/?api=1&query={{ (tarefa.endereco ~ ' ' ~ (tarefa.bairro or '') ~ ' Cravinhos')|urlencode }}" target="_blank" rel="noopener noreferrer">
+          {{ tarefa.endereco }}{% if tarefa.bairro %}, {{ tarefa.bairro }}{% endif %}
+        </a>
+      </p>
+
+
       <p><strong>Período:</strong> {{ tarefa.periodo|capitalize }}</p>
       <p><strong>Status atual:</strong> <span class="badge bg-info text-dark">{{ tarefa.status|capitalize }}</span></p>
       <p><strong>Complexidade:</strong> {{ tarefa.complexidade|capitalize }}</p>
-      <p><strong>Chefe da Equipe:</strong> {{ tarefa.chefe_equipe.nome }}</p>
+      <p><strong>Chefe da Equipe:</strong>
+        {{ tarefa.chefe_equipe.nome }}
+        <button type="button" class="btn btn-success btn-sm ms-2 btn-whatsapp"
+            data-whatsapp='{{ dados_whatsapp|tojson }}'
+            title="Enviar mensagem pelo WhatsApp">
+          <i class="fab fa-whatsapp">WhatsApp</i>
+        </button>
+      </p>
       <p><strong>Observações:</strong> {{ tarefa.observacoes or 'Nenhuma' }}</p>
+
 
       <hr>
       <div class="d-flex flex-wrap gap-2">
-        <!-- Formulário para Concluir/Cancelar -->
         <form method="POST" action="{{ url_for('tarefas.atualizar_tarefa_status', tarefa_id=tarefa.id) }}" class="d-inline">
           <button type="submit" name="acao" value="concluir" class="btn btn-success"><i class="fas fa-check me-2"></i>Concluir</button>
           <button type="submit" name="acao" value="cancelar" class="btn btn-danger"><i class="fas fa-times me-2"></i>Cancelar</button>
         </form>
-        <!-- Botão de Reagendar -->
         <a href="{{ url_for('tarefas.reagendar_tarefa', tarefa_id=tarefa.id) }}" class="btn btn-warning"><i class="fas fa-calendar-alt me-2"></i>Reagendar</a>
-        <!-- Formulário de Excluir -->
         <form method="POST" action="{{ url_for('tarefas.excluir_tarefa', tarefa_id=tarefa.id) }}" onsubmit="return confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.');" class="d-inline">
           <button type="submit" class="btn btn-outline-danger"><i class="fas fa-trash-alt me-2"></i>Excluir</button>
         </form>
@@ -45,4 +72,46 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+  function formatPhoneForWhatsApp(phone) {
+    if (!phone) return null;
+    let digits = phone.replace(/\D/g, '');
+    digits = digits.replace(/^0+/, '');
+    if (!digits.startsWith('55') && (digits.length >= 8 && digits.length <= 11)) {
+      digits = '55' + digits;
+    }
+    return digits;
+  }
+
+
+  function abrirWhatsAppPara(data) {
+    if (!data) return;
+    const phone = formatPhoneForWhatsApp(data.telefone || '');
+    if (!phone) {
+      alert('Telefone do chefe da equipe não disponível.');
+      return;
+    }
+    const mensagem = `ROBÔ SEMAPA\nTarefa para o dia ${data.data} \nPeríodo da ${data.periodo} \n${data.descricao}\nLocal: ${data.endereco}\n${data.observacoes}.`;
+    const texto = encodeURIComponent(mensagem);
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+    const url = isMobile
+      ? `https://wa.me/${phone}?text=${texto}`
+      : `https://web.whatsapp.com/send?phone=${phone}&text=${texto}`;
+    window.open(url, '_blank');
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnWhatsapp = document.querySelector('.btn-whatsapp');
+    if (btnWhatsapp) {
+      btnWhatsapp.addEventListener('click', function() {
+        const dados = JSON.parse(this.getAttribute('data-whatsapp'));
+        abrirWhatsAppPara(dados);
+      });
+    }
+  });
+</script>
 {% endblock %}

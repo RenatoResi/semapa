@@ -27,27 +27,28 @@ async function carregarSelecao() {
   }
 }
 
-// Renderiza a tabela principal
+// Renderiza a tabela principal com estilo card em mobile
 function renderTabelaRequerimentos() {
   const tbody = document.querySelector('#requerimentos-lista tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
   const inicio = (paginaReq - 1) * porPagina;
   const fim = inicio + porPagina;
-  
+
   filteredRequerimentos.slice(inicio, fim).forEach(r => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${r.numero}</td>
-      <td>${r.tipo}</td>
-      <td>${r.motivo}</td>
-      <td>${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
-      <td>${r.requerente_nome || ''}</td>
-      <td>${gerarLinkGoogleMaps(r)}</td>
-      <td>${r.arvore_bairro || ''}</td>
-      <td>
-        <button class="btn-selecionar" data-id="${r.id}">Selecionar</button>
-        <button class="btn-whatsapp" data-id="${r.id}">Enviar WhatsApp</button>
+      <td data-label="Número">${r.numero}</td>
+      <td data-label="Tipo">${r.tipo}</td>
+      <td data-label="Motivo">${r.motivo}</td>
+      <td data-label="Data">${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
+      <td data-label="Requerente">${r.requerente_nome || ''}</td>
+      <td data-label="Local">${gerarLinkGoogleMaps(r)}</td>
+      <td data-label="Bairro">${r.arvore_bairro || ''}</td>
+      <td data-label="Data de Conclusão" style="display: none;">${r.data_conclusao ? formatDateDDMMYYYY(r.data_conclusao) : ''}</td>
+      <td data-label="Ações">
+        <button class="btn-selecionar btn-icon" data-id="${r.id}" title="Selecionar"><span>+</span></button>
+        <button class="btn-whatsapp btn-icon" data-id="${r.id}" title="Enviar WhatsApp"><span>📱</span></button>
       </td>
     `;
     tbody.appendChild(tr);

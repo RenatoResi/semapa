@@ -1,0 +1,31 @@
+/* Estilos específicos para a página de Dashboard */
+
+/*
+  O layout principal do dashboard é construído com classes do Bootstrap 5.
+  Este arquivo contém apenas ajustes finos e animações para melhorar a experiência.
+*/
+
+/* Animação suave ao passar o mouse sobre os cards de estatísticas */
+.card.shadow.h-100 {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card.shadow.h-100:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 1.75rem rgba(58, 59, 69, 0.18) !important;
+}
+
+/* Ajusta o tamanho da fonte para os títulos dos cards (ex: "Total de Usuários") */
+.text-xs {
+    font-size: .8rem;
+}
+
+/* Garante que o ícone nos cards de estatísticas fique com uma cor suave */
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+
+/* Cor para o texto principal dos cards (números) */
+.text-gray-800 {
+    color: #5a5c69 !important;
+}

@@ -23,8 +23,8 @@ body {
 nav {
     background: var(--primary);
     border-radius: var(--radius);
-    margin-bottom: 32px;
-    margin-top: 32px;
+    margin-bottom: 10px;
+    margin-top: 10px;
     box-shadow: 0 2px 8px #0001;
 }
 nav ul {
@@ -121,11 +121,11 @@ button[type="submit"]:hover {
     background: #fffbe7;
     border: 1px solid #ffe082;
     padding: 14px;
-    margin-bottom: 32px;
+    margin-bottom: 10px;
     border-radius: var(--radius);
     font-family: 'Fira Mono', 'Consolas', monospace;
     color: #7c6f00;
-    font-size: 1rem;
+    font-size: 0.8rem;
     white-space: pre-wrap;
 }
 table {
@@ -251,7 +251,7 @@ input.erro {
   left: 0;
   top: 0;
   z-index: 10;
-  padding-top: 32px;
+  padding-top: 0px;
 }
 
 .sidebar nav ul {
@@ -262,7 +262,7 @@ input.erro {
 }
 
 .sidebar nav li {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .sidebar nav a {
@@ -507,4 +507,49 @@ input.erro {
 }
 .autocomplete-item:hover {
     background: #f0f0f0;
+}
+
+
+/* Estilos para modo cartão em dispositivos móveis */
+@media (max-width: 600px) {
+    #requerimentos-lista thead {
+        display: none;
+    }
+
+    #requerimentos-lista tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+    }
+
+    #requerimentos-lista tbody td {
+        display: block;
+        text-align: left;
+        padding: 5px 0;
+        border: none;
+        position: relative;
+        padding-left: 50%;
+    }
+
+    #requerimentos-lista tbody td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        top: 10px;
+        width: 45%;
+        white-space: nowrap;
+        font-weight: bold;
+        font-size: 0.9em;
+        color: #333;
+    }
+
+    /* Ajusta os botões para ficar compacto */
+    table button {
+        padding: 4px 8px;
+        font-size: 0.9em;
+        margin: 2px 4px;
+    }
 }

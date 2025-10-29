@@ -65,6 +65,7 @@ async function carregarDetalhesOS(osId) {
                         ${isConcluido 
                             ? '<span class="checked-sign">✅</span>' 
                             : `<button class="btn-vistoriar" data-req-id="${req.id}">Vistoriar</button>
+                            <button class="btn-gerar-tarefa" data-req-numero="${req.numero}">Gerar Tarefa</button>
                             <button class="btn-concluir" data-req-id="${req.id}">Concluir</button>`
                         }
                     </td>
@@ -85,6 +86,14 @@ async function carregarDetalhesOS(osId) {
                 btn.addEventListener('click', (e) => {
                     const reqId = btn.dataset.reqId;
                     window.location.href = `/vistoria_form?requerimento_id=${reqId}`;
+                });
+            });
+
+            // Event listeners para "Gerar Tarefa"
+            document.querySelectorAll('.btn-gerar-tarefa').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const reqNumero = btn.dataset.reqNumero;
+                    window.location.href = `/tarefas/nova?requerimento_numero=${encodeURIComponent(reqNumero)}`;
                 });
             });
 

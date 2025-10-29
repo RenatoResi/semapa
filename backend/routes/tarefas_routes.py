@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from database import SessionLocal, Tarefa, Requerimento, Arvore, User
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
+from sqlalchemy.orm import joinedload
 
 tarefas_bp = Blueprint('tarefas', __name__, url_prefix='/tarefas')
 
@@ -144,9 +145,12 @@ def nova_tarefa():
         
         # GET - preparar formulário vazio
         data_prevista_ini = request.args.get('data_prevista', '')
+        requerimento_numero = request.args.get('requerimento_numero', '')
+        
         tarefa = type('FakeTarefa', (), {})()
         tarefa.data_prevista = None
         tarefa.chefe_equipe_id = None
+        tarefa.requerimento_numero = requerimento_numero
         
         if data_prevista_ini:
             try:
@@ -206,10 +210,9 @@ def editar_tarefa(tarefa_id):
 @tarefas_bp.route('/<int:tarefa_id>/detalhes')
 @login_required
 def tarefa_detalhes(tarefa_id):
-    """Exibe detalhes da tarefa"""
     sessao = SessionLocal()
     try:
-        tarefa = sessao.query(Tarefa).get(tarefa_id)
+        tarefa = sessao.query(Tarefa).options(joinedload(Tarefa.chefe_equipe)).get(tarefa_id)
         if not tarefa:
             flash("Tarefa não encontrada.", "error")
             return redirect(url_for('tarefas.listar_tarefas'))
