@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 import io
 from routes.decorators import nivel_requerido
+from app import cache
 
 vistorias_bp = Blueprint('vistorias', __name__, url_prefix='/vistorias')
 
@@ -63,6 +64,8 @@ def processar_fotos(files, vistoria_id, session):
 
 @vistorias_bp.route('/', methods=['GET'])
 @login_required
+@nivel_requerido(1, 2)
+@cache.cached(timeout=300)
 def listar_vistorias():
     """Lista todas as vistorias cadastradas"""
     session = SessionLocal()
@@ -240,6 +243,7 @@ def atualizar_vistoria(id):
 
 @vistorias_bp.route('/foto/<int:foto_id>', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def vistoria_foto(foto_id):
     """Exibe foto da vistoria"""
     session = SessionLocal()

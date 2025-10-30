@@ -4,6 +4,9 @@ from database import SessionLocal, Requerimento, Arvore
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func as sa_func
 from datetime import datetime
+from app import cache
+
+# -------------------- BLUEPRINT --------------------   
 
 requerimentos_bp = Blueprint('requerimentos', __name__)
 
@@ -111,6 +114,7 @@ def cadastrar_requerimento():
 
 @requerimentos_bp.route('/requerimentos', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_requerimentos():
     """Lista requerimentos com paginação e ordenação"""
     session = SessionLocal()
@@ -190,6 +194,7 @@ def atualizar_requerimento(id):
 
 @requerimentos_bp.route('/requerimentos/todos', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_todos_requerimentos():
     """Lista todos os requerimentos não concluídos com dados completos"""
     session = SessionLocal()
@@ -213,6 +218,7 @@ def listar_todos_requerimentos():
 
 @requerimentos_bp.route('/requerimentos/concluidos', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_requerimentos_concluidos():
     """Lista todos os requerimentos concluídos com dados completos"""
     session = SessionLocal()

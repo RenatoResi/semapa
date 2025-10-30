@@ -2,7 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required
 from database import SessionLocal, Especies
 from sqlalchemy import or_, func as sa_func
+from app import cache
 
+# -------------------- BLUEPRINT ESPECIES --------------------
 
 especies_bp = Blueprint('especies', __name__, url_prefix='/especies')
 
@@ -10,6 +12,7 @@ especies_bp = Blueprint('especies', __name__, url_prefix='/especies')
 
 @especies_bp.route('/', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_especies():
     """Lista todas as espécies cadastradas"""
     session = SessionLocal()

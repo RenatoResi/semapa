@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from database import SessionLocal, Requerente
 from datetime import datetime
+from app import cache
+
+# -------------------- BLUEPRINT --------------------
 
 requerentes_bp = Blueprint('requerentes', __name__)
 
@@ -48,6 +51,7 @@ def cadastrar_requerente():
 
 @requerentes_bp.route('/requerentes', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_requerentes():
     """Lista requerentes com paginação"""
     session = SessionLocal()

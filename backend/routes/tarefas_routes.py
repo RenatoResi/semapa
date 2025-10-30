@@ -4,6 +4,7 @@ from database import SessionLocal, Tarefa, Requerimento, Arvore, User
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
 from sqlalchemy.orm import joinedload
+from app import cache
 
 tarefas_bp = Blueprint('tarefas', __name__, url_prefix='/tarefas')
 
@@ -41,6 +42,7 @@ def buscar_requerimento_id(session, numero_completo):
 
 @tarefas_bp.route('/', methods=['GET'])
 @login_required
+@cache.cached(timeout=300)
 def listar_tarefas():
     """Lista tarefas da semana com opção de busca"""
     semana_str = request.args.get("semana")
