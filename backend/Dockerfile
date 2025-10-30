@@ -14,6 +14,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o resto do código da sua aplicação para o diretório de trabalho
 COPY . .
 
+# --- Boas práticas de segurança ---
+# Cria um usuário e grupo não-root
+RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot
+
+# Muda para o usuário não-root
+USER nonroot
+
 # Expõe a porta que o Gunicorn vai usar (definida em gunicorn_config.py)
 EXPOSE 5001
 
