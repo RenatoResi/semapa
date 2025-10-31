@@ -1,6 +1,6 @@
 # Use uma imagem base oficial do Python.
 # A versão 3.9 é uma boa escolha, atendendo ao requisito de 3.8+
-FROM python:3.9-slim
+FROM python:3.11-slim-bookworm
 
 # Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
