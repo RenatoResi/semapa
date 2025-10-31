@@ -7,7 +7,6 @@ from datetime import datetime
 from simplekml import Kml
 import os
 import sqlalchemy as sa
-from app import cache
 
 arvores_bp = Blueprint('arvores', __name__)
 
@@ -90,7 +89,6 @@ def listar_todas_arvores():
 
 @arvores_bp.route('/arvores', methods=['GET'])
 @login_required
-@cache.cached(timeout=300)
 def listar_arvores():
     """Lista árvores com paginação"""
     session = SessionLocal()

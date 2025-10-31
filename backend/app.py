@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_login import LoginManager
-from flask_caching import Cache
 from database import SessionLocal, User
 from config import config
 import os
@@ -13,13 +12,6 @@ app_env = os.getenv("FLASK_ENV", "development")
 app.config.from_object(config[app_env])
 
 CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
-
-# -------------------- CACHE SETUP (MEMCACHED) --------------------
-
-cache = Cache(app)
-
-# O valor de CACHE_MEMCACHED_SERVERS virá do seu config.py,
-# que por sua vez pode ler de uma variável de ambiente.
 
 # -------------------- FLASK-LOGIN SETUP --------------------
 
