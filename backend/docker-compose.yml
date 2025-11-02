@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:17
+    container_name: semapa-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-semapa}
+      POSTGRES_USER: ${POSTGRES_USER:-semapa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-semapa}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-semapa} -d ${POSTGRES_DB:-semapa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: semapa-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Variáveis do app
+      SECRET_KEY: ${SECRET_KEY}
+      FLASK_ENV: ${FLASK_ENV:-production}
+      # Use o hostname do serviço db (rede do Compose)
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-semapa}:${POSTGRES_PASSWORD:-semapa}@db:5432/${POSTGRES_DB:-semapa}}
+      # Ajustes do Gunicorn (mapeados no seu gunicorn_config.py)
+      GUNICORN_BIND: ${GUNICORN_BIND:-0.0.0.0:5001}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+    # Healthcheck simples checando a porta HTTP do backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5001/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  pgdata:
