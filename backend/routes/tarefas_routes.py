@@ -1,9 +1,11 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from database import SessionLocal, Tarefa, Requerimento, Arvore, User
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
 from sqlalchemy.orm import joinedload
+import requests
+import os
 
 tarefas_bp = Blueprint('tarefas', __name__, url_prefix='/tarefas')
 
@@ -42,29 +44,26 @@ def buscar_requerimento_id(session, numero_completo):
 @tarefas_bp.route('/', methods=['GET'])
 @login_required
 def listar_tarefas():
-    """Lista tarefas da semana com opção de busca"""
     semana_str = request.args.get("semana")
     ano_str = request.args.get("ano")
     busca = request.args.get("q", "").strip().lower()
     hoje = datetime.now().date()
-    
+
     if semana_str and semana_str.isdigit():
         ref_week = int(semana_str)
         ref_year = int(ano_str) if ano_str and ano_str.isdigit() else hoje.isocalendar()[0]
     else:
         ref_week = hoje.isocalendar()[1]
         ref_year = hoje.isocalendar()[0]
-
+    
     inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
     dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
-
+    
     semana_anterior, ano_anterior, semana_proxima, ano_proxima = get_week_navigation(ref_week, ref_year)
 
     sessao = SessionLocal()
     try:
         if busca:
-            # Se há busca, retorna TODAS as tarefas que correspondem (sem limite de semana)
-            from sqlalchemy import or_
             tarefas = sessao.query(Tarefa).filter(
                 or_(
                     Tarefa.descricao.ilike(f'%{busca}%'),
@@ -73,26 +72,25 @@ def listar_tarefas():
                     Tarefa.observacoes.ilike(f'%{busca}%')
                 )
             ).order_by(Tarefa.data_prevista.desc()).all()
-            
-            # Se há resultados, usar a semana da primeira tarefa encontrada
             if tarefas:
                 primeira_tarefa_data = tarefas[0].data_prevista
                 inicio_semana = primeira_tarefa_data - timedelta(days=primeira_tarefa_data.weekday())
                 dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
         else:
-            # Se não há busca, retorna tarefas da semana especificada
             tarefas = sessao.query(Tarefa).filter(
                 Tarefa.data_prevista >= inicio_semana,
                 Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
             ).order_by(Tarefa.data_prevista.asc()).all()
     finally:
         sessao.close()
-    
+
     tarefas_por_dia = {dia: [] for dia in dias_semana}
     for tarefa in tarefas:
-        # Adicionar tarefa apenas se ela estiver dentro da semana mostrada
         if tarefa.data_prevista in tarefas_por_dia:
             tarefas_por_dia[tarefa.data_prevista].append(tarefa)
+
+    # Obter previsão do tempo para a semana
+    weather_icons = obter_previsao_semana(dias_semana)
 
     return render_template(
         "tarefas_listar.html",
@@ -105,7 +103,8 @@ def listar_tarefas():
         semana_proxima=semana_proxima,
         ano_proxima=ano_proxima,
         timedelta=timedelta,
-        busca=busca
+        busca=busca,
+        weather_icons=weather_icons
     )
 
 @tarefas_bp.route('/nova', methods=['GET', 'POST'])
@@ -387,3 +386,31 @@ def api_requerimento():
         })
     finally:
         session.close()
+
+
+# Função para obter previsão do tempo na semana para Ribeirão Preto usando OpenWeatherMap
+def obter_previsao_semana(dias_semana):
+    api_key = os.getenv('OPENWEATHER_API_KEY')
+    latitude = -21.3400
+    longitude = -47.7318
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&units=metric&appid={api_key}&lang=pt_br"
+    
+    resp = requests.get(url)
+    data = resp.json()
+    
+    previsao_por_dia = {dia.strftime('%Y-%m-%d'): None for dia in dias_semana}
+    registros_por_dia = {}
+    for item in data.get('list', []):
+        dt_txt = item['dt_txt'].split()[0]
+        if dt_txt in previsao_por_dia and dt_txt not in registros_por_dia:
+            registros_por_dia[dt_txt] = {
+                'icon': item['weather'][0]['icon'],      # Exemplo: '01d', '02d', '09d'
+                'descricao': item['weather'][0]['description'].capitalize()  # Exemplo: 'Céu limpo'
+            }
+    for dia in previsao_por_dia:
+        if dia in registros_por_dia:
+            previsao_por_dia[dia] = registros_por_dia[dia]
+
+    return previsao_por_dia
+
+

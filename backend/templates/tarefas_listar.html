@@ -53,10 +53,20 @@
                     <div class="day-column">
                         <div class="day-header">
                             <div class="text-start">
-                                <div>{{ dias_semana_nomes[i] }}</div>
+                                <div>
+                                    {{ dias_semana_nomes[i] }}
+                                    {% set dia_str = dia.strftime('%Y-%m-%d') %}
+                                    {% if weather_icons.get(dia_str) %}
+                                        <img src="https://openweathermap.org/img/wn/{{ weather_icons[dia_str]['icon'] }}.png"
+                                            alt="{{ weather_icons[dia_str]['descricao'] }}"
+                                            title="{{ weather_icons[dia_str]['descricao'] }}"
+                                            style="width:24px; vertical-align: middle; margin-left: 6px;">
+                                    {% endif %}
+                                </div>
                                 <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
                             </div>
                         </div>
+                    </div>
 
                         <div class="tasks-list">
                             {% set tarefas_dia = tarefas_por_dia.get(dia, []) %}
