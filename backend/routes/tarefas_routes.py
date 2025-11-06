@@ -390,27 +390,55 @@ def api_requerimento():
 
 # Função para obter previsão do tempo na semana para Ribeirão Preto usando OpenWeatherMap
 def obter_previsao_semana(dias_semana):
+    """
+    Retorna um dicionário com chaves 'YYYY-MM-DD' => {'icon': '09d', 'descricao': 'Chuva'} ou None.
+    Faz tratamento de erros, verifica API key e usa timeout em requests.
+    """
     api_key = os.getenv('OPENWEATHER_API_KEY')
     latitude = -21.3400
     longitude = -47.7318
-    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&units=metric&appid={api_key}&lang=pt_br"
-    
-    resp = requests.get(url)
-    data = resp.json()
-    
+
+    # Inicializa com None para cada dia solicitado
     previsao_por_dia = {dia.strftime('%Y-%m-%d'): None for dia in dias_semana}
-    registros_por_dia = {}
-    for item in data.get('list', []):
-        dt_txt = item['dt_txt'].split()[0]
-        if dt_txt in previsao_por_dia and dt_txt not in registros_por_dia:
-            registros_por_dia[dt_txt] = {
-                'icon': item['weather'][0]['icon'],      # Exemplo: '01d', '02d', '09d'
-                'descricao': item['weather'][0]['description'].capitalize()  # Exemplo: 'Céu limpo'
-            }
-    for dia in previsao_por_dia:
-        if dia in registros_por_dia:
-            previsao_por_dia[dia] = registros_por_dia[dia]
+
+    if not api_key:
+        print("[Aviso] OPENWEATHER_API_KEY não encontrada no ambiente (.env não carregado ou variável faltando).")
+        return previsao_por_dia
+
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&units=metric&appid={api_key}&lang=pt_br"
+    try:
+        resp = requests.get(url, timeout=5)
+        print("Status OpenWeather:", resp.status_code)
+
+        if resp.status_code != 200:
+            # Log do corpo da resposta para debug (por exemplo, 401 Invalid API key)
+            try:
+                print("Erro na API OpenWeather:", resp.text)
+            except Exception:
+                print("Erro na API OpenWeather e resposta não pôde ser decodificada.")
+            return previsao_por_dia
+
+        data = resp.json()
+        registros_por_dia = {}
+        # Percorre itens e pega o primeiro registro do dia que batizar com a chave no dicionário
+        for item in data.get('list', []):
+            dt_txt = item.get('dt_txt', '').split()[0]
+            if dt_txt in previsao_por_dia and dt_txt not in registros_por_dia:
+                weather = item.get('weather')
+                if weather and isinstance(weather, list) and len(weather) > 0:
+                    registros_por_dia[dt_txt] = {
+                        'icon': weather[0].get('icon'),
+                        'descricao': weather[0].get('description', '').capitalize()
+                    }
+
+        # Atribui apenas os dias onde encontrou registro
+        for dia in previsao_por_dia:
+            if dia in registros_por_dia:
+                previsao_por_dia[dia] = registros_por_dia[dia]
+
+    except requests.exceptions.RequestException as e:
+        print("Erro ao conectar com OpenWeather:", str(e))
+    except Exception as e:
+        print("Erro inesperado ao processar previsão do tempo:", str(e))
 
     return previsao_por_dia
-
-

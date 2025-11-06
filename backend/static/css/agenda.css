@@ -22,6 +22,7 @@
     padding: 1rem 0.5rem;
     font-weight: 600;
     border-bottom: 1px solid #e5e7eb;
+    position: relative;
 }
 
 .day-date {
@@ -229,6 +230,17 @@
     box-shadow: 0 4px 16px rgba(34,197,94,0.25);
 }
 
-.day-header {
-    position: relative;
+/* Container do ícone de clima */
+.weather-icon-container {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    text-align: right;
+}
+
+/* Imagem do ícone */
+.weather-icon-img {
+    width: 50px;       /* aumenta o tamanho do ícone */
+    height: 50px;      /* mantém proporção consistente */
+    opacity: 0.95;     /* leve transparência opcional */
 }
