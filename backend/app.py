@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_login import LoginManager
 from database import SessionLocal, User
 from config import config
+from flask_caching import Cache
 import os
 
 # -------------------- CONFIGURAÇÃO INICIAL --------------------
@@ -12,6 +13,7 @@ app_env = os.getenv("FLASK_ENV", "development")
 app.config.from_object(config[app_env])
 
 CORS(app, resources={r"/*": {"origins": app.config['CORS_ORIGINS']}})
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 # -------------------- FLASK-LOGIN SETUP --------------------
 

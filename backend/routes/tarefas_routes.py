@@ -4,6 +4,7 @@ from database import SessionLocal, Tarefa, Requerimento, Arvore, User
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
 from sqlalchemy.orm import joinedload
+from app import cache
 import requests
 import os
 
@@ -389,38 +390,28 @@ def api_requerimento():
 
 
 # Função para obter previsão do tempo na semana para Ribeirão Preto usando OpenWeatherMap
+
+@cache.memoize(timeout=600)  # cache por 10 minutos
 def obter_previsao_semana(dias_semana):
-    """
-    Retorna um dicionário com chaves 'YYYY-MM-DD' => {'icon': '09d', 'descricao': 'Chuva'} ou None.
-    Faz tratamento de erros, verifica API key e usa timeout em requests.
-    """
     api_key = os.getenv('OPENWEATHER_API_KEY')
     latitude = -21.3400
     longitude = -47.7318
 
-    # Inicializa com None para cada dia solicitado
     previsao_por_dia = {dia.strftime('%Y-%m-%d'): None for dia in dias_semana}
 
     if not api_key:
-        print("[Aviso] OPENWEATHER_API_KEY não encontrada no ambiente (.env não carregado ou variável faltando).")
+        print("[Aviso] OPENWEATHER_API_KEY não encontrada no ambiente.")
         return previsao_por_dia
 
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&units=metric&appid={api_key}&lang=pt_br"
     try:
         resp = requests.get(url, timeout=5)
-        print("Status OpenWeather:", resp.status_code)
-
         if resp.status_code != 200:
-            # Log do corpo da resposta para debug (por exemplo, 401 Invalid API key)
-            try:
-                print("Erro na API OpenWeather:", resp.text)
-            except Exception:
-                print("Erro na API OpenWeather e resposta não pôde ser decodificada.")
+            print("Erro na API OpenWeather:", resp.text)
             return previsao_por_dia
 
         data = resp.json()
         registros_por_dia = {}
-        # Percorre itens e pega o primeiro registro do dia que batizar com a chave no dicionário
         for item in data.get('list', []):
             dt_txt = item.get('dt_txt', '').split()[0]
             if dt_txt in previsao_por_dia and dt_txt not in registros_por_dia:
@@ -431,14 +422,11 @@ def obter_previsao_semana(dias_semana):
                         'descricao': weather[0].get('description', '').capitalize()
                     }
 
-        # Atribui apenas os dias onde encontrou registro
         for dia in previsao_por_dia:
             if dia in registros_por_dia:
                 previsao_por_dia[dia] = registros_por_dia[dia]
 
-    except requests.exceptions.RequestException as e:
-        print("Erro ao conectar com OpenWeather:", str(e))
     except Exception as e:
-        print("Erro inesperado ao processar previsão do tempo:", str(e))
+        print("Erro ao obter previsão:", e)
 
     return previsao_por_dia
