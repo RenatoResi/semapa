@@ -184,8 +184,13 @@ echo "Aplicação rodando em http://localhost:5001"
 Use:
 
 ```bash
+# Linux/Mac
 chmod +x start.sh
 ./start.sh
+
+# Windows
+start.bat
+.\start.ps1
 ```
 
 ***
