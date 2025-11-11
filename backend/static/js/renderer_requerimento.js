@@ -144,14 +144,27 @@ document.getElementById('filtro-arvore').addEventListener('input', function(e) {
 document.getElementById('form-requerimento').addEventListener('submit', async function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(this));
-  const response = await fetch('/requerimento', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  const resultado = await response.json();
-  document.getElementById('resposta').innerText = JSON.stringify(resultado, null, 2);
-  this.reset();
+  try {
+    const response = await fetch('/requerimento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Falha ao enviar requerimento');
+    const resultado = await response.json();
+
+    // Exibe o resultado como popup
+    alert(
+      typeof resultado === "string" 
+        ? resultado 
+        : JSON.stringify(resultado, null, 2)
+    );
+    this.reset();
+  } catch (error) {
+    console.error('Erro ao enviar requerimento:', error);
+    alert('Erro ao enviar requerimento!');
+  }
 });
+
 
 window.onload = carregarSelecao;

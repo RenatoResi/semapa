@@ -14,34 +14,53 @@ function formatarData(dataISO) {
 }
 
 // Cadastrar Requerente
-formRequerente = document.getElementById('form-requerente')
+const formRequerente = document.getElementById('form-requerente')
 formRequerente?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(formRequerente));
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(formRequerente));
+  try {
     const response = await fetch('/requerente', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
     });
-    exibirResposta(await response.json());
+    if (!response.ok) throw new Error('Falha ao cadastrar requerente');
+    const resultado = await response.json();
+
+    alert(typeof resultado === 'string' ? resultado : JSON.stringify(resultado, null, 2));
     formRequerente.reset();
     listarRequerentes();
     document.getElementById('cadastro-arvore').scrollIntoView({ behavior: 'smooth' });
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao cadastrar requerente!');
+  }
 });
 
 // Cadastrar Árvore
-formArvore = document.getElementById('form-arvore')
+const formArvore = document.getElementById('form-arvore')
 formArvore?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(formArvore));
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(formArvore));
+  try {
     const response = await fetch('/arvores', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
     });
-    exibirResposta(await response.json());
+    if (!response.ok) throw new Error('Falha ao cadastrar árvore');
+    const resultado = await response.json();
+
+    alert(typeof resultado === 'string' ? resultado : JSON.stringify(resultado, null, 2));
     formArvore.reset();
     listarArvores();
     window.location.href = 'requerimento';
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao cadastrar árvore!');
+  }
 });
+
 
 
 // Listagens

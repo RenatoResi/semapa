@@ -48,7 +48,9 @@ function renderTabelaRequerimentos() {
       <td data-label="Data de Conclusão" style="display: none;">${r.data_conclusao ? formatDateDDMMYYYY(r.data_conclusao) : ''}</td>
       <td data-label="Ações">
         <button class="btn-selecionar btn-icon" data-id="${r.id}" title="Selecionar"><span>+</span></button>
-        <button class="btn-whatsapp btn-icon" data-id="${r.id}" title="Enviar WhatsApp"><span>📱</span></button>
+        <button class="btn-whatsapp btn-icon" data-id="${r.id}" title="Enviar WhatsApp">
+          <i class="fa-brands fa-whatsapp"; font-size:1.2em;"></i>
+        </button>
       </td>
     `;
     tbody.appendChild(tr);
