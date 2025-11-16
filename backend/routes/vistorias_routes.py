@@ -165,29 +165,12 @@ def editar_vistoria(id):
         especies = session.query(Especies).all()
 
         # Processar dados para o template
-        vistoria_data = {
-            'id': vistoria.id,
-            'requerimento_id': vistoria.requerimento_id,
-            'vistoria_data': vistoria.vistoria_data,
-            'especie_id': vistoria.especie_id,
-            'risco_queda': vistoria.risco_queda,
-            'diagnostico': vistoria.diagnostico,
-            'acao_recomendada': vistoria.acao_recomendada,
-            'galhos_cortar': vistoria.galhos_cortar,
-            'medidas_seguranca': vistoria.medidas_seguranca,
-            'observacoes_tecnicas': vistoria.observacoes_tecnicas,
-            'condicoes': vistoria.condicoes.split(',') if vistoria.condicoes else [],
-            'conflitos': vistoria.conflitos.split(',') if vistoria.conflitos else [],
-            'tipo_poda': vistoria.tipo_poda.split(',') if vistoria.tipo_poda else []
-        }
-        
-        return render_template('vistoria_form.html', 
-                             vistoria=vistoria_data,
-                             requerimento=vistoria.requerimento,
-                             requerimento_id=vistoria.requerimento_id,
-                             requerimentos=requerimentos,
-                             especies=especies,
-                             is_edit=True)
+        return render_template(
+            'vistoria_form.html',
+            vistoria=vistoria,
+            requerimentos=requerimentos,
+            especies=especies
+        )
     finally:
         session.close()
 
@@ -224,8 +207,9 @@ def atualizar_vistoria(id):
         vistoria.medidas_seguranca = data.get('medidas_seguranca')
         vistoria.observacoes_tecnicas = data.get('observacoes_tecnicas')
         
-        # Processar novas fotos
-        processar_fotos(files, vistoria.id, session)
+        # Processar APENAS novas fotos (adicionando, não substituindo)
+        if files and files[0].filename != '':
+            processar_fotos(files, vistoria.id, session)
         
         session.commit()
         flash("Vistoria atualizada com sucesso!", "success")
@@ -246,12 +230,11 @@ def vistoria_foto(foto_id):
     try:
         foto = session.query(VistoriaFoto).get(foto_id)
         if not foto:
-            return jsonify({"error": "Foto não encontrada"}), 404
-        
+            return "Foto não encontrada", 404
         return send_file(
             io.BytesIO(foto.arquivo),
             mimetype='image/jpeg',
-            download_name=foto.arquivo_nome
+            as_attachment=False
         )
     finally:
         session.close()
@@ -265,13 +248,13 @@ def remover_vistoria_foto(foto_id):
     try:
         foto = session.query(VistoriaFoto).get(foto_id)
         if not foto:
-            return jsonify({"success": False, "error": "Foto não encontrada"}), 404
+            return jsonify({'error': 'Foto não encontrada'}), 404
         
         session.delete(foto)
         session.commit()
-        return jsonify({"success": True})
+        return jsonify({'success': True})
     except Exception as e:
         session.rollback()
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
     finally:
         session.close()

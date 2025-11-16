@@ -229,3 +229,17 @@ E rode localmente, sem Docker.
 ***
 
 Este README dá instruções claras para rodar o projeto em qualquer ambiente, priorizando Docker para replicabilidade e facilidade, e mostrando a opção tradicional local para iniciantes. As dicas de scripts e configuração reduzem atritos iniciais com Docker.
+
+# MELHORIAS A SEREM IMPLEMENTADAS
+
+- lat long automaticos ao preencher endereco (cadastro)
+- tabela OS e vistoria: fazer card para mobile
+- melhorar menu lateral (base.html)
+- cards mobile nos requerimentos selecionados e lista de especies
+- botao vistoria na tela req_listar
+- adicionar coluna "complexidade" na tabela vistoria
+- tabela de equipamentos (caminhao, motosserra, motopoda)
+- refazer dashboard
+- fazer calendario completo em tarefas
+- arrumar busca em tarefas
+- filtrar requerimentos em aberto por complexidade para facilitar a designacao de equipes nas tarefas

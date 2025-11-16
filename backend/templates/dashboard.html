@@ -4,7 +4,6 @@
 
 {% block head %}
     {{ super() }}
-    {# Assumindo que você criará um arquivo dashboard.css em static/css/ #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 {% endblock %}
 
@@ -38,9 +37,9 @@
                 <div class="row g-0 align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs fw-bold text-success text-uppercase mb-1">
-                            Total de Árvores
+                            Total de Requerimentos
                         </div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">{{ stats.total_arvores or 0 }}</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ stats.total_requerimentos or 0 }}</div>
                     </div>
                     <div class="col-auto">
                         <i class="fa-solid fa-tree fa-2x text-gray-300"></i>
@@ -56,7 +55,7 @@
                 <div class="row g-0 align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs fw-bold text-info text-uppercase mb-1">
-                            Requerimentos Pendentes
+                            Requerimentos em Aberto
                         </div>
                         <div class="h5 mb-0 fw-bold text-gray-800">{{ req_stats.pendentes or 0 }}</div>
                     </div>
@@ -90,8 +89,24 @@
 <div class="row">
     <div class="col-lg-6">
         <div class="card shadow mb-4">
-            <div class="card-header py-3 bg-light">
-                <h6 class="m-0 fw-bold text-primary">Últimos Requerimentos</h6>
+            <div class="card-header py-3 bg-light d-flex justify-content-between align-items-center">
+                <h6 class="m-0 fw-bold text-primary">Requerimentos Pendentes de {{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes - 1] }} <span>({{ ultimos_requerimentos|length }})</span></h6>
+                <form method="POST" action="{{ url_for('dashboard.dashboard') }}" class="d-inline">
+                    <select class="form-select" id="mes" style="width: 200px;" name="mes" onchange="this.form.submit()">
+                        <option value="1" {% if mes == 1 %}selected{% endif %}>Janeiro</option>
+                        <option value="2" {% if mes == 2 %}selected{% endif %}>Fevereiro</option>
+                        <option value="3" {% if mes == 3 %}selected{% endif %}>Março</option>
+                        <option value="4" {% if mes == 4 %}selected{% endif %}>Abril</option>
+                        <option value="5" {% if mes == 5 %}selected{% endif %}>Maio</option>
+                        <option value="6" {% if mes == 6 %}selected{% endif %}>Junho</option>
+                        <option value="7" {% if mes == 7 %}selected{% endif %}>Julho</option>
+                        <option value="8" {% if mes == 8 %}selected{% endif %}>Agosto</option>
+                        <option value="9" {% if mes == 9 %}selected{% endif %}>Setembro</option>
+                        <option value="10" {% if mes == 10 %}selected{% endif %}>Outubro</option>
+                        <option value="11" {% if mes == 11 %}selected{% endif %}>Novembro</option>
+                        <option value="12" {% if mes == 12 %}selected{% endif %}>Dezembro</option>
+                    </select>
+                </form>
             </div>
             <div class="card-body">
                 {% if ultimos_requerimentos %}
@@ -109,7 +124,7 @@
                                 {% for req in ultimos_requerimentos %}
                                 <tr>
                                     <td>{{ req.numero }}</td>
-                                    <td>{{ req.tipo_requerimento | title }}</td>
+                                    <td>{{ req.tipo | title }}</td>
                                     <td>
                                         <span class="badge bg-{{ 'warning' if req.status|lower == 'pendente' else 'secondary' }}">
                                             {{ req.status | title }}
@@ -131,26 +146,33 @@
     <div class="col-lg-6">
         <div class="card shadow mb-4">
             <div class="card-header py-3 bg-light">
-                <h6 class="m-0 fw-bold text-primary">Ordens de Serviço Pendentes</h6>
+                <h6 class="m-0 fw-bold text-primary">Requerimentos Concluídos em {{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes - 1] }} <span>({{ requerimentos_concluidos|length }})</span>
+                </h6>
             </div>
             <div class="card-body">
-                {% if ordens_pendentes %}
+                {% if requerimentos_concluidos %}
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead>
                                 <tr>
                                     <th>Número</th>
                                     <th>Data Emissão</th>
-                                    <th>Status</th>
+                                    <th>Data Conclusão</th>
+                                    <th>Dias em espera</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for ordem in ordens_pendentes %}
+                                {% for req in requerimentos_concluidos %}
                                 <tr>
-                                    <td>{{ ordem.numero }}</td>
-                                    <td>{{ ordem.data_emissao.strftime("%d/%m/%Y") if ordem.data_emissao else '-' }}</td>
+                                    <td>{{ req.numero }}</td>
+                                    <td>{{ req.data_abertura.strftime("%d/%m/%Y") if req.data_abertura else '-' }}</td>
+                                    <td>{{ req.data_atualizacao.strftime("%d/%m/%Y") if req.data_atualizacao else '-' }}</td>
                                     <td>
-                                        <span class="badge bg-warning">{{ ordem.status | title }}</span>
+                                        {% if req.data_abertura and req.data_atualizacao %}
+                                            {{ (req.data_atualizacao - req.data_abertura).days }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -158,7 +180,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted text-center mt-3">Nenhuma ordem de serviço pendente.</p>
+                    <p class="text-muted text-center mt-3">Nenhum requerimento concluído neste mês.</p>
                 {% endif %}
             </div>
         </div>

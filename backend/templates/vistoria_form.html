@@ -12,26 +12,18 @@
     <fieldset class="form-section">
         <legend>Dados da Vistoria</legend>
         <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1 1 250px; max-width: 280px;">
                 <label for="requerimento_id">Requerimento:</label>
                 {% if requerimento_id and requerimento %}
-                    <!-- Mostra apenas o número do requerimento como readonly -->
                     <input type="text" class="form-control" value="{{ requerimento.numero }}" readonly>
                     <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
                 {% else %}
-                    <!-- Select normal para escolha quando não há requerimento_id -->
-                    <select name="requerimento_id" id="requerimento_id" required>
-                        <option value="">Selecione...</option>
-                        {% for req in requerimentos %}
-                            <option value="{{ req.id }}">
-                                {{ req.numero }} - {{ req.requerente.nome if req.requerente else 'Sem requerente' }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <input type="text" name="requerimento_id" id="requerimento_id" 
+                        value="{% if vistoria %}{{ vistoria.requerimento.numero }}{% endif %}" required>
                 {% endif %}
             </div>
             
-            <div class="form-group">
+            <div class="form-group" style="flex: 1 1 300px; max-width: 320px;">
                 <label for="vistoria_data">Data da Vistoria:</label>
                 <input type="datetime-local" name="vistoria_data" id="vistoria_data" 
                     value="{% if vistoria %}{{ vistoria.vistoria_data.strftime('%Y-%m-%dT%H:%M') }}{% endif %}" required>
@@ -42,10 +34,10 @@
     <!-- Seção 2: Avaliação Técnica da Árvore -->
     <fieldset class="form-section">
         <legend>Avaliação Técnica</legend>
-        
+
         <div class="form-row">
-            <div class="form-group">
-                 <label for="especie_id">Espécie Confirmada:</label>
+            <div class="form-group" style="flex: 1 1 320px; max-width: 350px;">
+                <label for="especie_id">Espécie Confirmada:</label>
                 <div id="especie-selector-container">
                     <select name="especie_id" id="especie_id">
                         <option value="">Selecione a espécie</option>
@@ -63,8 +55,8 @@
                     <button type="button" id="cancelar-nova-especie" class="btn-secondary" style="margin-top: 5px;">Voltar para seleção</button>
                 </div>
             </div>
-            
-            <div class="form-group">
+
+            <div class="form-group" style="flex: 1 1 350px; max-width: 380px;">
                 <label>Condição Fitossanitária:</label>
                 <div class="checkbox-group">
                     <label><input type="checkbox" name="condicoes[]" value="saudavel" 
@@ -80,9 +72,9 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1 1 300px; max-width: 350px;">
                 <label>Conflitos Identificados:</label>
                 <div class="checkbox-group">
                     <label><input type="checkbox" name="conflitos[]" value="fiacao" 
@@ -99,8 +91,8 @@
                         {% if vistoria and 'outros' in vistoria.conflitos %}checked{% endif %}> Outros</label>
                 </div>
             </div>
-            
-            <div class="form-group">
+
+            <div class="form-group" style="flex: 1 1 200px; max-width: 220px;">
                 <label>Risco de Queda:</label>
                 <div class="radio-group">
                     <label><input type="radio" name="risco_queda" value="baixo" required
@@ -112,19 +104,19 @@
                 </div>
             </div>
         </div>
-        
-        <div class="form-group">
+
+        <div class="form-group" style="flex: 1 1 100%;">
             <label for="diagnostico">Diagnóstico Técnico:</label>
-            <textarea name="diagnostico" id="diagnostico" rows="3">{% if vistoria %}{{ vistoria.diagnostico }}{% endif %}</textarea>
+            <textarea name="diagnostico" id="diagnostico" rows="4">{% if vistoria %}{{ vistoria.diagnostico }}{% endif %}</textarea>
         </div>
     </fieldset>
 
     <!-- Seção 3: Recomendações Técnicas -->
     <fieldset class="form-section">
         <legend>Recomendações Técnicas</legend>
-        
+
         <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" style="flex: 1 1 280px; max-width: 320px;">
                 <label>Ação Recomendada:</label>
                 <div class="radio-group">
                     <label><input type="radio" name="acao_recomendada" value="nenhuma" required
@@ -137,8 +129,8 @@
                         {% if vistoria and vistoria.acao_recomendada == 'transplante' %}checked{% endif %}> Transplante</label>
                 </div>
             </div>
-            
-            <div class="form-group" id="poda-details" style="display: '{{ 'block' if vistoria and vistoria.acao_recomendada == 'poda' else 'none' }}';">
+
+            <div class="form-group" id="poda-details" style="display: '{{ 'block' if vistoria and vistoria.acao_recomendada == 'poda' else 'none' }}'; flex: 1 1 320px; max-width: 350px;">
                 <label>Tipo de Poda:</label>
                 <div class="checkbox-group">
                     <label><input type="checkbox" name="tipo_poda[]" value="limpeza"
@@ -152,48 +144,49 @@
                 </div>
             </div>
         </div>
-        
-        <div class="form-group">
+
+        <div class="form-group" style="flex: 1 1 100%;">
             <label for="galhos_cortar">Galhos Específicos para Corte:</label>
-            <textarea name="galhos_cortar" id="galhos_cortar" rows="2" placeholder="Identifique galhos por posição (ex: galho NW a 5m de altura)">{% if vistoria %}{{ vistoria.galhos_cortar }}{% endif %}</textarea>
+            <textarea name="galhos_cortar" id="galhos_cortar" rows="3" placeholder="Identifique galhos por posição (ex: galho NW a 5m de altura)">{% if vistoria %}{{ vistoria.galhos_cortar }}{% endif %}</textarea>
         </div>
-        
-        <div class="form-group">
+
+        <div class="form-group" style="flex: 1 1 100%;">
             <label for="medidas_seguranca">Medidas de Segurança:</label>
-            <textarea name="medidas_seguranca" id="medidas_seguranca" rows="2" placeholder="Equipamentos necessários, sinalização, etc.">{% if vistoria %}{{ vistoria.medidas_seguranca }}{% endif %}</textarea>
+            <textarea name="medidas_seguranca" id="medidas_seguranca" rows="3" placeholder="Equipamentos necessários, sinalização, etc.">{% if vistoria %}{{ vistoria.medidas_seguranca }}{% endif %}</textarea>
         </div>
-        
-        <div class="form-group">
+
+        <div class="form-group" style="flex: 1 1 100%;">
             <label for="observacoes_tecnicas">Observações Técnicas:</label>
-            <textarea name="observacoes_tecnicas" id="observacoes_tecnicas" rows="3">{% if vistoria %}{{ vistoria.observacoes_tecnicas }}{% endif %}</textarea>
+            <textarea name="observacoes_tecnicas" id="observacoes_tecnicas" rows="4">{% if vistoria %}{{ vistoria.observacoes_tecnicas }}{% endif %}</textarea>
         </div>
     </fieldset>
 
     <!-- Seção 4: Registro Fotográfico -->
     <fieldset class="form-section">
         <legend>Registro Fotográfico</legend>
-        <div class="form-group">
-            <label for="fotos">Fotos da Vistoria (mínimo 3 ângulos):</label>
+        <div class="form-group" style="flex: 1 1 100%;">
+            <label for="fotos">Fotos da Vistoria:</label>
             <input type="file" name="fotos" id="fotos" multiple accept="image/*">
             <small>Registre: visão geral, detalhes de conflitos, condições fitossanitárias</small>
         </div>
-        
+
         {% if vistoria and vistoria.fotos %}
         <div class="existing-photos">
-            <h4>Fotos Existentes:</h4>
+            <h4>Fotos Existentes ({{ vistoria.fotos|length }}):</h4>
             <div class="photo-grid">
                 {% for foto in vistoria.fotos %}
                 <div class="photo-item">
-                    <img src="{{ url_for('vistorias.vistoria_foto', foto_id=foto.id) }}" alt="Foto existente">
-                    <button type="button" class="btn-remove-photo" data-photo-id="{{ foto.id }}">Remover</button>
+                    <img src="{{ url_for('vistorias.vistoria_foto', foto_id=foto.id) }}" alt="Foto da vistoria">
+                    <button type="button" class="btn-remove-photo" data-photo-id="{{ foto.id }}">✕</button>
                 </div>
                 {% endfor %}
             </div>
+            <p class="info-text">Use o campo acima para <strong>adicionar mais fotos</strong> sem perder as existentes.</p>
         </div>
         {% endif %}
     </fieldset>
 
-    <button type="submit" class="btn-submit">Salvar Laudo Técnico</button>
+    <button type="submit" class="btn-submit">{% if vistoria %}Atualizar Laudo Técnico{% else %}Salvar Laudo Técnico{% endif %}</button>
 </form>
 {% endblock %}
 
@@ -204,23 +197,20 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar/ocultar detalhes de poda - FUNCIONA TANTO NA CRIAÇÃO QUANTO NA EDIÇÃO
     const acaoRadios = document.querySelectorAll('input[name="acao_recomendada"]');
     const podaDetails = document.getElementById('poda-details');
-    
+
     function togglePodaDetails() {
         const selected = document.querySelector('input[name="acao_recomendada"]:checked');
         podaDetails.style.display = (selected && selected.value === 'poda') ? 'block' : 'none';
     }
-    
+
     acaoRadios.forEach(radio => {
         radio.addEventListener('change', togglePodaDetails);
     });
-    
-    // Executar na inicialização para mostrar/ocultar baseado no valor pré-selecionado
+
     togglePodaDetails();
-    
-    // Lógica para nova espécie
+
     const especieSelect = document.getElementById('especie_id');
     const novaEspecieContainer = document.getElementById('nova-especie-container');
     const especieSelectorContainer = document.getElementById('especie-selector-container');
@@ -250,27 +240,46 @@ document.addEventListener('DOMContentLoaded', function() {
         novaEspecieCientificoInput.value = '';
         especieSelect.value = '';
     });
-    
-    // Auto-preencher data se estiver vazio (apenas para criação)
+
     const dataField = document.getElementById('vistoria_data');
     if (!dataField.value) {
         const now = new Date();
         const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         dataField.value = localDateTime;
     }
-    
-    // Remover fotos existentes
+
     document.querySelectorAll('.btn-remove-photo').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
             const photoId = this.dataset.photoId;
+            const photoItem = this.closest('.photo-item');
+
             if (confirm('Deseja realmente remover esta foto?')) {
-                fetch(`/vistoria_foto/${photoId}`, { method: 'DELETE' })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.closest('.photo-item').remove();
+                fetch(`/vistorias/foto/${photoId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        photoItem.remove();
+                        const photoGrid = document.querySelector('.photo-grid');
+                        const existingPhotos = document.querySelector('.existing-photos h4');
+                        const count = photoGrid.querySelectorAll('.photo-item').length;
+                        if (count === 0) {
+                            document.querySelector('.existing-photos').remove();
+                        } else {
+                            existingPhotos.textContent = `Fotos Existentes (${count}):`;
                         }
-                    });
+                    } else {
+                        alert('Erro ao remover foto: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Erro ao remover foto: ' + error);
+                });
             }
         });
     });
