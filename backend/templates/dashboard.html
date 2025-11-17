@@ -116,7 +116,7 @@
                                 <tr>
                                     <th>Número</th>
                                     <th>Tipo</th>
-                                    <th>Status</th>
+                                    <th>Prioridade</th>
                                     <th>Abertura</th>
                                 </tr>
                             </thead>
@@ -126,8 +126,8 @@
                                     <td>{{ req.numero }}</td>
                                     <td>{{ req.tipo | title }}</td>
                                     <td>
-                                        <span class="badge bg-{{ 'warning' if req.status|lower == 'pendente' else 'secondary' }}">
-                                            {{ req.status | title }}
+                                        <span class="badge bg-{{ 'warning' if req.prioridade|lower == 'alta' else 'danger' if req.prioridade|lower == 'urgente' else 'secondary' }}">
+                                            {{ req.prioridade | title }}
                                         </span>
                                     </td>
                                     <td>{{ req.data_abertura.strftime("%d/%m/%Y") }}</td>

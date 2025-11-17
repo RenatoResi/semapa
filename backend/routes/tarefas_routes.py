@@ -7,6 +7,8 @@ from sqlalchemy.orm import joinedload
 from app import cache
 import requests
 import os
+import calendar
+from calendar import Calendar, monthrange
 
 tarefas_bp = Blueprint('tarefas', __name__, url_prefix='/tarefas')
 
@@ -45,25 +47,95 @@ def buscar_requerimento_id(session, numero_completo):
 @tarefas_bp.route('/', methods=['GET'])
 @login_required
 def listar_tarefas():
-    semana_str = request.args.get("semana")
-    ano_str = request.args.get("ano")
+    # Parâmetros comuns
+    view = request.args.get("view", "week")
     busca = request.args.get("q", "").strip().lower()
     hoje = datetime.now().date()
 
-    if semana_str and semana_str.isdigit():
-        ref_week = int(semana_str)
-        ref_year = int(ano_str) if ano_str and ano_str.isdigit() else hoje.isocalendar()[0]
-    else:
-        ref_week = hoje.isocalendar()[1]
-        ref_year = hoje.isocalendar()[0]
-    
-    inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
-    dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
-    
-    semana_anterior, ano_anterior, semana_proxima, ano_proxima = get_week_navigation(ref_week, ref_year)
-
     sessao = SessionLocal()
     try:
+        # VISÃO MENSAL
+        if view == 'month':
+            ano_str = request.args.get("ano")
+            mes_str = request.args.get("mes")
+            ano = int(ano_str) if (ano_str and ano_str.isdigit()) else hoje.year
+            mes = int(mes_str) if (mes_str and mes_str.isdigit()) else hoje.month
+
+            primeiro_dia = date(ano, mes, 1)
+            ultimo_dia_num = monthrange(ano, mes)[1]
+            ultimo_dia = date(ano, mes, ultimo_dia_num)
+
+            # Busca com ou sem termo
+            if busca:
+                tarefas = sessao.query(Tarefa).filter(
+                    or_(
+                        Tarefa.descricao.ilike(f'%{busca}%'),
+                        Tarefa.endereco.ilike(f'%{busca}%'),
+                        Tarefa.bairro.ilike(f'%{busca}%'),
+                        Tarefa.observacoes.ilike(f'%{busca}%')
+                    )
+                ).order_by(Tarefa.data_prevista.asc()).all()
+            else:
+                tarefas = sessao.query(Tarefa).filter(
+                    Tarefa.data_prevista >= primeiro_dia,
+                    Tarefa.data_prevista <= ultimo_dia
+                ).order_by(Tarefa.data_prevista.asc()).all()
+
+            # Mapeia tarefas por dia do mês (chave: date)
+            tarefas_por_dia = {}
+            for i in range(ultimo_dia_num):
+                d = primeiro_dia + timedelta(days=i)
+                tarefas_por_dia[d] = []
+            for t in tarefas:
+                if t.data_prevista in tarefas_por_dia:
+                    tarefas_por_dia[t.data_prevista].append(t)
+
+            # Calendário em semanas (listas de date)
+            cal = Calendar(firstweekday=0)  # Monday = 0
+            month_weeks = cal.monthdatescalendar(ano, mes)
+
+            # Navegação entre meses
+            if mes == 1:
+                prev_month, prev_year = 12, ano - 1
+            else:
+                prev_month, prev_year = mes - 1, ano
+            if mes == 12:
+                next_month, next_year = 1, ano + 1
+            else:
+                next_month, next_year = mes + 1, ano
+
+            # Não pedimos previsão do tempo para a visão mensal (mantemos apenas na semanal)
+            weather_icons = {}
+
+            return render_template(
+                "tarefas_listar.html",
+                view='month',
+                month_weeks=month_weeks,
+                tarefas_por_dia=tarefas_por_dia,
+                month_year=ano,
+                month_month=mes,
+                prev_month=prev_month,
+                prev_year=prev_year,
+                next_month=next_month,
+                next_year=next_year,
+                busca=busca
+            )
+
+        # VISÃO SEMANAL (comportamento original)
+        semana_str = request.args.get("semana")
+        ano_str = request.args.get("ano")
+
+        if semana_str and semana_str.isdigit():
+            ref_week = int(semana_str)
+            ref_year = int(ano_str) if ano_str and ano_str.isdigit() else hoje.isocalendar()[0]
+        else:
+            ref_week = hoje.isocalendar()[1]
+            ref_year = hoje.isocalendar()[0]
+        
+        inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
+        dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
+        semana_anterior, ano_anterior, semana_proxima, ano_proxima = get_week_navigation(ref_week, ref_year)
+
         if busca:
             tarefas = sessao.query(Tarefa).filter(
                 or_(
@@ -82,31 +154,32 @@ def listar_tarefas():
                 Tarefa.data_prevista >= inicio_semana,
                 Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
             ).order_by(Tarefa.data_prevista.asc()).all()
+
+        tarefas_por_dia = {dia: [] for dia in dias_semana}
+        for tarefa in tarefas:
+            if tarefa.data_prevista in tarefas_por_dia:
+                tarefas_por_dia[tarefa.data_prevista].append(tarefa)
+
+        # Obter previsão do tempo para a semana
+        weather_icons = obter_previsao_semana(dias_semana)
+
+        return render_template(
+            "tarefas_listar.html",
+            view='week',
+            dias_semana=dias_semana,
+            tarefas_por_dia=tarefas_por_dia,
+            semana_inicio=inicio_semana,
+            semana_fim=inicio_semana + timedelta(days=4),
+            semana_anterior=semana_anterior,
+            ano_anterior=ano_anterior,
+            semana_proxima=semana_proxima,
+            ano_proxima=ano_proxima,
+            timedelta=timedelta,
+            busca=busca,
+            weather_icons=weather_icons
+        )
     finally:
         sessao.close()
-
-    tarefas_por_dia = {dia: [] for dia in dias_semana}
-    for tarefa in tarefas:
-        if tarefa.data_prevista in tarefas_por_dia:
-            tarefas_por_dia[tarefa.data_prevista].append(tarefa)
-
-    # Obter previsão do tempo para a semana
-    weather_icons = obter_previsao_semana(dias_semana)
-
-    return render_template(
-        "tarefas_listar.html",
-        dias_semana=dias_semana,
-        tarefas_por_dia=tarefas_por_dia,
-        semana_inicio=inicio_semana,
-        semana_fim=inicio_semana + timedelta(days=4),
-        semana_anterior=semana_anterior,
-        ano_anterior=ano_anterior,
-        semana_proxima=semana_proxima,
-        ano_proxima=ano_proxima,
-        timedelta=timedelta,
-        busca=busca,
-        weather_icons=weather_icons
-    )
 
 @tarefas_bp.route('/nova', methods=['GET', 'POST'])
 @login_required

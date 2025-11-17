@@ -244,3 +244,77 @@
     height: 50px;      /* mantém proporção consistente */
     opacity: 0.95;     /* leve transparência opcional */
 }
+
+.month-grid-cards {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.month-cell-head {
+    padding: 0.25rem 0.5rem;
+    background: #2563eb;
+    color: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.month-cell-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 0.4rem 0.6rem;
+    min-height: 110px; /* Altura menor que semanal para caber mais no eixo vertical */
+    display: flex;
+    flex-direction: column;
+}
+
+.month-cell-card.other-month {
+    background: #e9ecef;
+    opacity: 0.6;
+}
+
+.cell-date {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.tasks-list {
+    margin-top: 0.25rem;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.task-card.small-task-card {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+    border-left-width: 5px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.task-card.small-task-card .task-title {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-card.small-task-card .task-location {
+    font-size: 0.75rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 600px) {
+    .month-grid-cards {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    .month-cell-card {
+        min-height: 90px;
+    }
+}
