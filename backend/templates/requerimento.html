@@ -3,7 +3,7 @@
 {% block title %}Requerimentos - Sistema SEMAPA{% endblock %}
 
 {% block content %}
-<h1>Sistema SEMAPA - Requerimentos</h1>
+<h1>Sistema SEMAPA - Cadastrar Requerimentos</h1>
 
 <section>
     <h2>Novo Requerimento</h2>
@@ -18,10 +18,12 @@
                 <input id="data_abertura" name="data_abertura" type="date" required>
             </div>
         </div>
+
         <div class="form-row">
             <div class="form-group">
                 <label for="tipo">Tipo</label>
                 <select name="tipo" required>
+                    <option value="">Selecione</option>
                     <option value="Poda">Poda</option>
                     <option value="Remoção">Remoção</option>
                     <option value="Plantio">Plantio</option>
@@ -45,38 +47,337 @@
                 </select>
             </div>
         </div>
+
         <div class="form-group">
             <label for="motivo">Motivo</label>
             <input id="motivo" name="motivo" type="text" required>
         </div>
+
+        <!-- Seção Requerente -->
         <div class="form-group">
-            <label for="requerente_id">ID do Requerente</label>
-            <input id="requerente-id" name="requerente_id" type="number" required>
-            <input id="filtro-requerente" placeholder="Buscar requerente...">
+            <label for="requerente_id">Requerente</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input id="requerente-id" name="requerente_id" type="number" required style="flex: 1;">
+                <button type="button" id="btn-novo-requerente" class="btn btn-secondary">Cadastrar Novo</button>
+            </div>
+            <input id="filtro-requerente" placeholder="Buscar requerente..." style="width: 100%; margin-bottom: 8px;">
             <table id="tabela-selecao-requerente">
                 <tbody></tbody>
-                <div id="paginacao-requerentes" style="margin-top: 10px;"></div>
             </table>
+            <div id="paginacao-requerentes" style="margin-top: 10px;"></div>
         </div>
+
+        <!-- Seção Árvore -->
         <div class="form-group">
-            <label for="arvore_id">ID da Árvore</label>
-            <input id="arvore-id" name="arvore_id" type="number" required>
-            <input id="filtro-arvore" placeholder="Buscar árvore...">
+            <label for="arvore_id">Árvore</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input id="arvore-id" name="arvore_id" type="number" required style="flex: 1;">
+                <button type="button" id="btn-nova-arvore" class="btn btn-secondary">Cadastrar Nova</button>
+            </div>
+            <input id="filtro-arvore" placeholder="Buscar árvore..." style="width: 100%; margin-bottom: 8px;">
             <table id="tabela-selecao-arvore">
                 <tbody></tbody>
-                <div id="paginacao-arvores" style="margin-top: 10px;"></div>
             </table>
+            <div id="paginacao-arvores" style="margin-top: 10px;"></div>
         </div>
+
         <div class="form-group">
             <label for="observacao">Observação</label>
             <textarea id="observacao" name="observacao"></textarea>
         </div>
-        <button type="submit">Cadastrar</button>
+
+        <button type="submit" class="btn btn-primary">Cadastrar Requerimento</button>
     </form>
 </section>
+
+<!-- ==================== MODAL REQUERENTE ==================== -->
+<dialog id="modal-requerente">
+    <div class="modal-header">
+        <h2>Cadastro de Requerente</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('modal-requerente').close()">&times;</button>
+    </div>
+    <form id="form-requerente" autocomplete="off">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nome-requerente">Nome</label>
+                <input id="nome-requerente" name="nome" type="text" required>
+                <div id="nome-erro" class="erro-mensagem" style="display:none;"></div>
+            </div>
+            <div class="form-group">
+                <label for="telefone-requerente">Telefone</label>
+                <input id="telefone-requerente" name="telefone" type="tel" oninput="formatarTelefone(this)" maxlength="15">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="observacao-requerente">Observação</label>
+            <input id="observacao-requerente" name="observacao" type="text">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-requerente').close()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Cadastrar</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- ==================== MODAL ÁRVORE ==================== -->
+<dialog id="modal-arvore">
+    <div class="modal-header">
+        <h2>Cadastro de Árvore</h2>
+        <button type="button" class="btn-close" onclick="document.getElementById('modal-arvore').close()">&times;</button>
+    </div>
+    <form id="form-arvore" autocomplete="off">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="endereco-arvore">Endereço</label>
+                <input id="endereco-arvore" name="endereco" type="text">
+            </div>
+            <div class="form-group">
+                <label for="bairro-arvore">Bairro</label>
+                <input id="bairro-arvore" name="bairro" type="text">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="latitude-arvore">Latitude</label>
+                <input id="latitude-arvore" name="latitude" type="text">
+            </div>
+            <div class="form-group">
+                <label for="longitude-arvore">Longitude</label>
+                <input id="longitude-arvore" name="longitude" type="text">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="data_plantio-arvore">Data de Plantio</label>
+                <input id="data_plantio-arvore" name="data_plantio" type="date">
+            </div>
+            <div class="form-group">
+                <label for="especie_input">Espécie</label>
+                <input id="especie_input" name="especie_nome" type="text" class="form-control" autocomplete="off" placeholder="Digite o nome popular ou científico">
+                <input type="hidden" id="especie_id" name="especie_id">
+                <div id="autocomplete-list" class="autocomplete-items"></div>
+                <button type="button" id="btn-nova-especie" style="display:none; margin-top: 8px;" class="btn btn-secondary">Cadastrar Nova Espécie</button>
+            </div>
+        </div>
+
+        <!-- Campos para nova espécie -->
+        <div id="nova-especie-campos" style="display:none; margin-top:10px; padding: 12px; background: var(--color-secondary); border-radius: 6px;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nova_nome_popular">Nome Popular</label>
+                    <input type="text" id="nova_nome_popular" name="nova_nome_popular" placeholder="Nome popular" class="form-control" required disabled>
+                </div>
+                <div class="form-group">
+                    <label for="nova_nome_cientifico">Nome Científico</label>
+                    <input type="text" id="nova_nome_cientifico" name="nova_nome_cientifico" placeholder="Nome científico" class="form-control" disabled>
+                </div>
+            </div>
+            <button type="button" id="btn-cancelar-nova-especie" class="btn btn-secondary">Cancelar</button>
+        </div>
+
+        <div class="form-group">
+            <label for="observacao-arvore">Observação</label>
+            <input id="observacao-arvore" name="observacao" type="text">
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-arvore').close()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Cadastrar</button>
+        </div>
+    </form>
+</dialog>
+
 
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/renderer_requerimento.js') }}"></script>
+<script>
+    // ============ MODAL REQUERENTE ============
+    const modalRequerente = document.getElementById('modal-requerente');
+    const btnNovoRequerente = document.getElementById('btn-novo-requerente');
+    const formRequerente = document.getElementById('form-requerente');
+
+    btnNovoRequerente.addEventListener('click', function(e) {
+        e.preventDefault();
+        formRequerente.reset();
+        modalRequerente.showModal();
+    });
+
+    formRequerente.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(formRequerente);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const response = await fetch('/requerente', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const novoRequerente = await response.json();
+                // Preenche o ID do requerente
+                document.getElementById('requerente-id').value = novoRequerente.id;
+                modalRequerente.close();
+                formRequerente.reset();
+                alert('Requerente cadastrado com sucesso!');
+            } else {
+                const erro = await response.json();
+                const nomeErro = document.getElementById('nome-erro');
+                nomeErro.textContent = erro.mensagem || 'Erro ao cadastrar';
+                nomeErro.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao cadastrar requerente');
+        }
+    });
+
+    // ============ MODAL ÁRVORE ============
+    const modalArvore = document.getElementById('modal-arvore');
+    const btnNovaArvore = document.getElementById('btn-nova-arvore');
+    const formArvore = document.getElementById('form-arvore');
+
+    btnNovaArvore.addEventListener('click', function(e) {
+        e.preventDefault();
+        formArvore.reset();
+        document.getElementById('nova-especie-campos').style.display = 'none';
+        document.getElementById('especie_id').value = '';
+        modalArvore.showModal();
+    });
+
+    formArvore.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(formArvore);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const response = await fetch('/arvores', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                const novaArvore = await response.json();
+                document.getElementById('arvore-id').value = novaArvore.id;
+                modalArvore.close();
+                formArvore.reset();
+                alert('Árvore cadastrada com sucesso!');
+            } else {
+                const erro = await response.json();
+                alert(erro.mensagem || 'Erro ao cadastrar árvore');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao cadastrar árvore');
+        }
+    });
+
+    // ============ AUTOCOMPLETE DE ESPÉCIE ============
+    const especieInput = document.getElementById('especie_input');
+    const especieId = document.getElementById('especie_id');
+    const autocompleteList = document.getElementById('autocomplete-list');
+    const btnNovaEspecie = document.getElementById('btn-nova-especie');
+    const novaCampos = document.getElementById('nova-especie-campos');
+    const btnCancelarNova = document.getElementById('btn-cancelar-nova-especie');
+    const novaNomePopular = document.getElementById('nova_nome_popular');
+    const novaNomeCientifico = document.getElementById('nova_nome_cientifico');
+    let especiesCache = [];
+
+    novaNomePopular.disabled = true;
+    novaNomePopular.required = false;
+    novaNomeCientifico.disabled = true;
+
+    especieInput.addEventListener('input', async function() {
+        const termo = this.value.trim();
+        autocompleteList.innerHTML = '';
+        especieId.value = '';
+        btnNovaEspecie.style.display = 'none';
+
+        if (termo.length < 2) return;
+
+        try {
+            const resp = await fetch(`/api/especies_autocomplete?q=${encodeURIComponent(termo)}`);
+            const especies = await resp.json();
+            especiesCache = especies;
+
+            if (especies.length === 0) {
+                btnNovaEspecie.style.display = 'inline-block';
+            } else {
+                especies.forEach(e => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `<strong>${e.nome_popular}</strong> <small>(${e.nome_cientifico})</small>`;
+                    item.addEventListener('click', function() {
+                        especieInput.value = e.nome_popular;
+                        especieId.value = e.id;
+                        autocompleteList.innerHTML = '';
+                        btnNovaEspecie.style.display = 'none';
+                    });
+                    autocompleteList.appendChild(item);
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao buscar espécies:', error);
+        }
+    });
+
+    especieInput.addEventListener('blur', function() {
+        setTimeout(() => autocompleteList.innerHTML = '', 200);
+    });
+
+    btnNovaEspecie.addEventListener('click', function() {
+        especieInput.disabled = true;
+        btnNovaEspecie.style.display = 'none';
+        novaCampos.style.display = 'block';
+        novaNomePopular.disabled = false;
+        novaNomePopular.required = true;
+        novaNomeCientifico.disabled = false;
+        novaNomePopular.focus();
+    });
+
+    btnCancelarNova.addEventListener('click', function() {
+        especieInput.disabled = false;
+        especieInput.value = '';
+        especieId.value = '';
+        novaCampos.style.display = 'none';
+        novaNomePopular.disabled = true;
+        novaNomePopular.required = false;
+        novaNomeCientifico.disabled = true;
+        novaNomePopular.value = '';
+        novaNomeCientifico.value = '';
+    });
+
+    especieInput.addEventListener('change', function() {
+        const match = especiesCache.find(e => e.nome_popular === especieInput.value);
+        especieId.value = match ? match.id : '';
+    });
+
+    // ============ FORMATAÇÃO DE TELEFONE ============
+    function formatarTelefone(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 11) valor = valor.slice(0, 11);
+        
+        if (valor.length <= 2) {
+            input.value = valor;
+        } else if (valor.length <= 6) {
+            input.value = `(${valor.slice(0, 2)}) ${valor.slice(2)}`;
+        } else {
+            input.value = `(${valor.slice(0, 2)}) ${valor.slice(2, 7)}-${valor.slice(7)}`;
+        }
+    }
+
+    // Fechar modal com ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (modalRequerente.open) modalRequerente.close();
+            if (modalArvore.open) modalArvore.close();
+        }
+    });
+</script>
 {% endblock %}

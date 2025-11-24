@@ -1,8 +1,3 @@
-// Função utilitária
-function exibirResposta(result) {
-    document.getElementById('resposta').innerText = JSON.stringify(result, null, 2);
-}
-
 // Função para formatar data no padrão brasileiro
 function formatarData(dataISO) {
     if (!dataISO) return '';

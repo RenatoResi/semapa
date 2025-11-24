@@ -5,6 +5,7 @@
 {% block head %}
     {{ super() }}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -81,6 +82,38 @@
                         <i class="fa-solid fa-leaf fa-2x text-gray-300"></i>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Novo Gráfico Anual -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-light">
+                <h6 class="m-0 fw-bold text-primary"><i class="fa-solid fa-chart-line"></i> Requerimentos por Mês - {{ grafico_dados.meses[0] }} a {{ grafico_dados.meses[-1] }}</h6>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 400px;">
+                    <canvas id="requerimentosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 bg-light">
+                <h6 class="m-0 fw-bold text-primary"><i class="fa-solid fa-chart-pie"></i> Tipos de Requerimentos ({{ now().year if now is defined else '' }})</h6>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 320px;">
+                    <canvas id="pieRequerimentos"></canvas>
+                </div>
+                {% if grafico_pie.labels|length == 0 %}
+                    <p class="text-muted text-center mt-3">Nenhum dado de tipos disponível.</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -186,4 +219,114 @@
         </div>
     </div>
 </div>
+
+<script>
+    /* jshint ignore:start */
+    const ctx = document.getElementById('requerimentosChart').getContext('2d');
+    const requerimentosChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ grafico_dados.meses | tojson }},
+            datasets: [
+                {
+                    label: 'Requerimentos Emitidos',
+                    data: {{ grafico_dados.emitidos | tojson }},
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Requerimentos Concluídos',
+                    data: {{ grafico_dados.concluidos | tojson }},
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#198754',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Saldo Acumulado',
+                    data: {{ grafico_dados.saldo | tojson }},
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#ffc107',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    borderWidth: 3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        padding: 15
+                    }
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de pizza - tipos de requerimentos
+    const pieCtx = document.getElementById('pieRequerimentos').getContext('2d');
+    const pieData = {
+        labels: {{ grafico_pie.labels | tojson }},
+        datasets: [{
+            data: {{ grafico_pie.data | tojson }},
+            backgroundColor: [
+                '#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1',
+                '#0dcaf0', '#fd7e14', '#20c997', '#6610f2', '#adb5bd',
+                '#e83e8c', '#343a40'
+            ],
+            borderColor: '#fff',
+            borderWidth: 1
+        }]
+    };
+    const pieOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: { boxWidth: 12, padding: 12 }
+            }
+        }
+    };
+    const pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: pieData,
+        options: pieOptions
+    });
+    /* jshint ignore:end */
+</script>
+
 {% endblock %}

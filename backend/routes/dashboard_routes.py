@@ -50,6 +50,34 @@ def dashboard():
             .limit(30)\
             .all()
 
+        # Dados para gráfico anual
+        ano_atual = datetime.now().year
+        meses_nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+        
+        requerimentos_emitidos = []
+        requerimentos_finalizados = []
+        saldo_acumulado = []
+        acumulado = 0
+
+        for m in range(1, 13):
+            # Requerimentos emitidos no mês
+            emitidos = session.query(sa_func.count(Requerimento.id)).filter(
+                extract('month', Requerimento.data_abertura) == m,
+                extract('year', Requerimento.data_abertura) == ano_atual
+            ).scalar() or 0
+
+            # Requerimentos concluídos no mês
+            concluidos = session.query(sa_func.count(Requerimento.id)).filter(
+                extract('month', Requerimento.data_atualizacao) == m,
+                extract('year', Requerimento.data_atualizacao) == ano_atual,
+                sa_func.lower(Requerimento.status) == 'concluído'
+            ).scalar() or 0
+
+            requerimentos_emitidos.append(emitidos)
+            requerimentos_finalizados.append(concluidos)
+            acumulado += (emitidos - concluidos)
+            saldo_acumulado.append(acumulado)
 
         stats = {
             'total_usuarios': total_usuarios,
@@ -58,12 +86,36 @@ def dashboard():
         }
         req_stats = {'pendentes': req_pendentes}
 
+        grafico_dados = {
+            'meses': meses_nomes,
+            'emitidos': requerimentos_emitidos,
+            'concluidos': requerimentos_finalizados,
+            'saldo': saldo_acumulado
+        }
+
+        # Dados para gráfico de pizza: contagem por tipo (ano atual)
+        tipo_counts = session.query(
+            Requerimento.tipo,
+            sa_func.count(Requerimento.id)
+        ).filter(
+            extract('year', Requerimento.data_abertura) == ano_atual
+        ).group_by(Requerimento.tipo).all()
+
+        pie_labels = [t[0].title() if t[0] else 'Outro' for t in tipo_counts]
+        pie_data = [t[1] for t in tipo_counts]
+
+        grafico_pie = {
+            'labels': pie_labels,
+            'data': pie_data
+        }
 
         return render_template('dashboard.html', 
                              stats=stats, 
                              req_stats=req_stats, 
                              ultimos_requerimentos=ultimos_requerimentos, 
                              requerimentos_concluidos=requerimentos_concluidos,
-                             mes=mes)
+                             mes=mes,
+                             grafico_dados=grafico_dados,
+                             grafico_pie=grafico_pie)
     finally:
         session.close()
