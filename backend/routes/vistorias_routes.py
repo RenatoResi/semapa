@@ -123,7 +123,8 @@ def criar_vistoria():
             tipo_poda=','.join(data.getlist('tipo_poda[]')) if data.get('acao_recomendada') == 'poda' else '',
             galhos_cortar=data.get('galhos_cortar'),
             medidas_seguranca=data.get('medidas_seguranca'),
-            observacoes_tecnicas=data.get('observacoes_tecnicas')
+            observacoes_tecnicas=data.get('observacoes_tecnicas'),
+            complexidade=data.get('complexidade')
         )
         session.add(nova_vistoria)
         session.flush()
@@ -155,21 +156,20 @@ def editar_vistoria(id):
             joinedload(Vistoria.requerimento),
             joinedload(Vistoria.especie)
         ).get(id)
-        
+
         if not vistoria:
             flash("Vistoria não encontrada", "error")
             return redirect(url_for('vistorias.listar_vistorias'))
-        
-        # Buscar todos os requerimentos e espécies para os selects
+
         requerimentos = session.query(Requerimento).all()
         especies = session.query(Especies).all()
 
-        # Processar dados para o template
         return render_template(
             'vistoria_form.html',
             vistoria=vistoria,
             requerimentos=requerimentos,
-            especies=especies
+            especies=especies,
+            requerimento_id=vistoria.requerimento_id
         )
     finally:
         session.close()
@@ -206,6 +206,7 @@ def atualizar_vistoria(id):
         vistoria.galhos_cortar = data.get('galhos_cortar')
         vistoria.medidas_seguranca = data.get('medidas_seguranca')
         vistoria.observacoes_tecnicas = data.get('observacoes_tecnicas')
+        vistoria.complexidade = data.get('complexidade')
         
         # Processar APENAS novas fotos (adicionando, não substituindo)
         if files and files[0].filename != '':

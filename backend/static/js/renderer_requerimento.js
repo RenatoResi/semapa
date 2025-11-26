@@ -14,7 +14,7 @@ function renderTabelaRequerentes() {
   const fim = inicio + porPagina;
   filteredRequerentes.slice(inicio, fim).forEach(r => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.id}</td><td>${r.nome}</td><td><button type="button">Selecionar</button></td>`;
+    tr.innerHTML = `<td>${r.id}</td><td>${r.nome}</td><td>${r.observacao}</td><button type="button">Selecionar</button></td>`;
     tr.querySelector('button').onclick = () => {
       document.getElementById('requerente-id').value = r.id;
     };
@@ -112,7 +112,8 @@ document.getElementById('filtro-requerente').addEventListener('input', function(
   
   // Filtra a lista completa
   filteredRequerentes = requerentesSelecionados.filter(r => 
-    r.nome.toLowerCase().includes(termo)
+    r.nome.toLowerCase().includes(termo) ||
+    r.observacao.toLowerCase().includes(termo)
   );
   
   paginaReq = 1;

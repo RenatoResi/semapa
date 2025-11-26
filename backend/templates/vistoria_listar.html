@@ -10,7 +10,6 @@
 <table id="tabela-vistorias">
     <thead>
         <tr>
-            <th>ID</th>
             <th>Requerimento</th>
             <th>Data</th>
             <th>Status</th>
@@ -22,10 +21,9 @@
     <tbody>
         {% for v in vistorias %}
         <tr>
-            <td>{{ v.id }}</td>
             <td>{{ v.requerimento.numero if v.requerimento else 'N/A' }}</td>
             <td>{{ v.vistoria_data.strftime('%d/%m/%Y %H:%M') }}</td>
-            <td>{{ v.status }}</td>
+            <td>{{ v.requerimento.status if v.requerimento else 'N/A' }}</td>
             <td>{{ v.user.nome if v.user else 'N/A' }}</td>
             <td>
                 {% for foto in v.fotos %}

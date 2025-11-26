@@ -111,6 +111,7 @@ class Vistoria(Base):
     galhos_cortar = Column(Text)
     medidas_seguranca = Column(Text)
     observacoes_tecnicas = Column(Text)
+    complexidade = Column(Integer, comment="1 - solo rapido; 2 - solo lento; 3 - altura rapido; 4 - altura lento; 5 - guindaste")
 
     especie = relationship("Especies")
     requerimento = relationship("Requerimento", backref="vistorias")

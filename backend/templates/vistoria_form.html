@@ -13,14 +13,31 @@
         <legend>Dados da Vistoria</legend>
         <div class="form-row">
             <div class="form-group" style="flex: 1 1 250px; max-width: 280px;">
-                <label for="requerimento_id">Requerimento:</label>
-                {% if requerimento_id and requerimento %}
-                    <input type="text" class="form-control" value="{{ requerimento.numero }}" readonly>
-                    <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
-                {% else %}
-                    <input type="text" name="requerimento_id" id="requerimento_id" 
-                        value="{% if vistoria %}{{ vistoria.requerimento.numero }}{% endif %}" required>
-                {% endif %}
+                <div class="form-group" style="flex: 1 1 250px; max-width: 280px;">
+                    <label for="requerimento_id">Requerimento:</label>
+                    {% if requerimento_id %}
+                        {# Buscar o objeto requerimento correspondente pelo id na lista 'requerimentos', que deve estar disponível no template #}
+                        {% set selected_req = None %}
+                        {% for req in requerimentos %}
+                            {% if req.id == requerimento_id %}
+                                {% set selected_req = req %}
+                            {% endif %}
+                        {% endfor %}
+                        <input type="text" class="form-control" value="{{ selected_req.numero if selected_req else 'N/A' }}" readonly>
+                        <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
+                    {% elif vistoria %}
+                        <input type="text" class="form-control" value="{{ vistoria.requerimento.numero }}" readonly>
+                        <input type="hidden" name="requerimento_id" value="{{ vistoria.requerimento_id }}">
+                    {% else %}
+                        <select name="requerimento_id" id="requerimento_id" required class="form-control">
+                            <option value="">Selecione um requerimento</option>
+                            {% for req in requerimentos %}
+                                <option value="{{ req.id }}">{{ req.numero }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+
             </div>
             
             <div class="form-group" style="flex: 1 1 300px; max-width: 320px;">
@@ -143,6 +160,17 @@
                         {% if vistoria and 'controle' in vistoria.tipo_poda %}checked{% endif %}> Controle fitossanitário</label>
                 </div>
             </div>
+
+            <div class="form-group" style="flex: 1 1 200px; max-width: 220px;">
+                <label for="complexidade">Complexidade da Intervenção:</label>
+                <select name="complexidade" id="complexidade" required>
+                    <option value="">Selecione</option>
+                    <option value="1" {% if vistoria and vistoria.complexidade == '1' %}selected{% endif %}>1 - Solo Rápido</option>
+                    <option value="2" {% if vistoria and vistoria.complexidade == '2' %}selected{% endif %}>2 - Solo Lento</option>
+                    <option value="3" {% if vistoria and vistoria.complexidade == '3' %}selected{% endif %}>3 - Altura Rápido</option>
+                    <option value="4" {% if vistoria and vistoria.complexidade == '4' %}selected{% endif %}>4 - Altura Lento</option>
+                    <option value="5" {% if vistoria and vistoria.complexidade == '5' %}selected{% endif %}>5 - Guindaste</option>
+                </select>
         </div>
 
         <div class="form-group" style="flex: 1 1 100%;">
