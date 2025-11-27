@@ -85,14 +85,22 @@ def nova_vistoria():
         requerimentos = session.query(Requerimento).all()
         especies = session.query(Especies).all()
         requerimento_id = request.args.get('requerimento_id', type=int)
+        
+        # Buscar o requerimento se ID foi fornecido
+        requerimento = None
+        if requerimento_id:
+            requerimento = session.query(Requerimento).filter_by(id=requerimento_id).first()
+        
         return render_template(
             'vistoria_form.html',
             requerimentos=requerimentos,
             especies=especies,
-            requerimento_id=requerimento_id
+            requerimento_id=requerimento_id,
+            requerimento=requerimento  # Adicionar aqui
         )
     finally:
         session.close()
+
 
 
 @vistorias_bp.route('/', methods=['POST'])
@@ -156,20 +164,21 @@ def editar_vistoria(id):
             joinedload(Vistoria.requerimento),
             joinedload(Vistoria.especie)
         ).get(id)
-
+        
         if not vistoria:
             flash("Vistoria não encontrada", "error")
             return redirect(url_for('vistorias.listar_vistorias'))
-
+        
+        # Buscar todos os requerimentos e espécies para os selects
         requerimentos = session.query(Requerimento).all()
         especies = session.query(Especies).all()
 
+        # Processar dados para o template
         return render_template(
             'vistoria_form.html',
             vistoria=vistoria,
             requerimentos=requerimentos,
-            especies=especies,
-            requerimento_id=vistoria.requerimento_id
+            especies=especies
         )
     finally:
         session.close()

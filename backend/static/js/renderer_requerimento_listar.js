@@ -36,6 +36,7 @@ function renderTabelaRequerimentos() {
   const fim = inicio + porPagina;
 
   filteredRequerimentos.slice(inicio, fim).forEach(r => {
+    const temVistoria = r.tem_vistoria || false;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td data-label="Número">${r.numero}</td>
@@ -47,9 +48,15 @@ function renderTabelaRequerimentos() {
       <td data-label="Bairro">${r.arvore_bairro || ''}</td>
       <td data-label="Data de Conclusão" style="display: none;">${r.data_conclusao ? formatDateDDMMYYYY(r.data_conclusao) : ''}</td>
       <td data-label="Ações">
+        <button class="${temVistoria ? 'btn-vistoria-existente' : 'btn-vistoria'} btn-icon" 
+                data-id="${r.id}" 
+                title="${temVistoria ? 'Editar Vistoria Existente' : 'Registrar Vistoria'}">
+          <i class="fa-solid ${temVistoria ? 'fa-edit' : 'fa-check-to-slot'}" 
+             style="font-size:1.2em;"></i>
+        </button>
         <button class="btn-selecionar btn-icon" data-id="${r.id}" title="Selecionar"><span>+</span></button>
         <button class="btn-whatsapp btn-icon" data-id="${r.id}" title="Enviar WhatsApp">
-          <i class="fa-brands fa-whatsapp"; font-size:1.2em;"></i>
+          <i class="fa-brands fa-whatsapp" style="font-size:1.2em;"></i>
         </button>
       </td>
     `;
@@ -287,6 +294,12 @@ document.addEventListener('click', function(e) {
     .catch(err => {
       alert('Erro: ' + err.message);
     });
+  }
+
+  // Registrar Vistoria (nova ou existente)
+  if (e.target.classList.contains('btn-vistoria') || e.target.classList.contains('btn-vistoria-existente')) {
+      const id = parseInt(e.target.dataset.id);
+      window.location.href = `/vistorias/nova?requerimento_id=${id}`;
   }
 
   // Enviar WhatsApp (tabela)

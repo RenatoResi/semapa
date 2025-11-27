@@ -13,31 +13,14 @@
         <legend>Dados da Vistoria</legend>
         <div class="form-row">
             <div class="form-group" style="flex: 1 1 250px; max-width: 280px;">
-                <div class="form-group" style="flex: 1 1 250px; max-width: 280px;">
-                    <label for="requerimento_id">Requerimento:</label>
-                    {% if requerimento_id %}
-                        {# Buscar o objeto requerimento correspondente pelo id na lista 'requerimentos', que deve estar disponível no template #}
-                        {% set selected_req = None %}
-                        {% for req in requerimentos %}
-                            {% if req.id == requerimento_id %}
-                                {% set selected_req = req %}
-                            {% endif %}
-                        {% endfor %}
-                        <input type="text" class="form-control" value="{{ selected_req.numero if selected_req else 'N/A' }}" readonly>
-                        <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
-                    {% elif vistoria %}
-                        <input type="text" class="form-control" value="{{ vistoria.requerimento.numero }}" readonly>
-                        <input type="hidden" name="requerimento_id" value="{{ vistoria.requerimento_id }}">
-                    {% else %}
-                        <select name="requerimento_id" id="requerimento_id" required class="form-control">
-                            <option value="">Selecione um requerimento</option>
-                            {% for req in requerimentos %}
-                                <option value="{{ req.id }}">{{ req.numero }}</option>
-                            {% endfor %}
-                        </select>
-                    {% endif %}
-                </div>
-
+                <label for="requerimento_id">Requerimento:</label>
+                {% if requerimento_id and requerimento %}
+                    <input type="text" class="form-control" value="{{ requerimento.numero }}">
+                    <input type="hidden" name="requerimento_id" value="{{ requerimento_id }}">
+                {% else %}
+                    <input type="text" name="requerimento_id" id="requerimento_id" 
+                        value="{% if vistoria %}{{ vistoria.requerimento.numero }}{% endif %}" required>
+                {% endif %}
             </div>
             
             <div class="form-group" style="flex: 1 1 300px; max-width: 320px;">
@@ -53,10 +36,10 @@
         <legend>Avaliação Técnica</legend>
 
         <div class="form-row">
-            <div class="form-group" style="flex: 1 1 320px; max-width: 350px;">
+            <div class="form-group" style="flex: 1 1 320px; max-width: 350px; min-width: 280px;">
                 <label for="especie_id">Espécie Confirmada:</label>
                 <div id="especie-selector-container">
-                    <select name="especie_id" id="especie_id">
+                    <select name="especie_id" id="especie_id" style="width: 100%; box-sizing: border-box;">
                         <option value="">Selecione a espécie</option>
                         {% for especie in especies %}
                             <option value="{{ especie.id }}" {% if vistoria and vistoria.especie_id == especie.id %}selected{% endif %}>
@@ -67,9 +50,9 @@
                     </select>
                 </div>
                 <div id="nova-especie-container" style="display: none;">
-                    <input type="text" name="nova_especie_popular" id="nova_especie_popular" placeholder="Nome Popular da Nova Espécie" class="form-control" disabled>
-                    <input type="text" name="nova_especie_cientifico" id="nova_especie_cientifico" placeholder="Nome Científico (opcional)" class="form-control" disabled>
-                    <button type="button" id="cancelar-nova-especie" class="btn-secondary" style="margin-top: 5px;">Voltar para seleção</button>
+                    <input type="text" name="nova_especie_popular" id="nova_especie_popular" placeholder="Nome Popular da Nova Espécie" class="form-control" disabled style="width: 100%; box-sizing: border-box;">
+                    <input type="text" name="nova_especie_cientifico" id="nova_especie_cientifico" placeholder="Nome Científico (opcional)" class="form-control" disabled style="width: 100%; box-sizing: border-box;">
+                    <button type="button" id="cancelar-nova-especie" class="btn-secondary" style="margin-top: 5px; width: 100%; box-sizing: border-box;">Voltar para seleção</button>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from database import SessionLocal, Requerimento, Arvore
+from database import SessionLocal, Requerimento, Vistoria
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func as sa_func
 from datetime import datetime
@@ -138,8 +138,23 @@ def listar_requerimentos():
             .all()
         )
         
+        # Obter IDs dos requerimentos que têm vistoria (mais eficiente)
+        requerimento_ids_com_vistoria = {
+            v.requerimento_id for v in 
+            session.query(Vistoria.requerimento_id)
+            .filter(Vistoria.requerimento_id.in_([r.id for r in requerimentos]))
+            .all()
+        }
+        
+        # Serializar com informação de vistoria
+        requerimentos_serializados = []
+        for r in requerimentos:
+            requerimento_data = serializar_requerimento_basico(r)
+            requerimento_data['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
+            requerimentos_serializados.append(requerimento_data)
+        
         return jsonify({
-            "requerimentos": [serializar_requerimento_basico(r) for r in requerimentos],
+            "requerimentos": requerimentos_serializados,
             "total": total,
             "page": page,
             "per_page": per_page
@@ -202,7 +217,22 @@ def listar_todos_requerimentos():
             .all()
         )
         
-        requerimentos_json = [serializar_requerimento_completo(r) for r in requerimentos]
+        # obter ids e verificar quais têm vistoria
+        ids = [r.id for r in requerimentos]
+        requerimento_ids_com_vistoria = set()
+        if ids:
+            requerimento_ids_com_vistoria = {
+                v.requerimento_id for v in
+                session.query(Vistoria.requerimento_id)
+                .filter(Vistoria.requerimento_id.in_(ids))
+                .all()
+            }
+        
+        requerimentos_json = []
+        for r in requerimentos:
+            obj = serializar_requerimento_completo(r)
+            obj['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
+            requerimentos_json.append(obj)
         return jsonify(requerimentos_json), 200
     except Exception as e:
         print(f"Erro no backend: {str(e)}")
@@ -232,12 +262,24 @@ def listar_requerimentos_concluidos():
             .order_by(ordenacao)
             .all()
         )
+
+        # obter ids e verificar quais têm vistoria
+        ids = [r.id for r in requerimentos]
+        requerimento_ids_com_vistoria = set()
+        if ids:
+            requerimento_ids_com_vistoria = {
+                v.requerimento_id for v in
+                session.query(Vistoria.requerimento_id)
+                .filter(Vistoria.requerimento_id.in_(ids))
+                .all()
+            }
         
         requerimentos_json = []
         for r in requerimentos:
             data = serializar_requerimento_completo(r)
             # Adicionar data de conclusão
             data['data_conclusao'] = r.data_atualizacao.isoformat() if r.data_atualizacao else None
+            data['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
             requerimentos_json.append(data)
         
         return jsonify(requerimentos_json), 200
