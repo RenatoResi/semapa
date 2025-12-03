@@ -70,7 +70,7 @@ def listar_vistorias():
         vistorias = session.query(Vistoria).options(
             joinedload(Vistoria.requerimento),
             joinedload(Vistoria.user)
-        ).all()
+        ).order_by(Vistoria.vistoria_data.desc()).all()
         return render_template('vistoria_listar.html', vistorias=vistorias)
     finally:
         session.close()

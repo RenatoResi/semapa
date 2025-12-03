@@ -199,9 +199,13 @@ async function ordenarRequerimentos() {
 
 // Selecionar e remover requerimento
 document.addEventListener('click', function(e) {
+  // usa closest para capturar o botão mesmo se o clique for no ícone/elemento interno
+  const el = e.target.closest('button, a, .btn-selecionar-mapa, .btn-whatsapp-mapa');
+  if (!el) return;
+
   // Selecionar (apenas para não concluídos) - botão da tabela
-  if (e.target.classList.contains('btn-selecionar') && modoVisualizacao === 'nao-concluidos') {
-    const id = parseInt(e.target.dataset.id);
+  if (el.classList.contains('btn-selecionar') && modoVisualizacao === 'nao-concluidos') {
+    const id = parseInt(el.dataset.id);
     const req = requerimentosDisponiveis.find(r => r.id === id);
     if (req && !requerimentosSelecionados.some(r => r.id === id)) {
       requerimentosSelecionados.push(req);
@@ -209,11 +213,12 @@ document.addEventListener('click', function(e) {
       renderTabelaSelecionados();
       criarMarcadores();
     }
+    return;
   }
 
   // Selecionar pelo botão no popup do mapa
-  if (e.target.classList.contains('btn-selecionar-mapa') && modoVisualizacao === 'nao-concluidos') {
-    const id = parseInt(e.target.dataset.id);
+  if (el.classList.contains('btn-selecionar-mapa') && modoVisualizacao === 'nao-concluidos') {
+    const id = parseInt(el.dataset.id);
     const req = requerimentosDisponiveis.find(r => r.id === id);
     if (req && !requerimentosSelecionados.some(r => r.id === id)) {
       requerimentosSelecionados.push(req);
@@ -225,20 +230,23 @@ document.addEventListener('click', function(e) {
     if (map && marcadoresMapa[id] && marcadoresMapa[id].getPopup) {
       marcadoresMapa[id].getPopup().remove();
     }
+    return;
   }
 
   // Remover da seleção
-  if (e.target.classList.contains('btn-remover-selecionado')) {
-    const id = parseInt(e.target.dataset.id);
+  if (el.classList.contains('btn-remover-selecionado')) {
+    const id = parseInt(el.dataset.id);
     requerimentosSelecionados = requerimentosSelecionados.filter(r => r.id !== id);
     renderTabelaRequerimentos();
     renderTabelaSelecionados();
     criarMarcadores();
+    return;
   }
+
   // Editar inline (apenas para não concluídos)
-  if (e.target.classList.contains('btn-editar-inline') && modoVisualizacao === 'nao-concluidos') {
-    const tr = e.target.closest('tr');
-    const id = parseInt(tr.dataset.id);
+  if (el.classList.contains('btn-editar-inline') && modoVisualizacao === 'nao-concluidos') {
+    const tr = el.closest('tr');
+    const id = parseInt(tr?.dataset.id);
     const r = requerimentosDisponiveis.find(r => r.id === id);
     if (!r) return;
     tr.innerHTML = `
@@ -262,16 +270,20 @@ document.addEventListener('click', function(e) {
         <button class="btn-cancelar-inline">Cancelar</button>
       </td>
     `;
+    return;
   }
+
   // Cancelar edição
-  if (e.target.classList.contains('btn-cancelar-inline')) {
+  if (el.classList.contains('btn-cancelar-inline')) {
     renderTabelaRequerimentos();
     atualizarPaginacaoReq();
+    return;
   }
+
   // Salvar edição
-  if (e.target.classList.contains('btn-salvar-inline')) {
-    const tr = e.target.closest('tr');
-    const id = parseInt(e.target.dataset.id);
+  if (el.classList.contains('btn-salvar-inline')) {
+    const tr = el.closest('tr');
+    const id = parseInt(el.dataset.id);
     const inputs = tr.querySelectorAll('.input-inline');
     const payload = {};
     inputs.forEach(input => {
@@ -294,26 +306,22 @@ document.addEventListener('click', function(e) {
     .catch(err => {
       alert('Erro: ' + err.message);
     });
+    return;
   }
 
   // Registrar Vistoria (nova ou existente)
-  if (e.target.classList.contains('btn-vistoria') || e.target.classList.contains('btn-vistoria-existente')) {
-      const id = parseInt(e.target.dataset.id);
-      window.location.href = `/vistorias/nova?requerimento_id=${id}`;
+  if (el.classList.contains('btn-vistoria') || el.classList.contains('btn-vistoria-existente')) {
+    const id = parseInt(el.dataset.id);
+    window.location.href = `/vistorias/nova?requerimento_id=${id}`;
+    return;
   }
 
-  // Enviar WhatsApp (tabela)
-  if (e.target.classList.contains('btn-whatsapp')) {
-    const id = parseInt(e.target.dataset.id);
+  // Enviar WhatsApp (tabela e popup)
+  if (el.classList.contains('btn-whatsapp') || el.classList.contains('btn-whatsapp-mapa')) {
+    const id = parseInt(el.dataset.id);
     const req = requerimentosDisponiveis.find(r => r.id === id) || filteredRequerimentos.find(r => r.id === id);
     abrirWhatsAppPara(req);
-  }
-
-  // Enviar WhatsApp (botão no popup do mapa)
-  if (e.target.classList.contains('btn-whatsapp-mapa')) {
-    const id = parseInt(e.target.dataset.id);
-    const req = requerimentosDisponiveis.find(r => r.id === id) || filteredRequerimentos.find(r => r.id === id);
-    abrirWhatsAppPara(req);
+    return;
   }
 });
 

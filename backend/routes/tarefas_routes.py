@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from database import SessionLocal, Tarefa, Requerimento, Arvore, User
+from database import SessionLocal, Tarefa, Requerimento, Arvore, User, Vistoria
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
 from sqlalchemy.orm import joinedload
@@ -289,6 +289,11 @@ def tarefa_detalhes(tarefa_id):
         if not tarefa:
             flash("Tarefa não encontrada.", "error")
             return redirect(url_for('tarefas.listar_tarefas'))
+
+        # Se for solicitação parcial (para modal), retorna apenas o fragmento
+        if request.args.get('partial') == '1':
+            return render_template("tarefa_detalhes_fragment.html", tarefa=tarefa)
+
         return render_template("tarefa_detalhes.html", tarefa=tarefa)
     finally:
         sessao.close()
@@ -503,3 +508,142 @@ def obter_previsao_semana(dias_semana):
         print("Erro ao obter previsão:", e)
 
     return previsao_por_dia
+
+# -------------------- API DRAG & DROP -------------------- 
+
+@tarefas_bp.route('/api/requerimentos', methods=['GET'])
+@login_required
+def api_requerimentos_dragdrop():
+    """API para requerimentos disponíveis para drag & drop na agenda"""
+    session = SessionLocal()
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 15
+        order_by = request.args.get('order_by', 'id-desc')
+        busca = request.args.get('busca', '').strip()
+
+        # Query base: requerimentos que têm pelo menos uma vistoria
+        query = session.query(Requerimento).join(Vistoria).outerjoin(Arvore).distinct()
+
+        # Excluir requerimentos que já têm tarefa ativa/agendada (qualquer status exceto 'cancelada' ou 'concluida')
+        tarefas_subq = session.query(Tarefa.requerimento_id).filter(
+            Tarefa.requerimento_id != None,
+            Tarefa.status.notin_(['cancelada', 'concluida'])
+        ).distinct()
+        query = query.filter(~Requerimento.id.in_(tarefas_subq))
+
+        # Excluir requerimentos já concluídos (caso o campo status contenha 'conclu')
+        query = query.filter(~Requerimento.status.ilike('%conclu%'))
+
+        # Filtro de busca (usa arvore.bairro quando disponível)
+        if busca:
+            query = query.filter(
+                or_(
+                    Requerimento.numero.ilike(f'%{busca}%'),
+                    Requerimento.tipo.ilike(f'%{busca}%'),
+                    Arvore.bairro.ilike(f'%{busca}%')
+                )
+            )
+
+        # Ordenação
+        if order_by == 'complexidade-asc':
+            if hasattr(Requerimento, 'complexidade'):
+                query = query.order_by(Requerimento.complexidade.asc())
+            else:
+                query = query.order_by(Requerimento.id.asc())
+        elif order_by == 'complexidade-desc':
+            if hasattr(Requerimento, 'complexidade'):
+                query = query.order_by(Requerimento.complexidade.desc())
+            else:
+                query = query.order_by(Requerimento.id.desc())
+        elif order_by == 'bairro':
+            query = query.order_by(Arvore.bairro.asc().nullsfirst())
+        elif order_by == 'tipo':
+            query = query.order_by(Requerimento.tipo.asc().nullsfirst())
+        else:
+            query = query.order_by(Requerimento.id.desc())
+
+        total = query.count()
+        requerimentos = query.offset((page - 1) * per_page).limit(per_page).all()
+
+        resultado = {
+            'requerimentos': [{
+                'id': r.id,
+                'numero': r.numero,
+                'prioridade': r.prioridade,
+                'tipo': r.tipo,
+                'bairro': (r.arvore.bairro if r.arvore else 'Centro') if hasattr(r, 'arvore') else 'Centro',
+                'complexidade': (r.vistorias[0].complexidade if r.vistorias else 1)
+            } for r in requerimentos],
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page
+        }
+
+        return jsonify(resultado)
+    finally:
+        session.close()
+
+@tarefas_bp.route('/api/agendar', methods=['POST'])
+@login_required
+def api_agendar_tarefa():
+    """API para criar tarefa via drag & drop"""
+    data = request.get_json()
+    session = SessionLocal()
+    try:
+        requerimento_id = data.get('requerimento_id')
+        data_prevista = data.get('data_prevista')
+        periodo = data.get('periodo')
+
+        if not all([requerimento_id, data_prevista, periodo]):
+            return jsonify({'success': False, 'error': 'Dados incompletos'}), 400
+
+        # Verificar se requerimento existe
+        requerimento = session.query(Requerimento).get(requerimento_id)
+        if not requerimento:
+            return jsonify({'success': False, 'error': 'Requerimento não encontrado'}), 404
+
+        # Buscar dados da árvore (pode ser None)
+        arvore = session.query(Arvore).get(requerimento.arvore_id) if getattr(requerimento, 'arvore_id', None) else None
+
+        # Proteções: campos que podem não existir no modelo
+        complexidade_val = getattr(requerimento, 'complexidade', None) or '1'
+        endereco_val = (arvore.endereco if arvore and getattr(arvore, 'endereco', None) else getattr(requerimento, 'endereco', None) or '')
+        bairro_val = (arvore.bairro if arvore and getattr(arvore, 'bairro', None) else getattr(requerimento, 'arvore_bairro', None) or '')
+
+        # Criar nova tarefa
+        try:
+            data_prevista_date = datetime.strptime(data_prevista, '%Y-%m-%d').date()
+        except Exception:
+            return jsonify({'success': False, 'error': 'Formato de data inválido'}), 400
+
+        nova_tarefa = Tarefa(
+            descricao=f"{(requerimento.tipo or '')} - {(requerimento.motivo or '')}",
+            requerimento_id=requerimento_id,
+            data_prevista=data_prevista_date,
+            periodo=periodo,
+            complexidade=complexidade_val,
+            endereco=endereco_val,
+            bairro=bairro_val,
+            latitude=(arvore.latitude if arvore else getattr(requerimento, 'latitude', None)),
+            longitude=(arvore.longitude if arvore else getattr(requerimento, 'longitude', None)),
+            prioridade=getattr(requerimento, 'prioridade', 'normal') or 'normal',
+            status='planejada',
+            criada_por=current_user.id,
+            atualizada_por=current_user.id
+        )
+
+        session.add(nova_tarefa)
+        session.commit()
+
+        return jsonify({
+            'success': True,
+            'tarefa_id': nova_tarefa.id,
+            'descricao': nova_tarefa.descricao
+        })
+    except Exception as e:
+        session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        session.close()

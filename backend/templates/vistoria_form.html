@@ -41,12 +41,12 @@
                 <div id="especie-selector-container">
                     <select name="especie_id" id="especie_id" style="width: 100%; box-sizing: border-box;">
                         <option value="">Selecione a espécie</option>
+                        <option value="outra">Outra (digitar)...</option>
                         {% for especie in especies %}
                             <option value="{{ especie.id }}" {% if vistoria and vistoria.especie_id == especie.id %}selected{% endif %}>
                                 {{ especie.nome_popular }} ({{ especie.nome_cientifico }})
                             </option>
                         {% endfor %}
-                        <option value="outra">Outra (digitar)...</option>
                     </select>
                 </div>
                 <div id="nova-especie-container" style="display: none;">
@@ -69,6 +69,10 @@
                         {% if vistoria and 'podridao' in vistoria.condicoes %}checked{% endif %}> Podridão no tronco/raízes</label>
                     <label><input type="checkbox" name="condicoes[]" value="danos" 
                         {% if vistoria and 'danos' in vistoria.condicoes %}checked{% endif %}> Danos mecânicos</label>
+                    <label><input type="checkbox" name="condicoes[]" value="morta" 
+                        {% if vistoria and 'morta' in vistoria.condicoes %}checked{% endif %}> Morta / Tombando</label>
+                    <label><input type="checkbox" name="condicoes[]" value="caida" 
+                        {% if vistoria and 'caida' in vistoria.condicoes %}checked{% endif %}> Caída</label>
                 </div>
             </div>
         </div>
@@ -87,6 +91,8 @@
                         {% if vistoria and 'sinalizacao' in vistoria.conflitos %}checked{% endif %}> Sinalização de trânsito</label>
                     <label><input type="checkbox" name="conflitos[]" value="iluminacao" 
                         {% if vistoria and 'iluminacao' in vistoria.conflitos %}checked{% endif %}> Iluminação pública</label>
+                    <label><input type="checkbox" name="conflitos[]" value="veiculos"
+                        {% if vistoria and 'veiculos' in vistoria.conflitos %}checked{% endif %}> Veículos</label>
                     <label><input type="checkbox" name="conflitos[]" value="outros" 
                         {% if vistoria and 'outros' in vistoria.conflitos %}checked{% endif %}> Outros</label>
                 </div>
@@ -125,8 +131,6 @@
                         {% if vistoria and vistoria.acao_recomendada == 'poda' %}checked{% endif %}> Poda</label>
                     <label><input type="radio" name="acao_recomendada" value="remoção"
                         {% if vistoria and vistoria.acao_recomendada == 'remoção' %}checked{% endif %}> Remoção</label>
-                    <label><input type="radio" name="acao_recomendada" value="transplante"
-                        {% if vistoria and vistoria.acao_recomendada == 'transplante' %}checked{% endif %}> Transplante</label>
                 </div>
             </div>
 
@@ -148,11 +152,11 @@
                 <label for="complexidade">Complexidade da Intervenção:</label>
                 <select name="complexidade" id="complexidade" required>
                     <option value="">Selecione</option>
-                    <option value="1" {% if vistoria and vistoria.complexidade == '1' %}selected{% endif %}>1 - Solo Rápido</option>
-                    <option value="2" {% if vistoria and vistoria.complexidade == '2' %}selected{% endif %}>2 - Solo Lento</option>
-                    <option value="3" {% if vistoria and vistoria.complexidade == '3' %}selected{% endif %}>3 - Altura Rápido</option>
-                    <option value="4" {% if vistoria and vistoria.complexidade == '4' %}selected{% endif %}>4 - Altura Lento</option>
-                    <option value="5" {% if vistoria and vistoria.complexidade == '5' %}selected{% endif %}>5 - Guindaste</option>
+                    <option value="1" {% if vistoria and vistoria.complexidade|int == 1 %}selected{% endif %}>1 - Solo Rápido</option>
+                    <option value="2" {% if vistoria and vistoria.complexidade|int == 2 %}selected{% endif %}>2 - Solo Lento</option>
+                    <option value="3" {% if vistoria and vistoria.complexidade|int == 3 %}selected{% endif %}>3 - Altura Rápido</option>
+                    <option value="4" {% if vistoria and vistoria.complexidade|int == 4 %}selected{% endif %}>4 - Altura Lento</option>
+                    <option value="5" {% if vistoria and vistoria.complexidade|int == 5 %}selected{% endif %}>5 - Guindaste</option>
                 </select>
         </div>
 

@@ -62,7 +62,7 @@ def vistoria_listar():
         vistorias = session.query(Vistoria).options(
             joinedload(Vistoria.requerimento),
             joinedload(Vistoria.user)
-        ).all()
+        ).order_by(Vistoria.vistoria_data.desc()).all()
         return render_template('vistoria_listar.html', vistorias=vistorias)
     finally:
         session.close()
@@ -96,7 +96,7 @@ def vistoria_form():
                              requerimentos=requerimentos)
     except Exception as e:
         print(f"Erro ao carregar formulário de vistoria: {str(e)}")
-        return render_template('vistoria_form.html', 
+        return render_template('vistoria_form.html', url_for('pages.vistoria_listar'),
                              requerimento_id=None,
                              requerimento=None,
                              requerimentos=[])
