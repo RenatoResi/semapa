@@ -171,7 +171,7 @@ def editar_vistoria(id):
         
         # Buscar todos os requerimentos e espécies para os selects
         requerimentos = session.query(Requerimento).all()
-        especies = session.query(Especies).all()
+        especies = session.query(Especies).order_by(Especies.nome_popular.asc()).all()
 
         # Processar dados para o template
         return render_template(

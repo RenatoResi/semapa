@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Requerimento {{ requerimento.numero }} — Detalhes{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/requerimento_listar.css') }}">
+  <style>
+    #mini-map { width: 100%; height: 300px; border-radius: 8px; margin-bottom: 12px; }
+    .foto-thumb { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; margin-right: 8px; cursor: pointer; background:#f5f5f5; display:inline-block; }
+    .fotos-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+    .form-row { display:flex; gap: 12px; flex-wrap:wrap; }
+    .form-group { flex:1 1 300px; min-width: 200px; }
+    .tab { padding: 12px; border:1px solid #e1e1e1; border-radius:6px; margin-bottom:12px; background:#fff; }
+    .btn { padding:6px 10px; border-radius:4px; cursor:pointer; }
+    .btn-primary { background:#0d6efd; color:#fff; border:none; }
+    .btn-secondary { background:#6c757d; color:#fff; border:none; }
+    .meta { color:#6b7280; font-size:0.95em; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<h1>Requerimento {{ requerimento.numero or '' }}</h1>
+
+<div class="tab">
+  <h3>Dados do Requerimento</h3>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Número</label>
+      <input id="input-numero" class="form-control" value="{{ requerimento.numero or '' }}">
+    </div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <input id="input-tipo" class="form-control" value="{{ requerimento.tipo or '' }}">
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <input id="input-motivo" class="form-control" value="{{ requerimento.motivo or '' }}">
+    </div>
+    <div class="form-group">
+      <label>Prioridade</label>
+      <select id="input-prioridade" class="form-control">
+        <option value="Normal" {% if requerimento.prioridade == 'Normal' %}selected{% endif %}>Normal</option>
+        <option value="Alta" {% if requerimento.prioridade == 'Alta' %}selected{% endif %}>Alta</option>
+        <option value="Urgente" {% if requerimento.prioridade == 'Urgente' %}selected{% endif %}>Urgente</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <input id="input-status" class="form-control" value="{{ requerimento.status or '' }}">
+    </div>
+    <div class="form-group">
+      <label>Data de Abertura</label>
+      <input id="input-data-abertura" type="date" class="form-control" value="{{ requerimento.data_abertura.strftime('%Y-%m-%d') if requerimento.data_abertura }}">
+    </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <label>Observação</label>
+    <textarea id="input-observacao" class="form-control" rows="3">{{ requerimento.observacao or '' }}</textarea>
+  </div>
+
+  <div style="margin-top:12px;">
+    <button id="btn-salvar-requerimento" class="btn btn-primary">Salvar Alterações</button>
+    <a href="{{ url_for('pages.requerimento_listar') }}" class="btn btn-secondary" style="margin-left:8px;">Voltar à lista</a>
+    <span class="meta" style="margin-left:12px;">Última atualização: {{ requerimento.data_atualizacao.strftime('%Y-%m-%d %H:%M:%S') if requerimento.data_atualizacao else '—' }}</span>
+  </div>
+</div>
+
+<div class="tab">
+  <h3>Dados do Requerente</h3>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Nome</label>
+      <input id="input-requerente-nome" class="form-control" value="{{ requerimento.requerente.nome if requerimento.requerente else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Telefone</label>
+      <input id="input-requerente-telefone" class="form-control" value="{{ requerimento.requerente.telefone if requerimento.requerente else '' }}">
+    </div>
+    <div class="form-group">
+      <label>Observações</label>
+      <input id="input-requerente-observacoes" class="form-control" value="{{ requerimento.requerente.observacao if requerimento.observacao else '' }}">
+  </div>
+</div>
+
+<div class="tab">
+  <h3>Árvore</h3>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Espécie</label>
+      <input id="input-arvore-especie" class="form-control" value="{{ requerimento.arvore.especie.nome_popular if requerimento.arvore and requerimento.arvore.especie else (requerimento.arvore_especie if requerimento.__dict__.get('arvore_especie') else '') }}">
+    </div>
+    <div class="form-group">
+      <label>Endereço</label>
+      <input id="input-arvore-endereco" class="form-control" value="{{ requerimento.arvore.endereco if requerimento.arvore else (requerimento.arvore_endereco if requerimento.__dict__.get('arvore_endereco') else '') }}">
+    </div>
+    <div class="form-group">
+      <label>Bairro</label>
+      <input id="input-arvore-bairro" class="form-control" value="{{ requerimento.arvore.bairro if requerimento.arvore else (requerimento.arvore_bairro if requerimento.__dict__.get('arvore_bairro') else '') }}">
+    </div>
+  </div>
+
+  <div style="margin-top:12px;">
+    <label>Localização</label>
+    <div id="mini-map"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Latitude</label>
+        <input id="input-lat" class="form-control" value="{{ requerimento.arvore.latitude if requerimento.arvore else (requerimento.arvore_latitude if requerimento.__dict__.get('arvore_latitude') else '') }}">
+      </div>
+      <div class="form-group">
+        <label>Longitude</label>
+        <input id="input-lon" class="form-control" value="{{ requerimento.arvore.longitude if requerimento.arvore else (requerimento.arvore_longitude if requerimento.__dict__.get('arvore_longitude') else '') }}">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab">
+  <h3>Vistorias</h3>
+  {% if vistorias %}
+    {% for v in vistorias %}
+      <div style="margin-bottom:14px; border-bottom:1px dashed #ddd; padding-bottom:10px;">
+        <strong>Vistoria #{{ v.id }} — {{ v.vistoria_data.strftime('%Y-%m-%d') if v.vistoria_data else '' }}</strong>
+        <div>Status: {{ v.status }}</div>
+        <div>Observações: {{ v.observacoes or '—' }}</div>
+        <div class="fotos-row" data-vistoria-id="{{ v.id }}">
+          {% for f in v.fotos %}
+            <div class="foto-thumb" data-photo-id="{{ f.id }}" title="{{ f.arquivo_nome or 'foto' }}"></div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div>Nenhuma vistoria registrada para este requerimento.</div>
+  {% endif %}
+</div>
+
+<div class="tab">
+  <h3>Tarefas Agendadas</h3>
+  {% if requerimento.tarefas %}
+    <ul>
+      {% for t in requerimento.tarefas %}
+        <li>
+          <strong>{{ t.data_prevista.strftime('%Y-%m-%d') if t.data_prevista else '—' }} ({{ t.periodo or '—' }})</strong> — {{ t.descricao or '' }} — <em>{{ t.status or '' }}</em>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div>Sem tarefas agendadas para este requerimento.</div>
+  {% endif %}
+</div>
+
+<!-- Modal simples para foto ampliada -->
+<div id="foto-modal" class="modal" tabindex="-1" role="dialog" style="display:none;">
+  <div style="max-width:900px; margin:40px auto; padding:12px; background:white; border-radius:6px;">
+    <img id="foto-modal-img" src="" style="width:100%; height:auto; display:block;">
+    <div style="text-align:right; margin-top:8px;">
+      <button onclick="closeFotoModal()" class="btn btn-secondary">Fechar</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+  <script>
+    const REQ_ID = {{ requerimento.id }};
+
+    function openFotoModal(url) {
+      document.getElementById('foto-modal-img').src = url;
+      const m = document.getElementById('foto-modal');
+      m.style.display = 'block';
+    }
+    function closeFotoModal() {
+      const m = document.getElementById('foto-modal');
+      m.style.display = 'none';
+      document.getElementById('foto-modal-img').src = '';
+    }
+
+    // Inicializa minimapa baseado nas coordenadas (tentando vários campos possíveis)
+    (function(){
+      const latVal = document.getElementById('input-lat').value;
+      const lonVal = document.getElementById('input-lon').value;
+      const lat = latVal ? parseFloat(latVal) : null;
+      const lon = lonVal ? parseFloat(lonVal) : null;
+      if (lat && lon) {
+        const map = new maplibregl.Map({
+          container: 'mini-map',
+          style: {
+            version: 8,
+            sources: { 'sat': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
+            layers: [{ id:'sat', type:'raster', source:'sat' }]
+          },
+          center: [lon, lat],
+          zoom: 16
+        });
+        new maplibregl.Marker().setLngLat([lon, lat]).addTo(map);
+      } else {
+        document.getElementById('mini-map').innerHTML = '<div style="padding:20px;">Localização não informada</div>';
+      }
+    })();
+
+    // Carregar fotos como blobs (endpoint servidor: /foto/<id>)
+    async function carregarFotos() {
+      const thumbs = document.querySelectorAll('.foto-thumb[data-photo-id]');
+      thumbs.forEach(async el => {
+        const id = el.dataset.photoId;
+        try {
+          const res = await fetch(`/foto/${id}`);
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          el.style.backgroundImage = `url(${url})`;
+          el.style.backgroundSize = 'cover';
+          el.style.backgroundPosition = 'center';
+          el.addEventListener('click', () => openFotoModal(url));
+        } catch (err) {
+          // ignore
+        }
+      });
+    }
+
+    // Salvar via PUT (enviamos campos de formulário; backend atual atualiza status
+    // e auditoria — se quiser atualizar mais campos também, ajuste o handler no backend)
+    document.getElementById('btn-salvar-requerimento').addEventListener('click', async function(){
+      const payload = {
+        numero: document.getElementById('input-numero').value,
+        tipo: document.getElementById('input-tipo').value,
+        motivo: document.getElementById('input-motivo').value,
+        prioridade: document.getElementById('input-prioridade').value,
+        status: document.getElementById('input-status').value,
+        observacao: document.getElementById('input-observacao').value,
+        data_abertura: document.getElementById('input-data-abertura').value || null
+      };
+      try {
+        const res = await fetch(`/requerimentos/${REQ_ID}`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          alert('Erro ao salvar: ' + txt);
+          return;
+        }
+        alert('Alterações salvas com sucesso!');
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao salvar alterações.');
+      }
+    });
+
+    // inicializações
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarFotos();
+    });
+  </script>
+{% endblock %}

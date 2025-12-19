@@ -118,3 +118,28 @@ def lista_especies():
 def agenda():
     """Redireciona para agenda de tarefas"""
     return redirect(url_for('tarefas.listar_tarefas'))
+
+@pages_bp.route('/requerimentos/<int:requerimento_id>/detalhes')
+@login_required
+@nivel_requerido(1, 2)
+def requerimento_detalhes(requerimento_id):
+    """Detalhes de um requerimento específico"""
+    session = SessionLocal()
+    try:
+        requerimento = session.query(Requerimento).filter(
+            Requerimento.id == requerimento_id
+        ).first()
+        
+        if not requerimento:
+            return "Requerimento não encontrado", 404
+        
+        # Carrega as vistorias associadas ao requerimento
+        vistorias = session.query(Vistoria).filter(
+            Vistoria.requerimento_id == requerimento_id
+        ).all()
+        
+        return render_template('requerimento_detalhes.html', 
+                               requerimento=requerimento, 
+                               vistorias=vistorias)
+    finally:
+        session.close()

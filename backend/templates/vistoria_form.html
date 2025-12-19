@@ -185,6 +185,12 @@
             <small>Registre: visão geral, detalhes de conflitos, condições fitossanitárias</small>
         </div>
 
+        <!-- Preview de novas fotos -->
+        <div id="novas-fotos-container" style="display: none;">
+            <h4>Novas Fotos Selecionadas:</h4>
+            <div class="photo-grid" id="novas-fotos-grid"></div>
+        </div>
+
         {% if vistoria and vistoria.fotos %}
         <div class="existing-photos">
             <h4>Fotos Existentes ({{ vistoria.fotos|length }}):</h4>
@@ -263,7 +269,76 @@ document.addEventListener('DOMContentLoaded', function() {
         dataField.value = localDateTime;
     }
 
-    document.querySelectorAll('.btn-remove-photo').forEach(btn => {
+    // ==================== PREVIEW DE FOTOS EM TEMPO REAL ====================
+    const fotosInput = document.getElementById('fotos');
+    const novasFotosContainer = document.getElementById('novas-fotos-container');
+    const novasFotosGrid = document.getElementById('novas-fotos-grid');
+    let fotosArmazenadas = [];
+
+    fotosInput.addEventListener('change', function(e) {
+        const novasArquivos = Array.from(e.target.files);
+        
+        novasArquivos.forEach(arquivo => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const id = Date.now() + Math.random();
+                fotosArmazenadas.push({ id, arquivo, preview: event.target.result });
+                renderizarPreviewFotos();
+            };
+            reader.readAsDataURL(arquivo);
+        });
+
+        // Limpar o input para permitir selecionar os mesmos arquivos novamente se necessário
+        fotosInput.value = '';
+    });
+
+    function renderizarPreviewFotos() {
+        if (fotosArmazenadas.length === 0) {
+            novasFotosContainer.style.display = 'none';
+            novasFotosGrid.innerHTML = '';
+            return;
+        }
+
+        novasFotosContainer.style.display = 'block';
+        novasFotosGrid.innerHTML = '';
+
+        fotosArmazenadas.forEach(foto => {
+            const div = document.createElement('div');
+            div.className = 'photo-item';
+            div.innerHTML = `
+                <img src="${foto.preview}" alt="Preview da foto">
+                <button type="button" class="btn-remove-photo" data-temp-id="${foto.id}">✕</button>
+            `;
+            novasFotosGrid.appendChild(div);
+        });
+
+        // Adicionar listeners aos botões de remover novas fotos
+        document.querySelectorAll('.btn-remove-photo[data-temp-id]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tempId = this.dataset.tempId;
+                fotosArmazenadas = fotosArmazenadas.filter(f => f.id != tempId);
+                renderizarPreviewFotos();
+            });
+        });
+    }
+
+    // Modificar o envio do formulário para incluir as fotos armazenadas
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (fotosArmazenadas.length > 0) {
+            const dataTransfer = new DataTransfer();
+            
+            // Adicionar as fotos armazenadas ao input
+            fotosArmazenadas.forEach(foto => {
+                dataTransfer.items.add(foto.arquivo);
+            });
+            
+            fotosInput.files = dataTransfer.files;
+        }
+    });
+
+    // Remover fotos já existentes
+    document.querySelectorAll('.btn-remove-photo[data-photo-id]').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             const photoId = this.dataset.photoId;
@@ -282,11 +357,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         photoItem.remove();
                         const photoGrid = document.querySelector('.photo-grid');
                         const existingPhotos = document.querySelector('.existing-photos h4');
-                        const count = photoGrid.querySelectorAll('.photo-item').length;
-                        if (count === 0) {
-                            document.querySelector('.existing-photos').remove();
-                        } else {
-                            existingPhotos.textContent = `Fotos Existentes (${count}):`;
+                        if (photoGrid) {
+                            const count = photoGrid.querySelectorAll('.photo-item').length;
+                            if (count === 0) {
+                                document.querySelector('.existing-photos').remove();
+                            } else {
+                                existingPhotos.textContent = `Fotos Existentes (${count}):`;
+                            }
                         }
                     } else {
                         alert('Erro ao remover foto: ' + data.error);

@@ -246,13 +246,28 @@
 }
 
 .card-complexidade {
-    background: linear-gradient(135deg, #ffc107, #ff9800);
     color: #000;
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(255,193,7,0.4);
+}
+
+.card-complexidade.complexidade-normal {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.card-complexidade.complexidade-alta {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+}
+
+.card-complexidade.complexidade-urgente {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    color: white;
 }
 
 .card-tipo {

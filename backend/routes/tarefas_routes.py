@@ -518,7 +518,7 @@ def api_requerimentos_dragdrop():
     session = SessionLocal()
     try:
         page = request.args.get('page', 1, type=int)
-        per_page = 15
+        per_page = 5
         order_by = request.args.get('order_by', 'id-desc')
         busca = request.args.get('busca', '').strip()
 

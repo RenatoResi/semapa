@@ -2,11 +2,12 @@ let requerimentosDisponiveis = [];
 let requerimentosSelecionados = [];
 let filteredRequerimentos = [];
 let paginaReq = 1;
-const porPagina = 5;
+const porPagina = 10;
 let map;
 let marcadoresMapa = {};
 let modoVisualizacao = 'nao-concluidos'; // 'nao-concluidos' ou 'concluidos'
 let usuarioMarker = null;
+let filtroNaoVistoriados = false; // nova flag global
 
 // Carrega todos os requerimentos e inicializa filtrados
 async function carregarSelecao() {
@@ -15,16 +16,52 @@ async function carregarSelecao() {
     const res = await fetch(endpoint);
     if (!res.ok) throw new Error(`Erro HTTP! Status: ${res.status}`);
     requerimentosDisponiveis = await res.json();
-    filteredRequerimentos = [...requerimentosDisponiveis];
+
+    // Agora aplicamos os filtros consistentes (busca + checkbox)
+    aplicarFiltrosGlobais();
+
     paginaReq = 1;
-    renderTabelaRequerimentos();
     renderTabelaSelecionados();
     atualizarPaginacaoReq();
-    criarMarcadores();  // Atualiza o mapa com todos os dados iniciais
+    criarMarcadores();  // Atualiza o mapa com todos os dados iniciais (usa filteredRequerimentos)
   } catch (error) {
     console.error('Erro ao carregar requerimentos:', error);
     document.getElementById('resposta') && (document.getElementById('resposta').innerText = `Erro: ${error.message}`);
   }
+}
+
+// Função centralizada que aplica busca + filtro "não vistoriados"
+function aplicarFiltrosGlobais() {
+  const termo = document.getElementById('filtro-requerimento')?.value?.toLowerCase() || '';
+  const chkNaoVistoriados = document.getElementById('switch-nao-vistoriados');
+  filtroNaoVistoriados = chkNaoVistoriados ? chkNaoVistoriados.checked : false;
+
+  filteredRequerimentos = (Array.isArray(requerimentosDisponiveis) ? requerimentosDisponiveis : []).filter(r => {
+    // filtro "apenas não vistoriados"
+    if (filtroNaoVistoriados) {
+      const tem = Boolean(r.tem_vistoria);
+      if (tem) return false;
+    }
+
+    // filtro de texto (se termo vazio, passa automaticamente)
+    if (!termo) return true;
+
+    return (
+      (r.numero?.toString().toLowerCase() || '').includes(termo) ||
+      (r.tipo?.toLowerCase() || '').includes(termo) ||
+      (r.motivo?.toLowerCase() || '').includes(termo) ||
+      (r.prioridade?.toLowerCase() || '').includes(termo) ||
+      (r.requerente_nome?.toLowerCase() || '').includes(termo) ||
+      (r.arvore_endereco?.toLowerCase() || '').includes(termo) ||
+      (r.arvore_bairro?.toLowerCase() || '').includes(termo) ||
+      (r.status?.toLowerCase() || '').includes(termo)
+    );
+  });
+
+  paginaReq = 1;
+  renderTabelaRequerimentos();
+  atualizarPaginacaoReq();
+  criarMarcadores();
 }
 
 // Renderiza a tabela principal com estilo card em mobile
@@ -35,18 +72,18 @@ function renderTabelaRequerimentos() {
   const inicio = (paginaReq - 1) * porPagina;
   const fim = inicio + porPagina;
 
+  const mostrarDataConclusao = modoVisualizacao === 'concluidos';
+  const mostrarAcoes = modoVisualizacao !== 'concluidos';
+
   filteredRequerimentos.slice(inicio, fim).forEach(r => {
     const temVistoria = r.tem_vistoria || false;
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td data-label="Número">${r.numero}</td>
-      <td data-label="Tipo">${r.tipo}</td>
-      <td data-label="Motivo">${r.motivo}</td>
-      <td data-label="Data">${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
-      <td data-label="Requerente">${r.requerente_nome || ''}</td>
-      <td data-label="Local">${gerarLinkGoogleMaps(r)}</td>
-      <td data-label="Bairro">${r.arvore_bairro || ''}</td>
-      <td data-label="Data de Conclusão" style="display: none;">${r.data_conclusao ? formatDateDDMMYYYY(r.data_conclusao) : ''}</td>
+    tr.dataset.temVistoria = String(r.tem_vistoria); // true/false
+    tr.dataset.id = r.id;
+
+    const dataConclusaoCell = `<td data-label="Data de Conclusão" ${mostrarDataConclusao ? '' : 'style="display: none;"'}>${r.data_conclusao ? formatDateDDMMYYYY(r.data_conclusao) : ''}</td>`;
+
+    const acoesCell = mostrarAcoes ? `
       <td data-label="Ações">
         <button class="${temVistoria ? 'btn-vistoria-existente' : 'btn-vistoria'} btn-icon" 
                 data-id="${r.id}" 
@@ -59,6 +96,22 @@ function renderTabelaRequerimentos() {
           <i class="fa-brands fa-whatsapp" style="font-size:1.2em;"></i>
         </button>
       </td>
+    ` : `<td data-label="Ações" style="display: none;"></td>`;
+
+    tr.innerHTML = `
+      <td data-label="Número">
+        <a href="/requerimentos/${r.id}/detalhes" class="link-requerimento" title="Abrir detalhes do requerimento">
+          ${r.numero}
+        </a>
+      </td>
+      <td data-label="Tipo">${r.tipo}</td>
+      <td data-label="Motivo">${r.motivo}</td>
+      <td data-label="Data">${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
+      <td data-label="Requerente">${r.requerente_nome || ''}</td>
+      <td data-label="Local">${gerarLinkGoogleMaps(r)}</td>
+      <td data-label="Bairro">${r.arvore_bairro || ''}</td>
+      ${dataConclusaoCell}
+      ${acoesCell}
     `;
     tbody.appendChild(tr);
   });
@@ -118,11 +171,25 @@ function alternarModoVisualizacao() {
   carregarSelecao();
 }
 
-// Event listener para o switch
+// Event listener para o switch e checkbox e busca
 document.addEventListener('DOMContentLoaded', function() {
   const switchElement = document.getElementById('switch-concluidos');
   if (switchElement) {
     switchElement.addEventListener('change', alternarModoVisualizacao);
+  }
+
+  const chkNaoVistoriados = document.getElementById('switch-nao-vistoriados');
+  if (chkNaoVistoriados) {
+    chkNaoVistoriados.addEventListener('change', function() {
+      aplicarFiltrosGlobais();
+    });
+  }
+
+  const filtroInput = document.getElementById('filtro-requerimento');
+  if (filtroInput) {
+    filtroInput.addEventListener('input', function() {
+      aplicarFiltrosGlobais();
+    });
   }
 });
 
@@ -130,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function atualizarPaginacaoReq() {
   const paginacao = document.getElementById('paginacao-requerimentos');
   if (!paginacao) return;
-  const totalPaginas = Math.ceil(filteredRequerimentos.length / porPagina);
+  const totalPaginas = Math.max(1, Math.ceil(filteredRequerimentos.length / porPagina));
   paginacao.innerHTML = `
     <button onclick="paginaAnteriorReq()" ${paginaReq === 1 ? 'disabled' : ''}>
       Anterior
@@ -157,44 +224,6 @@ function proximaPaginaReq() {
     renderTabelaRequerimentos();
     atualizarPaginacaoReq();
   }
-}
-
-// Filtro
-document.getElementById('filtro-requerimento').addEventListener('input', function(e) {
-  const termo = e.target.value.toLowerCase();
-  filteredRequerimentos = requerimentosDisponiveis.filter(r => {
-    return (
-      (r.numero?.toLowerCase() || '').includes(termo) ||
-      (r.tipo?.toLowerCase() || '').includes(termo) ||
-      (r.motivo?.toLowerCase() || '').includes(termo) ||
-      (r.prioridade?.toLowerCase() || '').includes(termo) ||
-      (r.requerente_nome?.toLowerCase() || '').includes(termo) ||
-      (r.arvore_endereco?.toLowerCase() || '').includes(termo) ||
-      (r.arvore_bairro?.toLowerCase() || '').includes(termo) ||
-      (r.status?.toLowerCase() || '').includes(termo)
-    );
-  });
-  
-  // Resetar paginação e renderizar imediatamente
-  paginaReq = 1;
-  renderTabelaRequerimentos();
-  atualizarPaginacaoReq();
-  criarMarcadores();  // Atualizar o mapa com os resultados filtrados
-});
-
-// Ordenação
-async function ordenarRequerimentos() {
-  const campo = document.getElementById('ordenar-campo').value;
-  const direcao = document.getElementById('ordenar-direcao').value;
-  const endpoint = modoVisualizacao === 'concluidos' ? '/requerimentos/concluidos' : '/requerimentos';
-  const res = await fetch(`${endpoint}?order_by=${campo}&direction=${direcao}`);
-  const data = await res.json();
-  requerimentosDisponiveis = modoVisualizacao === 'concluidos' ? data : data.requerimentos;
-  filteredRequerimentos = [...requerimentosDisponiveis];
-  paginaReq = 1;
-  renderTabelaRequerimentos();
-  atualizarPaginacaoReq();
-  criarMarcadores();  // Atualizar o mapa após ordenação
 }
 
 // Selecionar e remover requerimento

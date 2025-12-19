@@ -1,6 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, abort, send_file
+import mimetypes
+import io
 from flask_login import login_required, current_user
-from database import SessionLocal, Requerimento, Vistoria
+from database import SessionLocal, Requerimento, Vistoria, VistoriaFoto, Tarefa, Arvore, Requerente, Especies
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func as sa_func
 from datetime import datetime
@@ -181,6 +183,21 @@ def atualizar_requerimento(id):
         # Atualiza apenas campos fornecidos
         if 'status' in data:
             requerimento.status = data['status']
+        if 'numero' in data:
+            requerimento.numero = data['numero']
+        if 'tipo' in data:
+            requerimento.tipo = data['tipo']
+        if 'motivo' in data:
+            requerimento.motivo = data['motivo']
+        if 'prioridade' in data:
+            requerimento.prioridade = data['prioridade']
+        if 'observacao' in data:
+            requerimento.observacao = data['observacao']
+        if 'data_abertura' in data and data['data_abertura']:
+            try:
+                requerimento.data_abertura = datetime.strptime(data['data_abertura'], '%Y-%m-%d')
+            except:
+                pass
         
         # Campos obrigatórios de auditoria
         requerimento.data_atualizacao = datetime.now()
@@ -286,5 +303,509 @@ def listar_requerimentos_concluidos():
     except Exception as e:
         print(f"Erro no backend: {str(e)}")
         return jsonify({"error": "Erro interno no servidor"}), 500
+    finally:
+        session.close()
+
+@requerimentos_bp.route('/requerimentos/<int:id>/vistoria', methods=['POST'])
+@login_required
+def cadastrar_vistoria(id):
+    """Cadastra uma nova vistoria para um requerimento"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        requerimento = session.query(Requerimento).get(id)
+        if not requerimento:
+            return jsonify({"error": "Requerimento não encontrado"}), 404
+        
+        nova_vistoria = Vistoria(
+            requerimento_id=requerimento.id,
+            data_vistoria=datetime.strptime(data['data_vistoria'], '%Y-%m-%d'),
+            responsavel_id=current_user.id,
+            observacao=data.get('observacao', ''),
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
+        )
+        session.add(nova_vistoria)
+        session.commit()
+        
+        return jsonify({"message": "Vistoria cadastrada!", "id": nova_vistoria.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>', methods=['GET'])
+@login_required
+def obter_vistoria(id):
+    """Obtém os detalhes de uma vistoria específica"""
+    session = SessionLocal()
+    try:
+        vistoria = (
+            session.query(Vistoria)
+            .options(joinedload(Vistoria.requerimento))
+            .filter(Vistoria.id == id)
+            .first()
+        )
+        if not vistoria:
+            return jsonify({"error": "Vistoria não encontrada"}), 404
+        
+        # Serializar dados da vistoria
+        vistoria_data = {
+            "id": vistoria.id,
+            "requerimento_id": vistoria.requerimento_id,
+            "data_vistoria": vistoria.data_vistoria.isoformat() if vistoria.data_vistoria else None,
+            "responsavel_id": vistoria.responsavel_id,
+            "observacao": vistoria.observacao,
+            "criado_por": vistoria.criado_por,
+            "data_criacao": vistoria.data_criacao.isoformat() if vistoria.data_criacao else None
+        }
+        
+        return jsonify(vistoria_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>/fotos', methods=['POST'])
+@login_required
+def cadastrar_foto_vistoria(id):
+    """Cadastra uma nova foto para uma vistoria"""
+    files = request.files.getlist('fotos')
+    session = SessionLocal()
+    try:
+        vistoria = session.query(Vistoria).get(id)
+        if not vistoria:
+            return jsonify({"error": "Vistoria não encontrada"}), 404
+        
+        # Verificar se a vistoria já possui fotos cadastradas
+        if vistoria.fotos:
+            return jsonify({"error": "Vistoria já possui fotos cadastradas"}), 400
+        
+        # Salvar cada foto enviada
+        for file in files:
+            # Criar objeto de foto
+            nova_foto = VistoriaFoto(
+                vistoria_id=vistoria.id,
+                nome_arquivo=file.filename,
+                tipo_conteudo=file.content_type,
+                tamanho=file.content_length,
+                criado_por=current_user.id,
+                data_criacao=datetime.now()
+            )
+            # Ler conteúdo da foto e atribuir a coluna 'conteudo'
+            nova_foto.conteudo = file.read()
+            session.add(nova_foto)
+        
+        session.commit()
+        return jsonify({"message": "Fotos cadastradas com sucesso!"}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>/fotos', methods=['GET'])
+@login_required
+def listar_fotos_vistoria(id):
+    """Lista as fotos de uma vistoria"""
+    session = SessionLocal()
+    try:
+        vistoria = session.query(Vistoria).get(id)
+        if not vistoria:
+            return jsonify({"error": "Vistoria não encontrada"}), 404
+        
+        # Obter fotos da vistoria
+        fotos = (
+            session.query(VistoriaFoto)
+            .filter(VistoriaFoto.vistoria_id == vistoria.id)
+            .all()
+        )
+        
+        # Serializar dados das fotos
+        fotos_serializadas = [
+            {
+                "id": foto.id,
+                "nome_arquivo": foto.nome_arquivo,
+                "tipo_conteudo": foto.tipo_conteudo,
+                "tamanho": foto.tamanho,
+                "data_criacao": foto.data_criacao.isoformat() if foto.data_criacao else None
+            }
+            for foto in fotos
+        ]
+        
+        return jsonify(fotos_serializadas), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/foto/<int:id>', methods=['GET'])
+@login_required
+def obter_foto(id):
+    """Retorna o conteúdo binário da foto da vistoria (coluna 'arquivo' na tabela)."""
+    session = SessionLocal()
+    try:
+        foto = session.query(VistoriaFoto).get(id)
+        if not foto:
+            return ("Foto não encontrada", 404)
+
+        # Suporta tanto nomes antigos quanto os atuais (fallback)
+        arquivo_bytes = getattr(foto, 'arquivo', None) or getattr(foto, 'conteudo', None)
+        if not arquivo_bytes:
+            return ("Arquivo da foto vazio", 404)
+
+        filename = getattr(foto, 'arquivo_nome', None) or getattr(foto, 'nome_arquivo', None) or f'foto_{id}.jpg'
+
+        # Tenta usar tipo salvo em DB, senão deduz pelo nome do arquivo, senão fallback para jpeg
+        tipo = getattr(foto, 'tipo_conteudo', None)
+        if not tipo:
+            tipo, _ = mimetypes.guess_type(filename)
+        if not tipo:
+            tipo = 'image/jpeg'
+
+        # Serve inline (não como attachment) para facilitar exibição no browser
+        return send_file(
+            io.BytesIO(arquivo_bytes),
+            mimetype=tipo,
+            as_attachment=False,
+            download_name=filename
+        )
+    except Exception as e:
+        session.rollback()
+        return (f"Erro ao obter foto: {str(e)}", 500)
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_vistoria(id):
+    """Atualiza dados de uma vistoria"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        vistoria = session.query(Vistoria).get(id)
+        if not vistoria:
+            return jsonify({"error": "Vistoria não encontrada"}), 404
+        
+        # Atualiza apenas campos fornecidos
+        if 'data_vistoria' in data:
+            vistoria.data_vistoria = datetime.strptime(data['data_vistoria'], '%Y-%m-%d')
+        if 'observacao' in data:
+            vistoria.observacao = data['observacao']
+        
+        # Campos obrigatórios de auditoria
+        vistoria.data_atualizacao = datetime.now()
+        vistoria.atualizado_por = current_user.id
+
+        session.commit()
+        return jsonify({
+            "message": "Vistoria atualizada com sucesso!",
+            "atualizado_por": current_user.nome,
+            "data_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>/foto/<int:foto_id>', methods=['DELETE'])
+@login_required
+def remover_foto_vistoria(id, foto_id):
+    """Remove uma foto de uma vistoria"""
+    session = SessionLocal()
+    try:
+        foto = session.query(VistoriaFoto).filter(VistoriaFoto.id == foto_id, VistoriaFoto.vistoria_id == id).first()
+        if not foto:
+            return jsonify({"error": "Foto não encontrada"}), 404
+        
+        # Remover foto
+        session.delete(foto)
+        session.commit()
+        return jsonify({"message": "Foto removida com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/vistoria/<int:id>', methods=['DELETE'])
+@login_required
+def remover_vistoria(id):
+    """Remove uma vistoria e suas fotos associadas"""
+    session = SessionLocal()
+    try:
+        vistoria = session.query(Vistoria).get(id)
+        if not vistoria:
+            return jsonify({"error": "Vistoria não encontrada"}), 404
+        
+        # Remover fotos associadas
+        for foto in vistoria.fotos:
+            session.delete(foto)
+        
+        # Remover vistoria
+        session.delete(vistoria)
+        session.commit()
+        return jsonify({"message": "Vistoria removida com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/tarefas', methods=['POST'])
+@login_required
+def cadastrar_tarefa():
+    """Cadastra uma nova tarefa"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        nova_tarefa = Tarefa(
+            requerimento_id=data['requerimento_id'],
+            descricao=data['descricao'],
+            responsavel_id=data.get('responsavel_id'),
+            data_limite=datetime.strptime(data['data_limite'], '%Y-%m-%d'),
+            status=data.get('status', 'Pendente'),
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
+        )
+        session.add(nova_tarefa)
+        session.commit()
+        return jsonify({"message": "Tarefa cadastrada!", "id": nova_tarefa.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/tarefas/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_tarefa(id):
+    """Atualiza dados de uma tarefa"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        tarefa = session.query(Tarefa).get(id)
+        if not tarefa:
+            return jsonify({"error": "Tarefa não encontrada"}), 404
+        
+        # Atualiza apenas campos fornecidos
+        if 'status' in data:
+            tarefa.status = data['status']
+        if 'responsavel_id' in data:
+            tarefa.responsavel_id = data['responsavel_id']
+        
+        # Campos obrigatórios de auditoria
+        tarefa.data_atualizacao = datetime.now()
+        tarefa.atualizado_por = current_user.id
+
+        session.commit()
+        return jsonify({
+            "message": "Tarefa atualizada com sucesso!",
+            "atualizado_por": current_user.nome,
+            "data_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/tarefas/<int:id>', methods=['DELETE'])
+@login_required
+def remover_tarefa(id):
+    """Remove uma tarefa"""
+    session = SessionLocal()
+    try:
+        tarefa = session.query(Tarefa).get(id)
+        if not tarefa:
+            return jsonify({"error": "Tarefa não encontrada"}), 404
+        
+        # Remover tarefa
+        session.delete(tarefa)
+        session.commit()
+        return jsonify({"message": "Tarefa removida com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/arvores', methods=['POST'])
+@login_required
+def cadastrar_arvore():
+    """Cadastra uma nova árvore"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        nova_arvore = Arvore(
+            especie_id=data['especie_id'],
+            latitude=data['latitude'],
+            longitude=data['longitude'],
+            endereco=data['endereco'],
+            bairro=data['bairro'],
+            numero=data['numero'],
+            complemento=data.get('complemento', ''),
+            cep=data.get('cep', ''),
+            status=data.get('status', 'Ativa'),
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
+        )
+        session.add(nova_arvore)
+        session.commit()
+        return jsonify({"message": "Árvore cadastrada!", "id": nova_arvore.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/arvores/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_arvore(id):
+    """Atualiza dados de uma árvore"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        arvore = session.query(Arvore).get(id)
+        if not arvore:
+            return jsonify({"error": "Árvore não encontrada"}), 404
+        
+        # Atualiza apenas campos fornecidos
+        if 'status' in data:
+            arvore.status = data['status']
+        if 'responsavel_id' in data:
+            arvore.responsavel_id = data['responsavel_id']
+        
+        # Campos obrigatórios de auditoria
+        arvore.data_atualizacao = datetime.now()
+        arvore.atualizado_por = current_user.id
+
+        session.commit()
+        return jsonify({
+            "message": "Árvore atualizada com sucesso!",
+            "atualizado_por": current_user.nome,
+            "data_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/arvores/<int:id>', methods=['DELETE'])
+@login_required
+def remover_arvore(id):
+    """Remove uma árvore"""
+    session = SessionLocal()
+    try:
+        arvore = session.query(Arvore).get(id)
+        if not arvore:
+            return jsonify({"error": "Árvore não encontrada"}), 404
+        
+        # Remover árvore
+        session.delete(arvore)
+        session.commit()
+        return jsonify({"message": "Árvore removida com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/especies', methods=['POST'])
+@login_required
+def cadastrar_especie():
+    """Cadastra uma nova espécie"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        nova_especie = Especies(
+            nome_cientifico=data['nome_cientifico'],
+            nome_popular=data.get('nome_popular', ''),
+            familia=data.get('familia', ''),
+            genero=data.get('genero', ''),
+            ordem=data.get('ordem', ''),
+            classe=data.get('classe', ''),
+            reino=data.get('reino', ''),
+            dados_adicionais=data.get('dados_adicionais', ''),
+            status=data.get('status', 'Ativa'),
+            criado_por=current_user.id,
+            data_criacao=datetime.now()
+        )
+        session.add(nova_especie)
+        session.commit()
+        return jsonify({"message": "Espécie cadastrada!", "id": nova_especie.id}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/especies/<int:id>', methods=['PUT'])
+@login_required
+def atualizar_especie(id):
+    """Atualiza dados de uma espécie"""
+    data = request.json
+    session = SessionLocal()
+    try:
+        especie = session.query(Especies).get(id)
+        if not especie:
+            return jsonify({"error": "Espécie não encontrada"}), 404
+        
+        # Atualiza apenas campos fornecidos
+        if 'status' in data:
+            especie.status = data['status']
+        
+        # Campos obrigatórios de auditoria
+        especie.data_atualizacao = datetime.now()
+        especie.atualizado_por = current_user.id
+
+        session.commit()
+        return jsonify({
+            "message": "Espécie atualizada com sucesso!",
+            "atualizado_por": current_user.nome,
+            "data_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        session.close()
+
+
+@requerimentos_bp.route('/especies/<int:id>', methods=['DELETE'])
+@login_required
+def remover_especie(id):
+    """Remove uma espécie"""
+    session = SessionLocal()
+    try:
+        especie = session.query(Especies).get(id)
+        if not especie:
+            return jsonify({"error": "Espécie não encontrada"}), 404
+        
+        # Remover espécie
+        session.delete(especie)
+        session.commit()
+        return jsonify({"message": "Espécie removida com sucesso!"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 400
     finally:
         session.close()

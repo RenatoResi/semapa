@@ -89,6 +89,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Função auxiliar para determinar classe de cor baseada em prioridade
+    function getClassePrioridade(prioridade) {
+        if (!prioridade) return 'complexidade-normal';
+        const prio = prioridade.toLowerCase().trim();
+        if (prio === 'urgente') return 'complexidade-urgente';
+        if (prio === 'alta') return 'complexidade-alta';
+        return 'complexidade-normal';
+    }
+
     function renderizarRequerimentos(data) {
         const container = containerEl;
         if (!container) return;
@@ -103,10 +112,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div>
                         <div class="card-tipo"># ${r.numero || ''}</div>
                         <div class="card-numero">${r.tipo || ''}</div>
-                        <div class="card-tipo">Prioridade ${r.prioridade || ''}</div>
                     </div>
-                    <div class="card-complexidade">${r.complexidade || ''}</div>
+                    <div class="card-complexidade ${getClassePrioridade(r.prioridade)}">${r.complexidade || ''}</div>
                 </div>
+                <div class="card-tipo">${r.endereco || ''}</div>
                 <div class="card-bairro">${r.bairro || ''}</div>
             </div>
         `).join('');
