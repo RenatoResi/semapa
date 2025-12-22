@@ -34,10 +34,6 @@
       <input id="input-tipo" class="form-control" value="{{ requerimento.tipo or '' }}">
     </div>
     <div class="form-group">
-      <label>Motivo</label>
-      <input id="input-motivo" class="form-control" value="{{ requerimento.motivo or '' }}">
-    </div>
-    <div class="form-group">
       <label>Prioridade</label>
       <select id="input-prioridade" class="form-control">
         <option value="Normal" {% if requerimento.prioridade == 'Normal' %}selected{% endif %}>Normal</option>
@@ -54,12 +50,20 @@
       <input id="input-data-abertura" type="date" class="form-control" value="{{ requerimento.data_abertura.strftime('%Y-%m-%d') if requerimento.data_abertura }}">
     </div>
   </div>
-
-  <div style="margin-top:12px;">
-    <label>Observação</label>
-    <textarea id="input-observacao" class="form-control" rows="3">{{ requerimento.observacao or '' }}</textarea>
+  <div class="row">
+    <div class="col-md-6">
+      <div style="margin-top:12px;">
+        <label>Motivo</label>
+        <textarea id="input-motivo" class="form-control" rows="3">{{ requerimento.motivo or '' }}</textarea>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div style="margin-top:12px;">
+        <label>Observação</label>
+        <textarea id="input-observacao" class="form-control" rows="3">{{ requerimento.observacao or '' }}</textarea>
+      </div>
+    </div>
   </div>
-
   <div style="margin-top:12px;">
     <button id="btn-salvar-requerimento" class="btn btn-primary">Salvar Alterações</button>
     <a href="{{ url_for('pages.requerimento_listar') }}" class="btn btn-secondary" style="margin-left:8px;">Voltar à lista</a>
@@ -84,66 +88,70 @@
   </div>
 </div>
 
-<div class="tab">
-  <h3>Árvore</h3>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Espécie</label>
-      <input id="input-arvore-especie" class="form-control" value="{{ requerimento.arvore.especie.nome_popular if requerimento.arvore and requerimento.arvore.especie else (requerimento.arvore_especie if requerimento.__dict__.get('arvore_especie') else '') }}">
-    </div>
-    <div class="form-group">
-      <label>Endereço</label>
-      <input id="input-arvore-endereco" class="form-control" value="{{ requerimento.arvore.endereco if requerimento.arvore else (requerimento.arvore_endereco if requerimento.__dict__.get('arvore_endereco') else '') }}">
-    </div>
-    <div class="form-group">
-      <label>Bairro</label>
-      <input id="input-arvore-bairro" class="form-control" value="{{ requerimento.arvore.bairro if requerimento.arvore else (requerimento.arvore_bairro if requerimento.__dict__.get('arvore_bairro') else '') }}">
-    </div>
-  </div>
-
-  <div style="margin-top:12px;">
-    <label>Localização</label>
-    <div id="mini-map"></div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Latitude</label>
-        <input id="input-lat" class="form-control" value="{{ requerimento.arvore.latitude if requerimento.arvore else (requerimento.arvore_latitude if requerimento.__dict__.get('arvore_latitude') else '') }}">
-      </div>
-      <div class="form-group">
-        <label>Longitude</label>
-        <input id="input-lon" class="form-control" value="{{ requerimento.arvore.longitude if requerimento.arvore else (requerimento.arvore_longitude if requerimento.__dict__.get('arvore_longitude') else '') }}">
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="tab">
-  <h3>Vistorias</h3>
-  {% if vistorias %}
-    {% for v in vistorias %}
-      <div style="margin-bottom:14px; border-bottom:1px dashed #ddd; padding-bottom:10px;">
-        <strong>Vistoria #{{ v.id }} — {{ v.vistoria_data.strftime('%Y-%m-%d') if v.vistoria_data else '' }}</strong>
-        <div>Status: {{ v.status }}</div>
-        <div>Observações: {{ v.observacoes or '—' }}</div>
-        <div class="fotos-row" data-vistoria-id="{{ v.id }}">
-          {% for f in v.fotos %}
-            <div class="foto-thumb" data-photo-id="{{ f.id }}" title="{{ f.arquivo_nome or 'foto' }}"></div>
-          {% endfor %}
+<div class="row">
+  <div class="col-md-6">
+    <div class="tab">
+      <h3>Árvore</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Endereço</label>
+          <input id="input-arvore-endereco" class="form-control" value="{{ requerimento.arvore.endereco if requerimento.arvore else (requerimento.arvore_endereco if requerimento.__dict__.get('arvore_endereco') else '') }}">
+        </div>
+        <div class="form-group">
+          <label>Bairro</label>
+          <input id="input-arvore-bairro" class="form-control" value="{{ requerimento.arvore.bairro if requerimento.arvore else (requerimento.arvore_bairro if requerimento.__dict__.get('arvore_bairro') else '') }}">
         </div>
       </div>
-    {% endfor %}
-  {% else %}
-    <div>Nenhuma vistoria registrada para este requerimento.</div>
-  {% endif %}
-</div>
 
+      <div style="margin-top:12px;">
+        <label>Localização</label>
+        <div id="mini-map"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Latitude</label>
+            <input id="input-lat" class="form-control" value="{{ requerimento.arvore.latitude if requerimento.arvore else (requerimento.arvore_latitude if requerimento.__dict__.get('arvore_latitude') else '') }}">
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input id="input-lon" class="form-control" value="{{ requerimento.arvore.longitude if requerimento.arvore else (requerimento.arvore_longitude if requerimento.__dict__.get('arvore_longitude') else '') }}">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="tab">
+      <h3>Vistorias</h3>
+      {% if vistorias %}
+        {% for v in vistorias %}
+          <div style="margin-bottom:14px; border-bottom:1px dashed #ddd; padding-bottom:10px;">
+            <strong>Vistoria #{{ v.id }} — {{ v.vistoria_data.strftime('%d-%m-%Y') if v.vistoria_data else '' }}</strong>
+            <div>Espécie {{ v.especie }}</div>
+            <div>Condições: {{ v.condicoes or '—' }}</div>
+            <div>Conflitos: {{ v.conflitos or '—' }}</div>
+            <div>Complexidade: {{ v.complexidade or '—' }}</div>
+            <div>Observações: {{ v.observacoes or '—' }}</div>
+            <div class="fotos-row" data-vistoria-id="{{ v.id }}">
+              {% for f in v.fotos %}
+                <div class="foto-thumb" data-photo-id="{{ f.id }}" title="{{ f.arquivo_nome or 'foto' }}"></div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div>Nenhuma vistoria registrada para este requerimento.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
 <div class="tab">
   <h3>Tarefas Agendadas</h3>
   {% if requerimento.tarefas %}
     <ul>
       {% for t in requerimento.tarefas %}
         <li>
-          <strong>{{ t.data_prevista.strftime('%Y-%m-%d') if t.data_prevista else '—' }} ({{ t.periodo or '—' }})</strong> — {{ t.descricao or '' }} — <em>{{ t.status or '' }}</em>
+          <strong>{{ t.data_prevista.strftime('%d-%m-%Y') if t.data_prevista else '—' }} ({{ t.periodo or '—' }})</strong> — <em>{{ t.status or '' }}</em>
         </li>
       {% endfor %}
     </ul>
