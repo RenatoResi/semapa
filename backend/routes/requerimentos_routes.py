@@ -140,19 +140,22 @@ def listar_requerimentos():
             .all()
         )
         
-        # Obter IDs dos requerimentos que têm vistoria (mais eficiente)
-        requerimento_ids_com_vistoria = {
-            v.requerimento_id for v in 
-            session.query(Vistoria.requerimento_id)
-            .filter(Vistoria.requerimento_id.in_([r.id for r in requerimentos]))
-            .all()
-        }
-        
-        # Serializar com informação de vistoria
+        # Obter IDs dos requerimentos que têm vistoria e mapear para o id da vistoria (mais eficiente)
         requerimentos_serializados = []
+        if requerimentos:
+            req_ids = [r.id for r in requerimentos]
+            rows = session.query(Vistoria.requerimento_id, Vistoria.id).filter(Vistoria.requerimento_id.in_(req_ids)).all()
+            requerimento_ids_com_vistoria = {req_id for req_id, _ in rows}
+            vistoria_map = {req_id: vist_id for req_id, vist_id in rows}
+        else:
+            requerimento_ids_com_vistoria = set()
+            vistoria_map = {}
+
+        # Serializar com informação de vistoria (inclui campo 'vistoria_id' quando disponível)
         for r in requerimentos:
             requerimento_data = serializar_requerimento_basico(r)
             requerimento_data['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
+            requerimento_data['vistoria_id'] = vistoria_map.get(r.id)
             requerimentos_serializados.append(requerimento_data)
         
         return jsonify({
@@ -234,21 +237,21 @@ def listar_todos_requerimentos():
             .all()
         )
         
-        # obter ids e verificar quais têm vistoria
-        ids = [r.id for r in requerimentos]
-        requerimento_ids_com_vistoria = set()
-        if ids:
-            requerimento_ids_com_vistoria = {
-                v.requerimento_id for v in
-                session.query(Vistoria.requerimento_id)
-                .filter(Vistoria.requerimento_id.in_(ids))
-                .all()
-            }
-        
+        # obter ids e mapear para id da vistoria (se houver)
         requerimentos_json = []
+        ids = [r.id for r in requerimentos]
+        if ids:
+            rows = session.query(Vistoria.requerimento_id, Vistoria.id).filter(Vistoria.requerimento_id.in_(ids)).all()
+            requerimento_ids_com_vistoria = {req_id for req_id, _ in rows}
+            vistoria_map = {req_id: vist_id for req_id, vist_id in rows}
+        else:
+            requerimento_ids_com_vistoria = set()
+            vistoria_map = {}
+
         for r in requerimentos:
             obj = serializar_requerimento_completo(r)
             obj['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
+            obj['vistoria_id'] = vistoria_map.get(r.id)
             requerimentos_json.append(obj)
         return jsonify(requerimentos_json), 200
     except Exception as e:
@@ -280,23 +283,23 @@ def listar_requerimentos_concluidos():
             .all()
         )
 
-        # obter ids e verificar quais têm vistoria
-        ids = [r.id for r in requerimentos]
-        requerimento_ids_com_vistoria = set()
-        if ids:
-            requerimento_ids_com_vistoria = {
-                v.requerimento_id for v in
-                session.query(Vistoria.requerimento_id)
-                .filter(Vistoria.requerimento_id.in_(ids))
-                .all()
-            }
-        
+        # obter ids e mapear para id da vistoria (se houver)
         requerimentos_json = []
+        ids = [r.id for r in requerimentos]
+        if ids:
+            rows = session.query(Vistoria.requerimento_id, Vistoria.id).filter(Vistoria.requerimento_id.in_(ids)).all()
+            requerimento_ids_com_vistoria = {req_id for req_id, _ in rows}
+            vistoria_map = {req_id: vist_id for req_id, vist_id in rows}
+        else:
+            requerimento_ids_com_vistoria = set()
+            vistoria_map = {}
+
         for r in requerimentos:
             data = serializar_requerimento_completo(r)
             # Adicionar data de conclusão
             data['data_conclusao'] = r.data_atualizacao.isoformat() if r.data_atualizacao else None
             data['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
+            data['vistoria_id'] = vistoria_map.get(r.id)
             requerimentos_json.append(data)
         
         return jsonify(requerimentos_json), 200

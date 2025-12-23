@@ -340,8 +340,24 @@ document.addEventListener('click', function(e) {
 
   // Registrar Vistoria (nova ou existente)
   if (el.classList.contains('btn-vistoria') || el.classList.contains('btn-vistoria-existente')) {
-    const id = parseInt(el.dataset.id);
-    window.location.href = `/vistorias/nova?requerimento_id=${id}`;
+    const idReq = parseInt(el.dataset.id);
+    // encontra o requerimento (procura nas listas disponíveis/filtradas)
+    const req = requerimentosDisponiveis.find(r => r.id === idReq) || filteredRequerimentos.find(r => r.id === idReq);
+
+    // Se for botão de edição de vistoria existente, tenta obter o id da vistoria
+    if (el.classList.contains('btn-vistoria-existente')) {
+      const vistoriaId = req && (req.vistoria_id || (req.vistoria && req.vistoria.id) || req.vistoriaId);
+      if (vistoriaId) {
+        window.location.href = `/vistorias/${vistoriaId}/editar`;
+        return;
+      }
+      // fallback: se não encontrou id da vistoria, direciona para criação com o requerimento
+      window.location.href = `/vistorias/nova?requerimento_id=${idReq}`;
+      return;
+    }
+
+    // padrão: registrar nova vistoria para o requerimento
+    window.location.href = `/vistorias/nova?requerimento_id=${idReq}`;
     return;
   }
 

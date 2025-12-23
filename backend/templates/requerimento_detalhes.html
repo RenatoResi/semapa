@@ -126,12 +126,18 @@
       {% if vistorias %}
         {% for v in vistorias %}
           <div style="margin-bottom:14px; border-bottom:1px dashed #ddd; padding-bottom:10px;">
-            <strong>Vistoria #{{ v.id }} — {{ v.vistoria_data.strftime('%d-%m-%Y') if v.vistoria_data else '' }}</strong>
-            <div>Espécie {{ v.especie }}</div>
+            <div style="display:flex; align-items:center; gap:8px; justify-content:space-between;">
+              <strong>Vistoria #{{ v.id }} — {{ v.vistoria_data.strftime('%d-%m-%Y') if v.vistoria_data else '' }}</strong>
+              <div>
+                <a href="/vistorias/{{ v.id }}/editar" class="btn btn-primary" style="font-size:0.9rem; padding:6px 8px;">Editar Vistoria</a>
+              </div>
+            </div>
+            <div>Espécie: {% if v.especie %}{{ v.especie.nome_popular }} <em>({{ v.especie.nome_cientifico }})</em>{% else %}—{% endif %}</div>
             <div>Condições: {{ v.condicoes or '—' }}</div>
             <div>Conflitos: {{ v.conflitos or '—' }}</div>
             <div>Complexidade: {{ v.complexidade or '—' }}</div>
-            <div>Observações: {{ v.observacoes or '—' }}</div>
+            <div>Diagnóstico: {{ v.diagnostico or '—' }}</div>
+            <div>Medidas de Segurança: {{ v.medidas_seguranca or '—' }}</div>
             <div class="fotos-row" data-vistoria-id="{{ v.id }}">
               {% for f in v.fotos %}
                 <div class="foto-thumb" data-photo-id="{{ f.id }}" title="{{ f.arquivo_nome or 'foto' }}"></div>
