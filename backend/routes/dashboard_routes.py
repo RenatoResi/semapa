@@ -15,50 +15,58 @@ def dashboard():
     """Dashboard principal do usuário"""
     session = SessionLocal()
     try:
+        # Ano selecionado (padrão: ano atual)
+        ano_atual = int(request.form.get('ano', datetime.now().year))
+        
         # Estatísticas gerais
         total_usuarios = session.query(sa_func.count(User.id)).scalar()
-        total_requerimentos = session.query(sa_func.count(Requerimento.id)).scalar()
+        total_requerimentos = session.query(sa_func.count(Requerimento.id)).filter(extract('year', Requerimento.data_abertura) == ano_atual).scalar() or 0
         total_especies = session.query(sa_func.count(Especies.id)).scalar()
-        
-        # Estatísticas de requerimentos
+
+        # Estatísticas de requerimentos (acumulado até o ano selecionado)
         req_pendentes = session.query(sa_func.count(Requerimento.id)).filter(
-            sa_func.lower(Requerimento.status) == 'aberto'
-        ).scalar()
+            sa_func.lower(Requerimento.status) == 'aberto',
+            extract('year', Requerimento.data_abertura) <= ano_atual
+        ).scalar() or 0
 
         # Listas recentes
         mes = request.form.get('mes', datetime.now().month)  # Usa o mês atual como padrão
         mes = int(mes)
         ultimos_requerimentos = session.query(Requerimento)\
-            .filter(extract('month', Requerimento.data_abertura) == mes)\
+            .filter(extract('month', Requerimento.data_abertura) == mes,\
+                    extract('year', Requerimento.data_abertura) == ano_atual)\
             .filter(sa_func.lower(Requerimento.status) == 'aberto')\
             .order_by(Requerimento.data_abertura.desc())\
             .limit(30)\
             .all()
-        
-        # ordens_pendentes = session.query(OrdemServico).filter(
-        #     sa_func.lower(OrdemServico.status).in_(['aberta', 'em andamento'])
-        # ).order_by(OrdemServico.data_emissao.desc()).limit(10).all()
-
-        # tarefas_realizadas = session.query(Tarefa).filter(
-        #     sa_func.lower(Tarefa.status) == 'concluida'
-        # ).order_by(Tarefa.data_conclusao.desc()).limit(10).all()
 
         requerimentos_concluidos = session.query(Requerimento)\
-            .filter(extract('month', Requerimento.data_atualizacao) == mes)\
+            .filter(extract('month', Requerimento.data_atualizacao) == mes,\
+                    extract('year', Requerimento.data_atualizacao) == ano_atual)\
             .filter(sa_func.lower(Requerimento.status) == 'concluído')\
             .order_by(Requerimento.data_atualizacao.desc())\
             .limit(30)\
             .all()
 
         # Dados para gráfico anual
-        ano_atual = datetime.now().year
+        # já temos `ano_atual` definido acima
         meses_nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
         
         requerimentos_emitidos = []
         requerimentos_finalizados = []
         saldo_acumulado = []
-        acumulado = 0
+
+        # Calcula o acumulado carregado do ano anterior e inicia o acumulado com esse valor
+        prev_year = ano_atual - 1
+        emitidos_prev = session.query(sa_func.count(Requerimento.id)).filter(
+            extract('year', Requerimento.data_abertura) == prev_year
+        ).scalar() or 0
+        concluidos_prev = session.query(sa_func.count(Requerimento.id)).filter(
+            extract('year', Requerimento.data_atualizacao) == prev_year,
+            sa_func.lower(Requerimento.status) == 'concluído'
+        ).scalar() or 0
+        acumulado = emitidos_prev - concluidos_prev
 
         for m in range(1, 13):
             # Requerimentos emitidos no mês
@@ -108,6 +116,9 @@ def dashboard():
             'labels': pie_labels,
             'data': pie_data
         }
+        # faixa de anos para seleção (ex.: últimos 3 anos até próximo ano)
+        current_year = datetime.now().year
+        years = list(range(current_year - 3, current_year + 2))
 
         return render_template('dashboard.html', 
                              stats=stats, 
@@ -115,6 +126,8 @@ def dashboard():
                              ultimos_requerimentos=ultimos_requerimentos, 
                              requerimentos_concluidos=requerimentos_concluidos,
                              mes=mes,
+                             ano=ano_atual,
+                             years=years,
                              grafico_dados=grafico_dados,
                              grafico_pie=grafico_pie)
     finally:

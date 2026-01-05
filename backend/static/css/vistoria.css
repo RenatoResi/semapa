@@ -75,19 +75,19 @@ textarea {
 
 .photo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
     gap: 14px;
     margin-top: 15px;
 }
 
 .photo-item {
     position: relative;
+    width: 400px;
+    height: 300px;
     border: 1px solid #ccc;
     border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 0 5px rgba(0,0,0,0.05);
-    width: 140px;
-    height: 140px;
 }
 
 .photo-item img {
