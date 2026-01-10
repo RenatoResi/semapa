@@ -6,98 +6,420 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      background: #e9f5ee;
-      font-family: 'Roboto', Arial, sans-serif;
       margin: 0;
       padding: 0;
+      font-family: 'Roboto', Arial, sans-serif;
+      min-height: 100vh;
+      overflow: hidden;
+      color: #0f172a;
+      background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 50%, #d1fae5 100%);
     }
-    .container {
-      max-width: 360px;
-      margin: 60px auto;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.11);
-      padding: 32px 28px 24px 28px;
+
+    /* CENÁRIO PARALLAX EXAGGERADO */
+    .scene {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .layer {
+      position: absolute;
+      will-change: transform;
+      transition: transform 0.06s ease-out;
+    }
+
+    /* Cartões de foto - tamanhos variados para mais dinamismo */
+    .photo-card {
+      width: 240px;
+      height: 160px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(1.15) contrast(1.1);
+    }
+
+    /* Tamanhos variados */
+    .photo-card.small  { width: 80px; height: 50px; }
+    .photo-card.medium { width: 160px; height: 110px; }
+    .photo-card.large  { width: 110px; height: 80px; }
+
+    /* POSIÇÕES INICIAIS - MUITAS FORA DA TELA */
+    .photo-1 { top: 5%;   left: 15%; } /* dentro */
+    .photo-2 { top: 20%;  right: 8%; } /* dentro */
+    .photo-3 { bottom: 8%; left: 10%; } /* dentro */
+    .photo-4 { bottom: 20%; right: 10%; } /* dentro */
+    
+    /* FORA DA TELA - aparecem no mouse */
+    .photo-5 { top: 20%;  left: 25%; } /* entra do topo */
+    .photo-6 { top: 60%;   left: 25%; } /* entra da esquerda */
+    .photo-7 { bottom: 15%; right: 30%; } /* entra do fundo */
+    .photo-8 { top: 60%;   right: 30%; } /* entra da direita */
+    .photo-9 { top: -10%;  left: -20%; } /* topo-esquerda */
+    .photo-10 { bottom: -5%; left: 45%; } /* fundo */
+    .photo-11 { top: 40%;  left: -15%; } /* esquerda extrema */
+    .photo-12 { bottom: 50%; right: -20%; } /* direita extrema */
+
+    /* Glows mais intensos */
+    .glow {
+      width: 500px;
+      height: 500px;
+      border-radius: 999px;
+      filter: blur(80px);
+      opacity: 0.55;
+    }
+
+    .glow-1 { background: radial-gradient(circle, rgba(16,185,129,1), transparent); top: -200px; left: -120px; }
+    .glow-2 { background: radial-gradient(circle, rgba(59,130,246,0.9), transparent); bottom: -220px; right: -100px; }
+    .glow-3 { background: radial-gradient(circle, rgba(245,158,11,0.8), transparent); top: 60%; left: 70%; }
+
+    /* LOGIN FOSCO (igual anterior) */
+    .login-wrapper {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 28px;
+      box-shadow: 
+        0 28px 80px rgba(15, 23, 42, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+      padding: 36px 28px 28px 28px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
     }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top left, rgba(34,197,94,0.15), transparent 60%),
+        radial-gradient(circle at bottom right, rgba(59,130,246,0.12), transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Resto do estilo do login igual ao anterior - sem mudanças */
     .logo {
-      width: 80px;
-      margin-bottom: 16px;
+      width: 84px;
+      height: 84px;
+      border-radius: 24px;
+      background: radial-gradient(circle at 30% 30%, rgba(187,247,208,0.95) 0, rgba(34,197,94,0.95) 35%, rgba(21,128,61,0.9) 80%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px auto;
+      box-shadow: 0 14px 40px rgba(22, 163, 74, 0.55);
+      backdrop-filter: blur(12px);
     }
-    h2 {
-      margin-bottom: 24px;
-      color: #217a4b;
+
+    .logo img {
+      width: 58%;
+      height: 58%;
+      object-fit: contain;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      color: #0f172a;
+      font-size: 24px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       font-weight: 700;
-      letter-spacing: 1px;
     }
-    input[type="email"], input[type="password"] {
-      width: 80%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #b2dfdb;
-      border-radius: 6px;
-      font-size: 16px;
-      background: #f4fdfb;
-      transition: border 0.2s;
+
+    .subtitle {
+      margin-bottom: 20px;
+      color: #374151;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.95;
     }
-    input:focus {
-      border-color: #217a4b;
+
+    .system-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(16,185,129,0.15);
+      color: #047857;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    .system-tag span {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.4);
+    }
+
+    form { margin-top: 8px; }
+
+    .field-label {
+      text-align: left;
+      font-size: 13px;
+      color: #6b7280;
+      margin: 12px auto 6px auto;
+      width: 100%;
+      max-width: 280px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      max-width: 280px;
+      padding: 14px 16px;
+      margin: 0 auto 12px auto;
+      border-radius: 12px;
+      border: 1px solid rgba(209, 250, 229, 0.6);
+      font-size: 15px;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(12px);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: block;
+      color: #111827;
+    }
+
+    input[type="email"]::placeholder,
+    input[type="password"]::placeholder {
+      color: #9ca3af;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: rgba(34, 197, 94, 0.8);
       outline: none;
+      box-shadow: 
+        0 0 0 1px rgba(34,197,94,0.5),
+        0 0 0 8px rgba(187,247,208,0.4);
+      background: rgba(255, 255, 255, 0.75);
+      transform: translateY(-1px);
     }
+
     button {
       width: 100%;
-      background: #217a4b;
-      color: #fff;
+      max-width: 280px;
+      background: linear-gradient(135deg, #16a34a, #059669);
+      color: #ffffff;
       border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 17px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 16px;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #145c37;
-    }
-    .register-link {
+      margin: 16px auto 8px auto;
       display: block;
-      margin-top: 18px;
-      color: #217a4b;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      box-shadow: 0 16px 45px rgba(22,163,74,0.65);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+      box-shadow: 0 22px 55px rgba(22,163,74,0.75);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 10px 25px rgba(22,163,74,0.45);
+      filter: brightness(0.98);
+    }
+
+    .register-link {
+      display: inline-block;
+      margin-top: 16px;
+      color: #047857;
       text-decoration: none;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 500;
     }
+
     .register-link:hover {
       text-decoration: underline;
     }
+
     .error-msg {
-      margin-top: 15px;
-      color: #c62828;
-      font-size: 15px;
+      margin-top: 12px;
+      color: #b91c1c;
+      font-size: 14px;
       font-weight: 500;
     }
+
     .footer {
-      margin-top: 28px;
-      font-size: 13px;
-      color: #999;
+      margin-top: 24px;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    @media (max-width: 640px) {
+      .photo-card.small  { width: 120px; height: 85px; }
+      .photo-card.medium { width: 180px; height: 120px; }
+      .photo-card.large  { width: 220px; height: 145px; }
+      .glow { display: none; }
+      .login-card { padding: 28px 22px 24px 22px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Se tiver um logo, substitua o src abaixo -->
-    <img src="https://img.icons8.com/color/96/000000/deciduous-tree.png" alt="Logo SEMAPA" class="logo">
-    <h2>Sistema SEMAPA<br>Prefeitura Municipal de Cravinhos/SP</h2>
-    <form method="POST" action="/login">
-      <input name="email" type="email" placeholder="E-mail" required>
-      <input name="password" type="password" placeholder="Senha" required>
-      <button type="submit">Entrar</button>
-    </form>
-    <a href="/register" class="register-link">Cadastrar novo usuário</a>
-    {% if error %}<div class="error-msg">{{ error }}</div>{% endif %}
-    <div class="footer">Secretaria do Meio Ambiente e Política Agrícola</div>
+  <!-- 12 FOTOS + 3 GLOWS = EFEITO INSANO -->
+  <div class="scene">
+    <div class="layer glow glow-1" data-speed="-6"></div>
+    <div class="layer glow glow-2" data-speed="7"></div>
+    <div class="layer glow glow-3" data-speed="-5"></div>
+
+    <!-- DENTRO DA TELA -->
+    <div class="layer photo-1 medium" data-speed="-14">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore1/600/400" alt="Árvore Urbana">
+      </div>
+    </div>
+    <div class="layer photo-2 large" data-speed="12">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore2/600/400" alt="Árvore Verde">
+      </div>
+    </div>
+    <div class="layer photo-3 medium" data-speed="-8">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore3/600/400" alt="Floresta Urbana">
+      </div>
+    </div>
+    <div class="layer photo-4 small" data-speed="16">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore4/600/400" alt="Árvore Nativa">
+      </div>
+    </div>
+
+    <!-- FORA DA TELA - APRECEM NO MOUSE -->
+    <div class="layer photo-5 large" data-speed="-22">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore5/600/400" alt="Árvore Frutífera">
+      </div>
+    </div>
+    <div class="layer photo-6 medium" data-speed="20">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore6/600/400" alt="Árvore Centenária">
+      </div>
+    </div>
+    <div class="layer photo-7 small" data-speed="-18">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore7/600/400" alt="Mata Nativa">
+      </div>
+    </div>
+    <div class="layer photo-8 large" data-speed="24">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore8/600/400" alt="Árvore Monumental">
+      </div>
+    </div>
+    <div class="layer photo-9 medium" data-speed="-26">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore9/600/400" alt="Jardim Público">
+      </div>
+    </div>
+    <div class="layer photo-10 small" data-speed="28">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore10/600/400" alt="Parque Lineal">
+      </div>
+    </div>
+    <div class="layer photo-11 large" data-speed="-30">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore11/600/400" alt="Árvore Histórica">
+      </div>
+    </div>
+    <div class="layer photo-12 medium" data-speed="32">
+      <div class="photo-card">
+        <img src="https://picsum.photos/seed/arvore12/600/400" alt="Bosque Urbano">
+      </div>
+    </div>
   </div>
+
+  <!-- LOGIN FOSCO -->
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="logo">
+        <img src="https://img.icons8.com/color/96/000000/deciduous-tree.png" alt="Logo SEMAPA">
+      </div>
+      <div class="system-tag">
+        <span></span>
+        SEMAPA • Cravinhos/SP
+      </div>
+      <h1>Sistema SEMAPA</h1>
+      <div class="subtitle">Secretaria do Meio Ambiente e Política Agrícola</div>
+
+      <form method="POST" action="/login">
+        <div class="field-label">E-mail institucional</div>
+        <input name="email" type="email" placeholder="nome.sobrenome@cravinhos.sp.gov.br" required>
+
+        <div class="field-label">Senha de acesso</div>
+        <input name="password" type="password" placeholder="Informe sua senha" required>
+
+        <button type="submit">Entrar</button>
+      </form>
+
+      <a href="/register" class="register-link">Cadastrar novo usuário</a>
+
+      {% if error %}
+      <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      <div class="footer">
+        Prefeitura Municipal de Cravinhos/SP<br>
+        Ambiente interno de gestão operacional
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Parallax EXAGGERADO - movimento mais intenso
+    document.addEventListener("mousemove", function(e) {
+      const layers = document.querySelectorAll(".layer");
+      const x = e.clientX;
+      const y = e.clientY;
+      const midX = window.innerWidth / 2;
+      const midY = window.innerHeight / 2;
+
+      layers.forEach(layer => {
+        const speed = parseFloat(layer.getAttribute("data-speed")) || 0;
+        // Movimento mais agressivo: /80 ao invés de /120
+        const offsetX = (x - midX) * (speed / 50);
+        const offsetY = (y - midY) * (speed / 50);
+        layer.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+      });
+    });
+  </script>
 </body>
 </html>
