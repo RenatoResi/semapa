@@ -7,6 +7,7 @@ from datetime import datetime
 from simplekml import Kml
 import os
 import sqlalchemy as sa
+import requests
 
 arvores_bp = Blueprint('arvores', __name__)
 
@@ -71,6 +72,53 @@ def parsear_data_plantio(data_str):
     return None
 
 # -------------------- ROTAS --------------------
+
+@arvores_bp.route('/api/geocode', methods=['GET'])
+def geocode_endereco():
+    """Converte endereço em coordenadas usando Nominatim"""
+    endereco = request.args.get('endereco', '').strip()
+    
+    if not endereco:
+        return jsonify({'error': 'Endereço não fornecido'}), 400
+    
+    try:
+        # Adiciona contexto de localização para melhor precisão
+        query = f"{endereco}, Cravinhos, São Paulo, Brasil"
+        headers = {
+            'User-Agent': 'SEMAPA-App/1.0 (Sistema de Manejo de Árvores; Brasil)'
+        }
+        response = requests.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={
+                'format': 'json',
+                'q': query,
+                'limit': 1
+            },
+            headers=headers,
+            timeout=5
+        )
+        response.raise_for_status()
+        dados = response.json()
+        
+        if dados and len(dados) > 0:
+            resultado = dados[0]
+            return jsonify({
+                'latitude': resultado['lat'],
+                'longitude': resultado['lon'],
+                'success': True
+            }), 200
+        else:
+            return jsonify({
+                'error': 'Endereço não encontrado',
+                'success': False
+            }), 404
+    
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Timeout na busca de coordenadas'}), 504
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        return jsonify({'error': f'Erro ao geocodificar: {str(e)}'}), 500
 
 @arvores_bp.route('/arvores/todos', methods=['GET'])
 @login_required

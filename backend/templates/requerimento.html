@@ -358,6 +358,30 @@
         especieId.value = match ? match.id : '';
     });
 
+    // ============ AUTO-PREENCHIMENTO LAT/LONG ============
+    const enderecoArvore = document.getElementById('endereco-arvore');
+    const latitudeArvore = document.getElementById('latitude-arvore');
+    const longitudeArvore = document.getElementById('longitude-arvore');
+
+    enderecoArvore.addEventListener('blur', async function() {
+        const endereco = this.value.trim();
+        if (!endereco) return;
+
+        try {
+            const response = await fetch(`/api/geocode?endereco=${encodeURIComponent(endereco)}`);
+            const dados = await response.json();
+
+            if (dados.success) {
+                latitudeArvore.value = dados.latitude;
+                longitudeArvore.value = dados.longitude;
+            } else {
+                console.warn('Endereço não encontrado:', dados.error);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar coordenadas:', error);
+        }
+    });
+
     // ============ FORMATAÇÃO DE TELEFONE ============
     function formatarTelefone(input) {
         let valor = input.value.replace(/\D/g, '');
@@ -367,7 +391,11 @@
             input.value = valor;
         } else if (valor.length <= 6) {
             input.value = `(${valor.slice(0, 2)}) ${valor.slice(2)}`;
+        } else if (valor.length <= 10) {
+            // Telefone fixo: (XX) XXXX-XXXX
+            input.value = `(${valor.slice(0, 2)}) ${valor.slice(2, 6)}-${valor.slice(6)}`;
         } else {
+            // Celular: (XX) 9XXXX-XXXX
             input.value = `(${valor.slice(0, 2)}) ${valor.slice(2, 7)}-${valor.slice(7)}`;
         }
     }
