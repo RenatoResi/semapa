@@ -1,6 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
-from database import SessionLocal, User
+from database import get_session, User
 import bcrypt
 
 auth_bp = Blueprint('auth', __name__)
@@ -13,8 +13,7 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         senha = request.form['password']
-        session = SessionLocal()
-        try:
+        with get_session() as session:
             user = session.query(User).filter_by(email=email).first()
             
             # Verificar se o usuário existe e a senha está correta
@@ -28,8 +27,6 @@ def login():
                 return redirect(url_for('dashboard.dashboard'))
             else:
                 return render_template('login.html', error="E-mail ou senha inválidos")
-        finally:
-            session.close()
     
     return render_template('login.html')
 
@@ -52,31 +49,27 @@ def register():
         telefone = request.form['telefone']
         senha = request.form['password']
         
-        session = SessionLocal()
         try:
-            # Verificar se e-mail já existe
-            if session.query(User).filter_by(email=email).first():
-                return render_template('register.html', error="E-mail já cadastrado.")
-            
-            # Criar novo usuário
-            hash_senha = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
-            novo = User(
-                nome=nome,
-                email=email,
-                telefone=telefone,
-                password=hash_senha,
-                ativo=False,  # Usuário inicia inativo
-                nivel=3  # Nível padrão para novos usuários
-            )
-            session.add(novo)
-            session.commit()
+            with get_session() as session:
+                # Verificar se e-mail já existe
+                if session.query(User).filter_by(email=email).first():
+                    return render_template('register.html', error="E-mail já cadastrado.")
+                
+                # Criar novo usuário
+                hash_senha = bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
+                novo = User(
+                    nome=nome,
+                    email=email,
+                    telefone=telefone,
+                    password=hash_senha,
+                    ativo=False,  # Usuário inicia inativo
+                    nivel=3  # Nível padrão para novos usuários
+                )
+                session.add(novo)
             
             return render_template('login.html', error="Cadastro realizado. Aguarde nossa verificação para liberar seu login.")
         except Exception as e:
-            session.rollback()
             return render_template('register.html', error=f"Erro ao registrar: {str(e)}")
-        finally:
-            session.close()
     
     return render_template('register.html')
 
@@ -89,29 +82,25 @@ def alterar_senha():
     nova_senha = request.form['nova_senha']
     confirma = request.form['confirma_senha']
     
-    session = SessionLocal()
     try:
-        user = session.query(User).get(current_user.id)
-        
-        # Validar senha atual
-        if not user or not bcrypt.checkpw(senha_atual.encode(), user.password.encode()):
-            return render_template('base.html', error="Senha atual incorreta.")
-        
-        # Validar confirmação de nova senha
-        if nova_senha != confirma:
-            return render_template('base.html', error="As novas senhas não coincidem.")
-        
-        # Validar senha não vazia
-        if not nova_senha:
-            return render_template('base.html', error="A nova senha não pode estar vazia.")
-        
-        # Atualizar senha
-        user.password = bcrypt.hashpw(nova_senha.encode(), bcrypt.gensalt()).decode()
-        session.commit()
+        with get_session() as session:
+            user = session.query(User).get(current_user.id)
+            
+            # Validar senha atual
+            if not user or not bcrypt.checkpw(senha_atual.encode(), user.password.encode()):
+                return render_template('base.html', error="Senha atual incorreta.")
+            
+            # Validar confirmação de nova senha
+            if nova_senha != confirma:
+                return render_template('base.html', error="As novas senhas não coincidem.")
+            
+            # Validar senha não vazia
+            if not nova_senha:
+                return render_template('base.html', error="A nova senha não pode estar vazia.")
+            
+            # Atualizar senha
+            user.password = bcrypt.hashpw(nova_senha.encode(), bcrypt.gensalt()).decode()
         
         return render_template('base.html', error="Senha alterada com sucesso.")
     except Exception as e:
-        session.rollback()
         return render_template('base.html', error=f"Erro ao alterar senha: {str(e)}")
-    finally:
-        session.close()

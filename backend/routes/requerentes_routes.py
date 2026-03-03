@@ -1,7 +1,9 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from database import SessionLocal, Requerente
+from database import get_session, Requerente
+from schemas import RequerenteSchema, validate_request_json
 from datetime import datetime
+from marshmallow import ValidationError
 
 requerentes_bp = Blueprint('requerentes', __name__)
 
@@ -25,45 +27,58 @@ def serializar_requerente(r):
 @requerentes_bp.route('/requerente', methods=['POST'])
 @login_required
 def cadastrar_requerente():
-    """Cadastra novo requerente"""
-    data = request.json
-    session = SessionLocal()
+    """Cadastra novo requerente com validação usando Marshmallow"""
+    schema = RequerenteSchema()
     try:
-        novo = Requerente(
-            nome=data['nome'],
-            telefone=data.get('telefone', ''),
-            observacao=data.get('observacao', ''),
-            criado_por=current_user.id,
-            data_criacao=datetime.now()
-        )
-        session.add(novo)
-        session.commit()
-        return jsonify({"message": "Requerente cadastrado!", "id": novo.id}), 201
+        # Validar dados de entrada
+        if not request.is_json:
+            return jsonify({"error": "Content-Type deve ser application/json"}), 400
+        
+        validated_data = schema.load(request.get_json())
+        
+        with get_session() as session:
+            novo = Requerente(
+                nome=validated_data['nome'],
+                telefone=validated_data.get('telefone', ''),
+                observacao=validated_data.get('observacao', ''),
+                criado_por=current_user.id,
+                data_criacao=datetime.now()
+            )
+            session.add(novo)
+        
+        return jsonify({
+            "message": "Requerente cadastrado com sucesso!", 
+            "id": novo.id
+        }), 201
+        
+    except ValidationError as e:
+        # Retornar erros de validação
+        return jsonify({
+            "error": "Erro de validação",
+            "details": e.messages
+        }), 400
     except Exception as e:
-        session.rollback()
-        return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
+        return jsonify({"error": f"Erro ao cadastrar requerente: {str(e)}"}), 500
 
 
 @requerentes_bp.route('/requerentes', methods=['GET'])
 @login_required
 def listar_requerentes():
     """Lista requerentes com paginação"""
-    session = SessionLocal()
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
         
-        query = session.query(Requerente).order_by(Requerente.id.desc())
-        total = query.count()
-        
-        requerentes = (
-            query
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-            .all()
-        )
+        with get_session() as session:
+            query = session.query(Requerente).order_by(Requerente.id.desc())
+            total = query.count()
+            
+            requerentes = (
+                query
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
         
         return jsonify({
             "requerentes": [serializar_requerente(r) for r in requerentes],
@@ -73,20 +88,15 @@ def listar_requerentes():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @requerentes_bp.route('/requerentes/todos', methods=['GET'])
 @login_required
 def listar_todos_requerentes():
     """Lista todos os requerentes cadastrados"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         requerentes = session.query(Requerente).order_by(Requerente.id.desc()).all()
         return jsonify([serializar_requerente(r) for r in requerentes]), 200
-    finally:
-        session.close()
 
 
 @requerentes_bp.route('/requerentes/<int:id>', methods=['PUT'])
@@ -94,25 +104,21 @@ def listar_todos_requerentes():
 def atualizar_requerente(id):
     """Atualiza dados de um requerente existente"""
     data = request.json
-    session = SessionLocal()
     try:
-        req = session.query(Requerente).get(id)
-        if not req:
-            return jsonify({"error": "Requerente não encontrado"}), 404
+        with get_session() as session:
+            req = session.query(Requerente).get(id)
+            if not req:
+                return jsonify({"error": "Requerente não encontrado"}), 404
+            
+            req.nome = data.get('nome', req.nome)
+            req.telefone = data.get('telefone', req.telefone)
+            req.observacao = data.get('observacao', req.observacao)
+            req.data_atualizacao = datetime.now()
+            req.atualizado_por = current_user.id
         
-        req.nome = data.get('nome', req.nome)
-        req.telefone = data.get('telefone', req.telefone)
-        req.observacao = data.get('observacao', req.observacao)
-        req.data_atualizacao = datetime.now()
-        req.atualizado_por = current_user.id
-        
-        session.commit()
         return jsonify({"message": "Requerente atualizado com sucesso!"}), 200
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @requerentes_bp.route('/api/requerente/existe', methods=['GET'])
@@ -120,12 +126,9 @@ def atualizar_requerente(id):
 def requerente_existe():
     """Verifica se um requerente já existe pelo nome"""
     nome = request.args.get('nome')
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         requerente = session.query(Requerente).filter_by(nome=nome).first()
         if requerente:
             return jsonify({"exists": True, "id": requerente.id}), 200
         else:
             return jsonify({"exists": False}), 200
-    finally:
-        session.close()

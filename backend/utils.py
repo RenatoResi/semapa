@@ -1,6 +1,6 @@
 # utils.py
 from sqlalchemy import text
-from database import SessionLocal  # importe sua sessionmaker
+from database import get_session  # importe seu context manager
 
 def reset_all_sequences():
     stmts = [
@@ -13,10 +13,6 @@ def reset_all_sequences():
         "SELECT setval('vistoria_id_seq', COALESCE((SELECT MAX(id) FROM vistoria), 1) + 1, false);",
         "SELECT setval('vistoria_foto_id_seq', COALESCE((SELECT MAX(id) FROM vistoria_foto), 1) + 1, false);"
     ]
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         for stmt in stmts:
             session.execute(text(stmt))
-        session.commit()
-    finally:
-        session.close()

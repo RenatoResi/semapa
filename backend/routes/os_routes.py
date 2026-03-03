@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from database import SessionLocal, OrdemServico, Requerimento
+from database import get_session, OrdemServico, Requerimento
 from sqlalchemy import func as sa_func
 from datetime import datetime
 
@@ -65,79 +65,71 @@ def ordens_servico():
 
 def listar_ordens_servico():
     """Lista todas as ordens de serviço não concluídas"""
-    session = SessionLocal()
     try:
-        ordens = session.query(OrdemServico).filter(
-            sa_func.lower(OrdemServico.status) != 'concluída'
-        ).all()
-        
-        ordens_json = [serializar_ordem_servico(os) for os in ordens]
+        with get_session() as session:
+            ordens = session.query(OrdemServico).filter(
+                sa_func.lower(OrdemServico.status) != 'concluída'
+            ).all()
+            
+            ordens_json = [serializar_ordem_servico(os) for os in ordens]
         return jsonify(ordens_json), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 def cadastrar_ordem_servico():
     """Cadastra nova ordem de serviço"""
     data = request.json
-    session = SessionLocal()
     try:
         # Verificar se requerimento_ids existe e não está vazio
         requerimento_ids = data.get('requerimento_ids', [])
         if not requerimento_ids:
             return jsonify({"error": "Nenhum requerimento selecionado."}), 400
         
-        # Verificar se todos os requerimentos existem
-        requerimentos = session.query(Requerimento).filter(
-            Requerimento.id.in_(requerimento_ids)
-        ).all()
-        
-        if len(requerimentos) != len(requerimento_ids):
-            ids_encontrados = {r.id for r in requerimentos}
-            ids_nao_encontrados = [rid for rid in requerimento_ids if rid not in ids_encontrados]
-            return jsonify({"error": f"Requerimentos não encontrados: {ids_nao_encontrados}"}), 400
-        
-        # Criar nova ordem de serviço
-        nova = OrdemServico(
-            numero=data['numero'],
-            responsavel=data['responsavel'],
-            observacao=data.get('observacao', ''),
-            criado_por=current_user.id,
-            data_emissao=datetime.now()
-        )
-        
-        if 'data_execucao' in data:
-            nova.data_execucao = data['data_execucao']
-        
-        nova.requerimentos = requerimentos
-        session.add(nova)
-        session.commit()
+        with get_session() as session:
+            # Verificar se todos os requerimentos existem
+            requerimentos = session.query(Requerimento).filter(
+                Requerimento.id.in_(requerimento_ids)
+            ).all()
+            
+            if len(requerimentos) != len(requerimento_ids):
+                ids_encontrados = {r.id for r in requerimentos}
+                ids_nao_encontrados = [rid for rid in requerimento_ids if rid not in ids_encontrados]
+                return jsonify({"error": f"Requerimentos não encontrados: {ids_nao_encontrados}"}), 400
+            
+            # Criar nova ordem de serviço
+            nova = OrdemServico(
+                numero=data['numero'],
+                responsavel=data['responsavel'],
+                observacao=data.get('observacao', ''),
+                criado_por=current_user.id,
+                data_emissao=datetime.now()
+            )
+            
+            if 'data_execucao' in data:
+                nova.data_execucao = data['data_execucao']
+            
+            nova.requerimentos = requerimentos
+            session.add(nova)
         
         return jsonify({"message": "Ordem de serviço cadastrada!", "id": nova.id}), 201
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @os_bp.route('/<int:id>', methods=['GET'])
 @login_required
 def detalhes_ordem_servico(id):
     """Retorna detalhes completos de uma ordem de serviço"""
-    session = SessionLocal()
     try:
-        os = session.query(OrdemServico).get(id)
-        if not os:
-            return jsonify({"error": "Ordem de serviço não encontrada"}), 404
-        
-        return jsonify(serializar_ordem_servico(os, completo=True)), 200
+        with get_session() as session:
+            os = session.query(OrdemServico).get(id)
+            if not os:
+                return jsonify({"error": "Ordem de serviça não encontrada"}), 404
+            
+            return jsonify(serializar_ordem_servico(os, completo=True)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @os_bp.route('/<int:id>', methods=['PUT'])
@@ -145,27 +137,23 @@ def detalhes_ordem_servico(id):
 def atualizar_ordem_servico(id):
     """Atualiza dados de uma ordem de serviço"""
     data = request.json
-    session = SessionLocal()
     try:
-        ordem = session.query(OrdemServico).get(id)
-        if not ordem:
-            return jsonify({"error": "Ordem de serviço não encontrada"}), 404
+        with get_session() as session:
+            ordem = session.query(OrdemServico).get(id)
+            if not ordem:
+                return jsonify({"error": "Ordem de serviço não encontrada"}), 404
+            
+            # Atualizar campos
+            ordem.numero = data.get('numero', ordem.numero)
+            ordem.responsavel = data.get('responsavel', ordem.responsavel)
+            ordem.observacao = data.get('observacao', ordem.observacao)
+            
+            if 'data_execucao' in data:
+                ordem.data_execucao = data['data_execucao']
+            
+            ordem.data_atualizacao = datetime.now()
+            ordem.atualizado_por = current_user.id
         
-        # Atualizar campos
-        ordem.numero = data.get('numero', ordem.numero)
-        ordem.responsavel = data.get('responsavel', ordem.responsavel)
-        ordem.observacao = data.get('observacao', ordem.observacao)
-        
-        if 'data_execucao' in data:
-            ordem.data_execucao = data['data_execucao']
-        
-        ordem.data_atualizacao = datetime.now()
-        ordem.atualizado_por = current_user.id
-        
-        session.commit()
         return jsonify({"message": "Ordem de serviço atualizada!"}), 200
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()

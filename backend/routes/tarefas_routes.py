@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from database import SessionLocal, Tarefa, Requerimento, Arvore, User, Vistoria
+from database import get_session, Tarefa, Requerimento, Arvore, User, Vistoria
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_ 
 from sqlalchemy.orm import joinedload
@@ -52,8 +52,7 @@ def listar_tarefas():
     busca = request.args.get("q", "").strip().lower()
     hoje = datetime.now().date()
 
-    sessao = SessionLocal()
-    try:
+    with get_session() as sessao:
         # VISÃO MENSAL
         if view == 'month':
             ano_str = request.args.get("ano")

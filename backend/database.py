@@ -1,5 +1,6 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Date, Text, Float, Table, LargeBinary
+from contextlib import contextmanager
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime, Date, Text, Float, Table, LargeBinary, Boolean
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from datetime import datetime
 from flask_login import UserMixin
@@ -23,7 +24,7 @@ class User(Base, UserMixin):
     nome = Column(String(100))
     telefone = Column(String(20))
     nivel = Column(Integer, nullable=False, default=3)  # 1=admin, 2, 3, etc
-    ativo = Column(String(10), nullable=False, default='False')  # 'True' ou 'False'
+    ativo = Column(Boolean, nullable=False, default=True)  # Corrigido: Boolean ao invés de String
 
     requerentes = relationship("Requerente", back_populates="user", foreign_keys='Requerente.criado_por')
     arvores = relationship("Arvore", back_populates="user", foreign_keys='Arvore.criado_por')
@@ -221,6 +222,32 @@ SessionLocal = sessionmaker(bind=engine)
 
 def criar_banco():
     Base.metadata.create_all(engine)
+
+
+@contextmanager
+def get_session():
+    """
+    Context manager para gerenciar sessões SQLAlchemy.
+    
+    Uso:
+        with get_session() as session:
+            user = session.query(User).get(1)
+    
+    Benefícios:
+    - Commit automático ao sair do bloco
+    - Rollback automático em caso de exceção
+    - Fechamento automático da sessão
+    """
+    session = SessionLocal()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 
 if __name__ == "__main__":
     criar_banco()

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_login import login_required, current_user
-from database import SessionLocal, Arvore, Especies
+from database import get_session, Arvore, Especies
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func as sa_func
 from datetime import datetime
@@ -124,35 +124,32 @@ def geocode_endereco():
 @login_required
 def listar_todas_arvores():
     """Lista todas as árvores cadastradas"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         arvores = session.query(Arvore).options(
             joinedload(Arvore.especie)
         ).order_by(Arvore.id.desc()).all()
         
         return jsonify([serializar_arvore(a) for a in arvores]), 200
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/arvores', methods=['GET'])
 @login_required
 def listar_arvores():
     """Lista árvores com paginação"""
-    session = SessionLocal()
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 5, type=int)
         
-        query = session.query(Arvore).order_by(Arvore.id.desc())
-        total = query.count()
-        
-        arvores = (
-            query
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-            .all()
-        )
+        with get_session() as session:
+            query = session.query(Arvore).order_by(Arvore.id.desc())
+            total = query.count()
+            
+            arvores = (
+                query
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
         
         return jsonify({
             "arvores": [serializar_arvore(a) for a in arvores],
@@ -162,8 +159,6 @@ def listar_arvores():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/arvores', methods=['POST'])
@@ -171,36 +166,32 @@ def listar_arvores():
 def cadastrar_arvore():
     """Cadastra nova árvore"""
     data = request.json
-    session = SessionLocal()
     try:
-        # Processar espécie
-        especie_id = processar_especie_arvore(data, session)
+        with get_session() as session:
+            # Processar espécie
+            especie_id = processar_especie_arvore(data, session)
 
-        # Parsear data de plantio
-        data_plantio = parsear_data_plantio(data.get('data_plantio'))
-        
-        # Criar nova árvore
-        nova = Arvore(
-            especie_id=especie_id,
-            endereco=data.get('endereco', ''),
-            bairro=data.get('bairro', ''),
-            latitude=data.get('latitude') or None,
-            longitude=data.get('longitude') or None,
-            data_plantio=data_plantio,
-            foto=data.get('foto', ''),
-            observacao=data.get('observacao', ''),
-            criado_por=current_user.id,
-            data_criacao=datetime.now()
-        )
-        
-        session.add(nova)
-        session.commit()
+            # Parsear data de plantio
+            data_plantio = parsear_data_plantio(data.get('data_plantio'))
+            
+            # Criar nova árvore
+            nova = Arvore(
+                especie_id=especie_id,
+                endereco=data.get('endereco', ''),
+                bairro=data.get('bairro', ''),
+                latitude=data.get('latitude') or None,
+                longitude=data.get('longitude') or None,
+                data_plantio=data_plantio,
+                foto=data.get('foto', ''),
+                observacao=data.get('observacao', ''),
+                criado_por=current_user.id,
+                data_criacao=datetime.now()
+            )
+            
+            session.add(nova)
         return jsonify({"message": "Árvore cadastrada!", "id": nova.id}), 201
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/arvores/<int:id>', methods=['PUT'])
@@ -208,63 +199,58 @@ def cadastrar_arvore():
 def atualizar_arvore(id):
     """Atualiza dados de uma árvore existente"""
     data = request.json
-    session = SessionLocal()
     try:
-        arvore = session.query(Arvore).get(id)
-        if not arvore:
-            return jsonify({"error": "Árvore não encontrada"}), 404
-        
-        # Processar espécie
-        nova_especie_popular = data.get('nova_especie_popular')
-        if nova_especie_popular:
-            especie_existente = session.query(Especies).filter(
-                sa_func.lower(Especies.nome_popular) == sa_func.lower(nova_especie_popular)
-            ).first()
+        with get_session() as session:
+            arvore = session.query(Arvore).get(id)
+            if not arvore:
+                return jsonify({"error": "Árvore não encontrada"}), 404
             
-            if especie_existente:
-                arvore.especie_id = especie_existente.id
-            else:
-                nova_especie = Especies(
-                    nome_popular=nova_especie_popular,
-                    nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
-                    porte='não informado'
-                )
-                session.add(nova_especie)
-                session.flush()
-                arvore.especie_id = nova_especie.id
-        elif data.get('especie_id'):
-            arvore.especie_id = int(data.get('especie_id'))
+            # Processar espécie
+            nova_especie_popular = data.get('nova_especie_popular')
+            if nova_especie_popular:
+                especie_existente = session.query(Especies).filter(
+                    sa_func.lower(Especies.nome_popular) == sa_func.lower(nova_especie_popular)
+                ).first()
+                
+                if especie_existente:
+                    arvore.especie_id = especie_existente.id
+                else:
+                    nova_especie = Especies(
+                        nome_popular=nova_especie_popular,
+                        nome_cientifico=data.get('nova_especie_cientifico') or 'Não informado',
+                        porte='não informado'
+                    )
+                    session.add(nova_especie)
+                    session.flush()
+                    arvore.especie_id = nova_especie.id
+            elif data.get('especie_id'):
+                arvore.especie_id = int(data.get('especie_id'))
+            
+            # Atualizar campos
+            arvore.endereco = data.get('endereco', arvore.endereco)
+            arvore.bairro = data.get('bairro', arvore.bairro)
+            arvore.latitude = data.get('latitude', arvore.latitude)
+            arvore.longitude = data.get('longitude', arvore.longitude)
+            
+            # Parsear data de plantio
+            if data.get('data_plantio'):
+                arvore.data_plantio = parsear_data_plantio(data.get('data_plantio'))
+            
+            arvore.foto = data.get('foto', arvore.foto)
+            arvore.observacao = data.get('observacao', arvore.observacao)
+            arvore.data_atualizacao = datetime.now()
+            arvore.atualizado_por = current_user.id
         
-        # Atualizar campos
-        arvore.endereco = data.get('endereco', arvore.endereco)
-        arvore.bairro = data.get('bairro', arvore.bairro)
-        arvore.latitude = data.get('latitude', arvore.latitude)
-        arvore.longitude = data.get('longitude', arvore.longitude)
-        
-        # Parsear data de plantio
-        if data.get('data_plantio'):
-            arvore.data_plantio = parsear_data_plantio(data.get('data_plantio'))
-        
-        arvore.foto = data.get('foto', arvore.foto)
-        arvore.observacao = data.get('observacao', arvore.observacao)
-        arvore.data_atualizacao = datetime.now()
-        arvore.atualizado_por = current_user.id
-        
-        session.commit()
         return jsonify({"message": "Árvore atualizada!"}), 200
     except Exception as e:
-        session.rollback()
         return jsonify({"error": str(e)}), 400
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/api/sugestoes/bairros', methods=['GET'])
 @login_required
 def sugestoes_bairros():
     """API para sugestões de bairros durante digitação"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         query = request.args.get('query', '').lower()
         bairros = (
             session.query(Arvore.bairro)
@@ -275,16 +261,13 @@ def sugestoes_bairros():
         )
         sugestoes = [b[0] for b in bairros if b[0]]
         return jsonify(sugestoes)
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/api/sugestoes/enderecos', methods=['GET'])
 @login_required
 def sugestoes_enderecos():
     """API para sugestões de endereços durante digitação"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         query = request.args.get('query', '').lower()
         enderecos = (
             session.query(Arvore.endereco)
@@ -295,16 +278,13 @@ def sugestoes_enderecos():
         )
         sugestoes = [e[0] for e in enderecos if e[0]]
         return jsonify(sugestoes)
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/gerar_kml', methods=['GET'])
 @login_required
 def gerar_kml():
     """Gera arquivo KML com todas as árvores cadastradas"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         arvores = session.execute(
             sa.select(Arvore.id, Arvore.endereco, Arvore.latitude, Arvore.longitude)
             .join(Especies, Arvore.especie_id == Especies.id, isouter=True)
@@ -336,16 +316,13 @@ def gerar_kml():
         kml.save(caminho_kml)
 
         return send_file(caminho_kml, as_attachment=True)
-    finally:
-        session.close()
 
 
 @arvores_bp.route('/gerar_kml/<int:arvore_id>', methods=['GET'])
 @login_required
 def gerar_kml_arvore(arvore_id):
     """Gera arquivo KML para uma árvore específica"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         arvore = session.query(Arvore).options(
             joinedload(Arvore.especie)
         ).get(arvore_id)
@@ -379,5 +356,3 @@ def gerar_kml_arvore(arvore_id):
         kml.save(caminho_kml)
         
         return send_file(caminho_kml, as_attachment=True, download_name=f'arvore_{arvore_id}.kml')
-    finally:
-        session.close()

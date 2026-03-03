@@ -1,9 +1,10 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_login import LoginManager
-from database import SessionLocal, User
+from database import get_session, User
 from config import config
 from flask_caching import Cache
+from errors import register_error_handlers
 import os
 
 # -------------------- CONFIGURAÇÃO INICIAL --------------------
@@ -27,12 +28,9 @@ login_manager.login_message_category = "info"
 @login_manager.user_loader
 def load_user(user_id):
     """Carrega usuário do banco de dados"""
-    session = SessionLocal()
-    try:
+    with get_session() as session:
         user = session.query(User).get(int(user_id))
         return user
-    finally:
-        session.close()
 
 
 @login_manager.unauthorized_handler
@@ -77,38 +75,9 @@ def register_blueprints(app):
 
 register_blueprints(app)
 
+# -------------------- REGISTRANDO MANIPULADORES DE ERRO --------------------
 
-# -------------------- MANIPULADORES DE ERRO --------------------
-
-@app.errorhandler(404)
-def not_found(error):
-    """Manipulador para erro 404"""
-    return {
-        "error": "Página não encontrada",
-        "status": 404
-    }, 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Manipulador para erro 500"""
-    session = SessionLocal()
-    session.rollback()
-    session.close()
-    
-    return {
-        "error": "Erro interno do servidor",
-        "status": 500
-    }, 500
-
-
-@app.errorhandler(403)
-def forbidden(error):
-    """Manipulador para erro 403"""
-    return {
-        "error": "Acesso Proibido",
-        "status": 403
-    }, 403
+register_error_handlers(app)
 
 
 # -------------------- CONTEXT PROCESSOR --------------------
@@ -116,6 +85,7 @@ def forbidden(error):
 @app.shell_context_processor
 def make_shell_context():
     """Contexto para shell do Flask"""
+    from database import SessionLocal
     return {'db': SessionLocal(), 'User': User}
 
 
