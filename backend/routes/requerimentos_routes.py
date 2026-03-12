@@ -21,6 +21,7 @@ def serializar_requerimento_basico(r):
         "prioridade": r.prioridade,
         "status": r.status,
         "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
+        "data_conclusao": r.data_conclusao.isoformat() if r.data_conclusao else None,
         "requerente_nome": r.requerente.nome if r.requerente else "",
         "arvore_endereco": r.arvore.endereco if r.arvore else "",
         "data_atualizacao": r.data_atualizacao.isoformat() if r.data_atualizacao else None,
@@ -37,6 +38,7 @@ def serializar_requerimento_completo(r):
         "motivo": r.motivo,
         "prioridade": r.prioridade,
         "data_abertura": r.data_abertura.isoformat() if r.data_abertura else None,
+        "data_conclusao": r.data_conclusao.isoformat() if r.data_conclusao else None,
         "requerente_nome": r.requerente.nome if r.requerente else "",
         "requerente_telefone": r.requerente.telefone if r.requerente else "",
         "observacao": r.observacao,
@@ -201,6 +203,13 @@ def atualizar_requerimento(id):
                 requerimento.data_abertura = datetime.strptime(data['data_abertura'], '%Y-%m-%d')
             except:
                 pass
+        if 'data_conclusao' in data and data['data_conclusao']:
+            try:
+                requerimento.data_conclusao = datetime.strptime(data['data_conclusao'], '%Y-%m-%dT%H:%M')
+            except:
+                pass
+        elif 'data_conclusao' in data and not data['data_conclusao']:
+            requerimento.data_conclusao = None
         
         # Campos obrigatórios de auditoria
         requerimento.data_atualizacao = datetime.now()
@@ -208,6 +217,7 @@ def atualizar_requerimento(id):
 
         # Atualizar ordens de serviço se status mudou para Concluído
         if status_anterior != "Concluído" and requerimento.status == "Concluído":
+            requerimento.data_conclusao = datetime.now()
             atualizar_status_ordens_servico(requerimento, session)
         
         session.commit()
@@ -267,12 +277,12 @@ def listar_requerimentos_concluidos():
     """Lista todos os requerimentos concluídos com dados completos"""
     session = SessionLocal()
     try:
-        order_by = request.args.get('order_by', 'data_atualizacao')
+        order_by = request.args.get('order_by', 'data_conclusao')
         direction = request.args.get('direction', 'desc').lower()
         
         # Obter campo de ordenação
         campos_validos = obter_campos_ordenacao()
-        campo_ordenacao = campos_validos.get(order_by, Requerimento.data_atualizacao)
+        campo_ordenacao = campos_validos.get(order_by, Requerimento.data_conclusao)
         ordenacao = campo_ordenacao.asc() if direction == 'asc' else campo_ordenacao.desc()
         
         requerimentos = (
@@ -296,8 +306,6 @@ def listar_requerimentos_concluidos():
 
         for r in requerimentos:
             data = serializar_requerimento_completo(r)
-            # Adicionar data de conclusão
-            data['data_conclusao'] = r.data_atualizacao.isoformat() if r.data_atualizacao else None
             data['tem_vistoria'] = r.id in requerimento_ids_com_vistoria
             data['vistoria_id'] = vistoria_map.get(r.id)
             requerimentos_json.append(data)
