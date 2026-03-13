@@ -22,6 +22,8 @@ def dashboard():
         total_usuarios = session.query(sa_func.count(User.id)).scalar()
         total_requerimentos = session.query(sa_func.count(Requerimento.id)).filter(extract('year', Requerimento.data_abertura) == ano_atual).scalar() or 0
         total_especies = session.query(sa_func.count(Especies.id)).scalar()
+        total_concluidos = session.query(sa_func.count(Requerimento.id)).filter(extract('year', Requerimento.data_conclusao) == ano_atual,sa_func.lower(Requerimento.status) == 'concluído'
+        ).scalar() or 0
 
         # Estatísticas de requerimentos (acumulado até o ano selecionado)
         req_pendentes = session.query(sa_func.count(Requerimento.id)).filter(
@@ -91,6 +93,7 @@ def dashboard():
             'total_usuarios': total_usuarios,
             'total_requerimentos': total_requerimentos,
             'total_especies': total_especies,
+            'total_requerimentos_concluidos': total_concluidos
         }
         req_stats = {'pendentes': req_pendentes}
 
