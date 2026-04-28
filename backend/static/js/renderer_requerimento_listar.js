@@ -130,7 +130,7 @@ function renderTabelaSelecionados() {
       <td>${r.tipo}</td>
       <td>${r.motivo}</td>
       <td>${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
-      <td>${r.requerente_nome || ''}</td>
+      <td>${r.requerente_nome} ${r.requerente_telefone || ''}</td>
       <td>${gerarLinkGoogleMaps(r)}</td>
       <td>${r.arvore_bairro || ''}</td>
       <td>
