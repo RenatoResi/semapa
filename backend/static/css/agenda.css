@@ -2,9 +2,12 @@
 
 .week-agenda {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(7, minmax(220px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    overflow-x: auto;
+    align-items: start;
+    padding-bottom: 0.5rem;
 }
 
 .day-column {
@@ -14,9 +17,18 @@
     display: flex;
     flex-direction: column;
     min-height: 400px;
+    min-width: 220px;
     overflow: hidden;
     border: 2px dashed transparent;
     transition: all 0.3s ease;
+}
+
+/* Variante compacta para visão mensal */
+.day-column.month-view {
+    min-height: auto;
+    height: 140px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .day-column.dropzone.drag-over {
@@ -36,6 +48,22 @@
     flex-shrink: 0;
 }
 
+/* Header compacto para visão mensal */
+.day-header-compact {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 6px 8px;
+    font-weight: 600;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.day-number {
+    font-size: 1.1rem;
+}
+
 .day-date {
     font-size: 0.95em;
     color: #dbeafe;
@@ -50,6 +78,17 @@
     overflow-y: auto;
     position: relative;
     min-height: 140px;
+    background-color: #e8f5e8
+}
+
+/* Drop area compacta para visão mensal */
+.drop-area-compact {
+    flex: 1;
+    padding: 6px 4px;
+    overflow-y: auto;
+    position: relative;
+    min-height: auto;
+    background-color: #e8f5e8;
 }
 
 .drop-placeholder {
@@ -83,10 +122,31 @@
 .task-card.status-cancelada { border-color: #ef4444; }
 .task-card.status-prorrogada { border-color: #fbbf24; }
 
+/* Task card compacto para visualização mensal */
+.task-card-compact {
+    background: #fff;
+    border-left: 3px solid #2563eb;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    padding: 4px 4px 4px 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    font-size: 0.75rem;
+}
+.task-card-compact:last-child { margin-bottom: 0; }
+
 .task-title {
     font-weight: 600;
     font-size: 1.05em;
     margin-bottom: 0.3em;
+}
+
+.task-title-compact {
+    font-weight: 600;
+    font-size: 0.7rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .task-description {
@@ -119,6 +179,12 @@
     border-radius: 6px;
     font-size: 1.1em;
     text-align: center;
+}
+
+.btn-add-task-small {
+    padding: 2px 6px !important;
+    font-size: 0.8rem !important;
+    border-radius: 4px !important;
 }
 
 /* Agenda Drag & Drop */
@@ -188,13 +254,66 @@
     flex-direction: column;
 }
 
+.two-week-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.week-row-block {
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 1rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.week-row-header {
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.week-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
 .calendar-dropzone {
     flex: 1;
     overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
     padding: 20px;
+}
+
+.month-grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.weekday-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    padding: 0 20px 12px 20px;
+    background: #f5f5f5;
+    margin: -20px -20px 0 -20px;
+    padding-top: 20px;
+}
+
+.weekday-item {
+    text-align: center;
+    font-weight: 700;
+    color: #667eea;
+    font-size: 0.95rem;
+    padding: 12px 0;
+}
+
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .day-column.drag-over {
@@ -206,18 +325,19 @@
 /* Cards arrastáveis */
 .requerimento-card {
     background: white;
-    border-radius: 12px;
-    padding: 18px;
+    border-radius: 8px;
+    padding: 10px;
     cursor: grab;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    border-left: 5px solid #4CAF50;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-left: 4px solid #4CAF50;
     user-select: none;
+    font-size: 0.9rem;
 }
 
 .requerimento-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
 .requerimento-card:active {
@@ -226,8 +346,8 @@
 
 .requerimento-card.dragging {
     opacity: 0.85;
-    transform: rotate(4deg) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    transform: rotate(2deg) scale(1.01);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.2);
     z-index: 1000;
 }
 
@@ -235,23 +355,25 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    gap: 8px;
 }
 
 .card-numero {
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: 0.95rem;
     color: #2c3e50;
     line-height: 1.2;
 }
 
 .card-complexidade {
     color: #000;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 0.7rem;
     font-weight: 700;
     box-shadow: 0 2px 8px rgba(255,193,7,0.4);
+    white-space: nowrap;
 }
 
 .card-complexidade.complexidade-normal {
@@ -272,15 +394,17 @@
 
 .card-tipo {
     color: #6c757d;
-    font-size: 0.92rem;
+    font-size: 0.8rem;
     margin-top: 4px;
+    line-height: 1.2;
 }
 
 .card-bairro {
     color: #28a745;
     font-weight: 600;
-    font-size: 1rem;
-    margin-top: 8px;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    line-height: 1.2;
 }
 
 /* Task cards colocados */

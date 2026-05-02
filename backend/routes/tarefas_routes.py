@@ -132,43 +132,57 @@ def listar_tarefas():
             ref_year = hoje.isocalendar()[0]
         
         inicio_semana = datetime.strptime(f'{ref_year}-W{ref_week}-1', "%G-W%V-%u").date()
-        dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
-        semana_anterior, ano_anterior, semana_proxima, ano_proxima = get_week_navigation(ref_week, ref_year)
+        segunda_semana_inicio = inicio_semana + timedelta(days=7)
 
         if busca:
-            tarefas = sessao.query(Tarefa).filter(
-                or_(
-                    Tarefa.descricao.ilike(f'%{busca}%'),
-                    Tarefa.endereco.ilike(f'%{busca}%'),
-                    Tarefa.bairro.ilike(f'%{busca}%'),
-                    Tarefa.observacoes.ilike(f'%{busca}%')
-                )
-            ).order_by(Tarefa.data_prevista.desc()).all()
+            filtro_busca = or_(
+                Tarefa.descricao.ilike(f'%{busca}%'),
+                Tarefa.endereco.ilike(f'%{busca}%'),
+                Tarefa.bairro.ilike(f'%{busca}%'),
+                Tarefa.observacoes.ilike(f'%{busca}%')
+            )
+            tarefas = sessao.query(Tarefa).filter(filtro_busca).order_by(Tarefa.data_prevista.desc()).all()
             if tarefas:
                 primeira_tarefa_data = tarefas[0].data_prevista
                 inicio_semana = primeira_tarefa_data - timedelta(days=primeira_tarefa_data.weekday())
-                dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
-        else:
-            tarefas = sessao.query(Tarefa).filter(
-                Tarefa.data_prevista >= inicio_semana,
-                Tarefa.data_prevista <= inicio_semana + timedelta(days=4)
-            ).order_by(Tarefa.data_prevista.asc()).all()
+                segunda_semana_inicio = inicio_semana + timedelta(days=7)
 
-        tarefas_por_dia = {dia: [] for dia in dias_semana}
+        semana_anterior_date = inicio_semana - timedelta(days=14)
+        semana_proxima_date = inicio_semana + timedelta(days=14)
+        semana_anterior, ano_anterior = semana_anterior_date.isocalendar()[1], semana_anterior_date.isocalendar()[0]
+        semana_proxima, ano_proxima = semana_proxima_date.isocalendar()[1], semana_proxima_date.isocalendar()[0]
+
+        dias_semana = [inicio_semana + timedelta(days=i) for i in range(5)]
+        segunda_semana = [segunda_semana_inicio + timedelta(days=i) for i in range(5)]
+        week_rows = [dias_semana, segunda_semana]
+        range_inicio = inicio_semana
+        range_fim = segunda_semana_inicio + timedelta(days=4)
+
+        query = sessao.query(Tarefa).filter(
+            Tarefa.data_prevista >= range_inicio,
+            Tarefa.data_prevista <= range_fim
+        )
+        if busca:
+            query = query.filter(filtro_busca)
+        tarefas = query.order_by(Tarefa.data_prevista.asc()).all()
+
+        tarefas_por_dia = {dia: [] for semana in week_rows for dia in semana}
         for tarefa in tarefas:
             if tarefa.data_prevista in tarefas_por_dia:
                 tarefas_por_dia[tarefa.data_prevista].append(tarefa)
 
-        # Obter previsão do tempo para a semana
-        weather_icons = obter_previsao_semana(dias_semana)
+        # Obter previsão do tempo para as duas semanas
+        weather_icons = obter_previsao_semana(dias_semana + segunda_semana)
 
         return render_template(
             "tarefas_listar.html",
             view='week',
-            dias_semana=dias_semana,
+            week_rows=week_rows,
             tarefas_por_dia=tarefas_por_dia,
             semana_inicio=inicio_semana,
-            semana_fim=inicio_semana + timedelta(days=4),
+            semana_fim=segunda_semana_inicio + timedelta(days=4),
+            semana2_inicio=segunda_semana_inicio,
+            semana2_fim=segunda_semana_inicio + timedelta(days=4),
             semana_anterior=semana_anterior,
             ano_anterior=ano_anterior,
             semana_proxima=semana_proxima,

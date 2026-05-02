@@ -22,6 +22,8 @@ def dashboard():
         total_usuarios = session.query(sa_func.count(User.id)).scalar()
         total_requerimentos = session.query(sa_func.count(Requerimento.id)).filter(extract('year', Requerimento.data_abertura) == ano_atual).scalar() or 0
         total_especies = session.query(sa_func.count(Especies.id)).scalar()
+        total_concluidos = session.query(sa_func.count(Requerimento.id)).filter(extract('year', Requerimento.data_conclusao) == ano_atual,sa_func.lower(Requerimento.status) == 'concluído'
+        ).scalar() or 0
 
         # Estatísticas de requerimentos (acumulado até o ano selecionado)
         req_pendentes = session.query(sa_func.count(Requerimento.id)).filter(
@@ -41,10 +43,10 @@ def dashboard():
             .all()
 
         requerimentos_concluidos = session.query(Requerimento)\
-            .filter(extract('month', Requerimento.data_atualizacao) == mes,\
-                    extract('year', Requerimento.data_atualizacao) == ano_atual)\
+            .filter(extract('month', Requerimento.data_conclusao) == mes,\
+                    extract('year', Requerimento.data_conclusao) == ano_atual)\
             .filter(sa_func.lower(Requerimento.status) == 'concluído')\
-            .order_by(Requerimento.data_atualizacao.desc())\
+            .order_by(Requerimento.data_conclusao.desc())\
             .limit(30)\
             .all()
 
@@ -63,7 +65,7 @@ def dashboard():
             extract('year', Requerimento.data_abertura) == prev_year
         ).scalar() or 0
         concluidos_prev = session.query(sa_func.count(Requerimento.id)).filter(
-            extract('year', Requerimento.data_atualizacao) == prev_year,
+            extract('year', Requerimento.data_conclusao) == prev_year,
             sa_func.lower(Requerimento.status) == 'concluído'
         ).scalar() or 0
         acumulado = emitidos_prev - concluidos_prev
@@ -77,8 +79,8 @@ def dashboard():
 
             # Requerimentos concluídos no mês
             concluidos = session.query(sa_func.count(Requerimento.id)).filter(
-                extract('month', Requerimento.data_atualizacao) == m,
-                extract('year', Requerimento.data_atualizacao) == ano_atual,
+                extract('month', Requerimento.data_conclusao) == m,
+                extract('year', Requerimento.data_conclusao) == ano_atual,
                 sa_func.lower(Requerimento.status) == 'concluído'
             ).scalar() or 0
 
@@ -91,6 +93,7 @@ def dashboard():
             'total_usuarios': total_usuarios,
             'total_requerimentos': total_requerimentos,
             'total_especies': total_especies,
+            'total_requerimentos_concluidos': total_concluidos
         }
         req_stats = {'pendentes': req_pendentes}
 

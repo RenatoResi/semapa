@@ -68,7 +68,8 @@
       prioridade: document.getElementById('input-prioridade').value,
       status: document.getElementById('input-status').value,
       observacao: document.getElementById('input-observacao').value,
-      data_abertura: document.getElementById('input-data-abertura').value || null
+      data_abertura: document.getElementById('input-data-abertura').value || null,
+      data_conclusao: document.getElementById('input-data-conclusao').value || null
     };
     try {
       const res = await fetch(`/requerimentos/${REQ_ID}`, {

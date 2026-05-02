@@ -70,6 +70,7 @@ class Requerimento(Base):
     id = Column(Integer, primary_key=True)
     numero = Column(String(20), unique=True)
     data_abertura = Column(DateTime, default=datetime.now)
+    data_conclusao = Column(DateTime, nullable=True)
     tipo = Column(Text)
     motivo = Column(Text)
     status = Column(String(30), default="Pendente")

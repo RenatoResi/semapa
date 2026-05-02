@@ -61,67 +61,99 @@
         <div class="calendar-dropzone" id="calendar-dropzone">
             {% if view == 'week' %}
                 {% set dias_semana_nomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'] %}
-                {% for i in range(5) %}
-                    {% set dia = semana_inicio + timedelta(days=i) %}
-                    {% set dia_str = dia.strftime('%Y-%m-%d') %}
-                    <!-- Manhã -->
-                    <div class="day-column dropzone" data-data="{{ dia_str }}">
-                        <div class="day-header d-flex justify-content-between align-items-center">
-                            <div>
-                                <div><span>{{ dias_semana_nomes[i] }}</span></div>
-                                <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
+                <div class="two-week-grid">
+                    {% for semana in week_rows %}
+                        <div class="week-row-block">
+                            <div class="week-row-header d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <strong>Semana {{ loop.index }}</strong>
+                                    <span class="text-secondary ms-2">{{ semana[0].strftime('%d/%m/%Y') }} - {{ semana[4].strftime('%d/%m/%Y') }}</span>
+                                </div>
                             </div>
-                            <div class="ms-2">
-                                <button class="btn btn-sm btn-success btn-add-task" data-date="{{ dia_str }}">+ Adicionar</button>
+                            <div class="week-row">
+                                {% for dia in semana %}
+                                    {% set dia_str = dia.strftime('%Y-%m-%d') %}
+                                    <div class="day-column dropzone" data-data="{{ dia_str }}">
+                                        <div class="day-header d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div><span>{{ dias_semana_nomes[dia.weekday()] }}</span></div>
+                                                <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
+                                            </div>
+                                            <div class="ms-2">
+                                                <button class="btn btn-sm btn-success btn-add-task" data-date="{{ dia_str }}">+ Adicionar</button>
+                                            </div>
+                                        </div>
+                                        <div class="period-header" style="text-align:center">Manhã</div>
+                                        <div class="drop-area" data-drop="manha">
+                                            <div class="drop-placeholder">Arraste requerimentos aqui</div>
+                                            {% set tarefas_manha = tarefas_por_dia.get(dia, []) | selectattr('periodo', 'equalto', 'manha') | list %}
+                                            {% for tarefa in tarefas_manha %}
+                                            <div class="task-card placed" data-tarefa-id="{{ tarefa.id }}">
+                                                <div class="task-title">
+                                                    {% if tarefa.requerimento %}
+                                                        {{ tarefa.requerimento.numero }} - {{ tarefa.descricao }}
+                                                    {% else %}
+                                                        {{ tarefa.descricao }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="task-body">{{ tarefa.endereco }} - {{ tarefa.bairro }}</div>
+                                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="period-header" style="text-align:center">Tarde</div>
+                                        <div class="drop-area" data-drop="tarde">
+                                            <div class="drop-placeholder">Arraste requerimentos aqui</div>
+                                            {% set tarefas_tarde = tarefas_por_dia.get(dia, []) | selectattr('periodo', 'equalto', 'tarde') | list %}
+                                            {% for tarefa in tarefas_tarde %}
+                                            <div class="task-card placed" data-tarefa-id="{{ tarefa.id }}">
+                                                <div class="task-title">
+                                                    {% if tarefa.requerimento %}
+                                                        {{ tarefa.requerimento.numero }} - {{ tarefa.descricao }}
+                                                    {% else %}
+                                                        {{ tarefa.descricao }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="task-body">{{ tarefa.endereco }} - {{ tarefa.bairro }}</div>
+                                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
-                        <div class="period-header">🌅 Manhã</div>
-                        <div class="drop-area" data-drop="manha">
-                            <div class="drop-placeholder">Arraste requerimentos aqui</div>
-                            {% set tarefas_manha = tarefas_por_dia.get(dia, []) | selectattr('periodo', 'equalto', 'manha') | list %}
-                            {% for tarefa in tarefas_manha %}
-                            <div class="task-card placed" data-tarefa-id="{{ tarefa.id }}">
-                                <div class="task-title">{{ tarefa.descricao }}</div>
-                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <div class="period-header">🌇 Tarde</div>
-                        <div class="drop-area" data-drop="tarde">
-                            <div class="drop-placeholder">Arraste requerimentos aqui</div>
-                            {% set tarefas_tarde = tarefas_por_dia.get(dia, []) | selectattr('periodo', 'equalto', 'tarde') | list %}
-                            {% for tarefa in tarefas_tarde %}
-                            <div class="task-card placed" data-tarefa-id="{{ tarefa.id }}">
-                                <div class="task-title">{{ tarefa.descricao }}</div>
-                                <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% else %}
-                {# Visão mensal: grid de semanas com colunas (dom -> sáb) - adaptamos para mostrar apenas dias do mês #}
+                {# Visão mensal: grid de semanas com colunas (dom -> sáb) #}
                 <div class="month-grid" style="display: grid; grid-template-columns: repeat(7,1fr); gap: 12px;">
+                  {% set dias_semana_nomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'] %}
                   {% for week in month_weeks %}
                     {% for dia in week %}
                       {% set dia_str = dia.strftime('%Y-%m-%d') %}
                       <div class="day-column dropzone{% if dia.month != month_month %} text-muted{% endif %}" data-data="{{ dia_str }}">
                         <div class="day-header d-flex justify-content-between align-items-center">
                           <div>
-                            <div><strong>{{ dia.day }}</strong></div>
-                            <div class="day-date">{{ dia.strftime('%d/%m/%Y') }}</div>
-                          </div>
-                          <div class="ms-2">
-                            <button class="btn btn-sm btn-success btn-add-task" data-date="{{ dia_str }}">+ Adicionar</button>
+                            <div><strong>{{ dias_semana_nomes[dia.weekday()] }}</strong></div>
+                            <div class="day-date">{{ dia.strftime('%d/%m') }}</div>
                           </div>
                         </div>
-                        <div class="period-header">Manhã / Tarde</div>
+                        <div class="period-header">
+                            <button class="btn btn-sm btn-success btn-add-task" data-date="{{ dia_str }}">+ Criar Tarefa</button>
+                        </div>
                         <div class="drop-area" data-drop="manha">
                           <div class="drop-placeholder">Arraste requerimentos aqui</div>
                           {% set tarefas_do_dia = tarefas_por_dia.get(dia, []) %}
                           {% for tarefa in tarefas_do_dia %}
                             <div class="task-card placed" data-tarefa-id="{{ tarefa.id }}">
-                                <div class="task-title">{{ tarefa.descricao }}</div>
+                                <div class="task-title">
+                                    {% if tarefa.requerimento %}
+                                        {{ tarefa.requerimento.numero }} - {{ tarefa.descricao }}
+                                    {% else %}
+                                        {{ tarefa.descricao }}
+                                    {% endif %}
+                                </div>
                                 <div class="task-status">Status: {{ tarefa.status | capitalize }}</div>
                             </div>
                           {% endfor %}

@@ -88,9 +88,9 @@
                 <div class="row g-0 align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs fw-bold text-warning text-uppercase mb-1">
-                            Total de Espécies
+                            Requerimentos Concluídos
                         </div>
-                        <div class="h5 mb-0 fw-bold text-gray-800">{{ stats.total_especies or 0 }}</div>
+                        <div class="h5 mb-0 fw-bold text-gray-800">{{ stats.total_requerimentos_concluidos or 0 }}</div>
                     </div>
                     <div class="col-auto">
                         <i class="fa-solid fa-leaf fa-2x text-gray-300"></i>
@@ -214,10 +214,10 @@
                                 <tr>
                                     <td>{{ req.numero }}</td>
                                     <td>{{ req.data_abertura.strftime("%d/%m/%Y") if req.data_abertura else '-' }}</td>
-                                    <td>{{ req.data_atualizacao.strftime("%d/%m/%Y") if req.data_atualizacao else '-' }}</td>
+                                    <td>{{ req.data_conclusao.strftime("%d/%m/%Y") if req.data_conclusao else '-' }}</td>
                                     <td>
-                                        {% if req.data_abertura and req.data_atualizacao %}
-                                            {{ (req.data_atualizacao - req.data_abertura).days }}
+                                        {% if req.data_abertura and req.data_conclusao %}
+                                            {{ (req.data_conclusao - req.data_abertura).days }}
                                         {% else %}
                                             -
                                         {% endif %}
