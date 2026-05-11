@@ -1,6 +1,8 @@
 (function(){
   const meta = document.getElementById('requerimento-meta');
   const REQ_ID = meta ? parseInt(meta.dataset.reqId, 10) : null;
+  const REQ_REQUERENTE_ID = meta && meta.dataset.requerenteId ? parseInt(meta.dataset.requerenteId, 10) : null;
+  const ARVORE_ID = meta && meta.dataset.arvoreId ? parseInt(meta.dataset.arvoreId, 10) : null;
 
   function openFotoModal(url) {
     document.getElementById('foto-modal-img').src = url;
@@ -90,6 +92,63 @@
     }
   }
 
+  async function salvarRequerente(){
+    if (!REQ_REQUERENTE_ID) {
+      return alert('Requerente não vinculado a este requerimento.');
+    }
+    const payload = {
+      nome: document.getElementById('input-requerente-nome').value,
+      telefone: document.getElementById('input-requerente-telefone').value,
+      observacao: document.getElementById('input-requerente-observacoes').value
+    };
+    try {
+      const res = await fetch(`/requerentes/${REQ_REQUERENTE_ID}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        alert('Erro ao salvar requerente: ' + txt);
+        return;
+      }
+      alert('Requerente atualizado com sucesso!');
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar requerente.');
+    }
+  }
+
+  async function salvarArvore(){
+    if (!ARVORE_ID) {
+      return alert('Árvore não vinculada a este requerimento.');
+    }
+    const payload = {
+      endereco: document.getElementById('input-arvore-endereco').value,
+      bairro: document.getElementById('input-arvore-bairro').value,
+      latitude: document.getElementById('input-lat').value || null,
+      longitude: document.getElementById('input-lon').value || null
+    };
+    try {
+      const res = await fetch(`/arvores/${ARVORE_ID}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        alert('Erro ao salvar árvore: ' + txt);
+        return;
+      }
+      alert('Árvore atualizada com sucesso!');
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar árvore.');
+    }
+  }
+
   function criarVistoria() {
     if (!REQ_ID) return alert('ID do requerimento não disponível');
     // Redireciona para o formulário de nova vistoria, passando o requerimento
@@ -112,6 +171,12 @@
 
     const btnSalvar = document.getElementById('btn-salvar-requerimento');
     if (btnSalvar) btnSalvar.addEventListener('click', salvarRequerimento);
+
+    const btnSalvarReq = document.getElementById('btn-salvar-requerente');
+    if (btnSalvarReq) btnSalvarReq.addEventListener('click', salvarRequerente);
+
+    const btnSalvarArv = document.getElementById('btn-salvar-arvore');
+    if (btnSalvarArv) btnSalvarArv.addEventListener('click', salvarArvore);
 
     const btnVist = document.getElementById('btn-vistoriar');
     if (btnVist) btnVist.addEventListener('click', criarVistoria);

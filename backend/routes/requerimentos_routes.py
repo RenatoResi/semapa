@@ -215,10 +215,10 @@ def atualizar_requerimento(id):
         requerimento.data_atualizacao = datetime.now()
         requerimento.atualizado_por = current_user.id
 
-        # Atualizar ordens de serviço se status mudou para Concluído
-        if status_anterior != "Concluído" and requerimento.status == "Concluído":
-            requerimento.data_conclusao = datetime.now()
-            atualizar_status_ordens_servico(requerimento, session)
+        # # Atualizar ordens de serviço se status mudou para Concluído
+        # if status_anterior != "Concluído" and requerimento.status == "Concluído":
+        #     requerimento.data_conclusao = datetime.now()
+        #     atualizar_status_ordens_servico(requerimento, session)
         
         session.commit()
         return jsonify({

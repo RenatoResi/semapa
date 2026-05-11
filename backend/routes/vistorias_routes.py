@@ -83,7 +83,7 @@ def nova_vistoria():
     session = SessionLocal()
     try:
         requerimentos = session.query(Requerimento).all()
-        especies = session.query(Especies).all()
+        especies = session.query(Especies).order_by(Especies.nome_popular.asc()).all()
         requerimento_id = request.args.get('requerimento_id', type=int)
         
         # Buscar o requerimento se ID foi fornecido

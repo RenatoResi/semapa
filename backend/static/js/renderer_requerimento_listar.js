@@ -88,7 +88,7 @@ function renderTabelaRequerimentos() {
         <button class="${temVistoria ? 'btn-vistoria-existente' : 'btn-vistoria'} btn-icon" 
                 data-id="${r.id}" 
                 title="${temVistoria ? 'Editar Vistoria Existente' : 'Registrar Vistoria'}">
-          <i class="fa-solid ${temVistoria ? 'fa-edit' : 'fa-check-to-slot'}" 
+          <i class="fa-solid ${temVistoria ? 'fa-edit' : 'fa-eye'}" 
              style="font-size:1.2em;"></i>
         </button>
         <button class="btn-selecionar btn-icon" data-id="${r.id}" title="Selecionar"><span>+</span></button>
@@ -130,7 +130,7 @@ function renderTabelaSelecionados() {
       <td>${r.tipo}</td>
       <td>${r.motivo}</td>
       <td>${r.data_abertura ? formatDateDDMMYYYY(r.data_abertura) : ''}</td>
-      <td>${r.requerente_nome || ''}</td>
+      <td>${r.requerente_nome} ${r.requerente_telefone || ''}</td>
       <td>${gerarLinkGoogleMaps(r)}</td>
       <td>${r.arvore_bairro || ''}</td>
       <td>

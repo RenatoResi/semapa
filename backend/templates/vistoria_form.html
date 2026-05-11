@@ -85,6 +85,8 @@
                         {% if vistoria and 'fiacao' in vistoria.conflitos %}checked{% endif %}> Fiação elétrica</label>
                     <label><input type="checkbox" name="conflitos[]" value="calcada" 
                         {% if vistoria and 'calcada' in vistoria.conflitos %}checked{% endif %}> Calçada danificada</label>
+                    <label><input type="checkbox" name="conflitos[]" value="calcada estreita" 
+                        {% if vistoria and 'calcada estreita' in vistoria.conflitos %}checked{% endif %}> Calçada estreita</label>
                     <label><input type="checkbox" name="conflitos[]" value="edificacao" 
                         {% if vistoria and 'edificacao' in vistoria.conflitos %}checked{% endif %}> Edificação</label>
                     <label><input type="checkbox" name="conflitos[]" value="sinalizacao" 

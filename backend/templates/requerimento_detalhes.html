@@ -20,7 +20,7 @@
 
 {% block content %}
 <h1>Requerimento {{ requerimento.numero or '' }}</h1>
-<div id="requerimento-meta" data-req-id="{{ requerimento.id }}" data-req-numero="{{ requerimento.numero }}" style="display:none;"></div>
+<div id="requerimento-meta" data-req-id="{{ requerimento.id }}" data-req-numero="{{ requerimento.numero }}" data-requerente-id="{{ requerimento.requerente.id if requerimento.requerente else '' }}" data-arvore-id="{{ requerimento.arvore.id if requerimento.arvore else '' }}" style="display:none;"></div>
 
 <div class="tab">
   <h3>Dados do Requerimento</h3>
@@ -31,7 +31,12 @@
     </div>
     <div class="form-group">
       <label>Tipo</label>
-      <input id="input-tipo" class="form-control" value="{{ requerimento.tipo or '' }}">
+      <select id="input-tipo" class="form-control">
+        <option value="Poda" {% if requerimento.tipo == 'Poda' %}selected{% endif %}>Poda</option>
+        <option value="Remoção" {% if requerimento.tipo == 'Remoção' %}selected{% endif %}>Remoção</option>
+        <option value="Plantio" {% if requerimento.tipo == 'Plantio' %}selected{% endif %}>Plantio</option>
+        <option value="Outros" {% if requerimento.tipo == 'Outros' %}selected{% endif %}>Outros</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Prioridade</label>
@@ -43,7 +48,11 @@
     </div>
     <div class="form-group">
       <label>Status</label>
-      <input id="input-status" class="form-control" value="{{ requerimento.status or '' }}">
+      <select id="input-status" class="form-control">
+        <option value="Aberto" {% if requerimento.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+        <option value="Em andamento" {% if requerimento.status == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+        <option value="Concluído" {% if requerimento.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+      </select>
     </div>
     <div class="form-group">
       <label>Data de Abertura</label>
@@ -69,7 +78,7 @@
     </div>
   </div>
   <div style="margin-top:12px;">
-    <button id="btn-salvar-requerimento" class="btn btn-primary">Salvar Alterações</button>
+    <button id="btn-salvar-requerimento" class="btn btn-primary">Salvar Requerimento</button>
     <a href="{{ url_for('pages.requerimento_listar') }}" class="btn btn-secondary" style="margin-left:8px;">Voltar à lista</a>
     <span class="meta" style="margin-left:12px;">Última atualização: {{ requerimento.data_atualizacao.strftime('%Y-%m-%d %H:%M:%S') if requerimento.data_atualizacao else '—' }}</span>
   </div>
@@ -88,7 +97,11 @@
     </div>
     <div class="form-group">
       <label>Observações</label>
-      <input id="input-requerente-observacoes" class="form-control" value="{{ requerimento.requerente.observacao if requerimento.observacao else '' }}">
+      <input id="input-requerente-observacoes" class="form-control" value="{{ requerimento.requerente.observacao if requerimento.requerente else '' }}">
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <button id="btn-salvar-requerente" type="button" class="btn btn-primary">Salvar Requerente</button>
   </div>
 </div>
 
@@ -120,6 +133,9 @@
             <input id="input-lon" class="form-control" value="{{ requerimento.arvore.longitude if requerimento.arvore else (requerimento.arvore_longitude if requerimento.__dict__.get('arvore_longitude') else '') }}">
           </div>
         </div>
+      </div>
+      <div style="margin-top:12px;">
+        <button id="btn-salvar-arvore" type="button" class="btn btn-primary">Salvar Árvore</button>
       </div>
     </div>
   </div>
