@@ -54,7 +54,8 @@ function aplicarFiltrosGlobais() {
       (r.requerente_nome?.toLowerCase() || '').includes(termo) ||
       (r.arvore_endereco?.toLowerCase() || '').includes(termo) ||
       (r.arvore_bairro?.toLowerCase() || '').includes(termo) ||
-      (r.status?.toLowerCase() || '').includes(termo)
+      (r.status?.toLowerCase() || '').includes(termo) ||
+      (r.observacao?.toLowerCase() || '').includes(termo)
     );
   });
 
